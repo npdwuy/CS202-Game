@@ -1,0 +1,11 @@
+build/
+.cmake/
+
+.vscode/
+compile_commands.json
+
+*.exe
+*.out
+*.app
+
+*.dll
