@@ -2,6 +2,7 @@
 
 #include "GameState.hpp"
 #include "entities/Enemy.hpp"
+#include "entities/Item.hpp"
 
 #include <memory>
 #include <vector>
@@ -17,4 +18,5 @@ public:
 
 private:
     std::vector<std::unique_ptr<Enemy>> m_enemies;
+    std::vector<std::unique_ptr<Item>> m_items;
 };
