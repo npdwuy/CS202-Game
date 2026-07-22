@@ -6,12 +6,14 @@ protected:
     sf::Vector2f velocity_;
     float width_;
     float height_;
-    bool active_;
+    bool active_ = true;
 public:
+    Entity(sf:: Vector2f position, float width = 1.0f, float height = 1.0f) : position_(position), width_(width), height_(height){}
+
     virtual ~Entity() = default;
     virtual std::string name()const = 0;
     virtual void draw() const = 0;
-    virtual void update() const = 0;
+    virtual void update() = 0;
 
     sf::Vector2f position()const{
         return position_;
