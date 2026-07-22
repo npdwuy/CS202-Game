@@ -1,4 +1,5 @@
 #include "entities/items/Coin.hpp"
+#include<cmath>
 
 Coin::Coin(sf::Vector2f position, int value)
     : m_body(16.f),
@@ -18,7 +19,22 @@ Coin::Coin(sf::Vector2f position, int value)
 
 void Coin::Update(sf::Time timePerFrame)
 {
-    (void)timePerFrame;
+    if (m_collected)
+    {
+        return;
+    }
+
+    m_animationTime += timePerFrame.asSeconds();
+
+    const float amplitude = 5.f;
+    const float frequency = 3.f;
+
+    float offsetY = std::sin(m_animationTime * frequency) * amplitude;
+
+    m_body.setPosition(
+        m_body.getPosition().x,
+        m_baseY + offsetY
+    );
 }
 
 void Coin::Render(sf::RenderWindow& window) const
