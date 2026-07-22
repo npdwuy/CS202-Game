@@ -19,7 +19,8 @@ public:
     int GetValue() const;
 
 private:
-    sf::CircleShape m_body;
+    sf::Texture m_texture;
+    sf::Sprite m_sprite;
 
     float m_baseY;
     float m_animationTime;
