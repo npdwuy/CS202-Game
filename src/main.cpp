@@ -20,13 +20,13 @@ int main() {
 
     while(window.isOpen()) {
         sf::Time elapsedTime = clock.restart();
-        
+
         if(elapsedTime > sf::seconds(0.25f)) {
             elapsedTime = sf::seconds(0.25f);
         }
 
         timeSinceLastUpdate += elapsedTime;
-        
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -36,13 +36,13 @@ int main() {
             // Input handling here
             if(currentState != nullptr) currentState->Input(event);
         }
-        
-        
+
+
         // Update State - fixed time stamp for better event handling
         while(timeSinceLastUpdate >= TimePerFrame) {
             timeSinceLastUpdate -= TimePerFrame;
-            
-            // Update game logic 
+
+            // Update game logic
             if(currentState != nullptr) currentState->Update(TimePerFrame);
         }
 
@@ -52,7 +52,7 @@ int main() {
         }
 
         window.clear(sf::Color::Black);
-        
+
         // Render here
         if(currentState != nullptr) currentState->Render(window);
 
