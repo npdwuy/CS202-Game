@@ -24,7 +24,16 @@ Goomba::Goomba(sf::Vector2f position,
 
 void Goomba::Update(sf::Time timePerFrame)
 {
-    (void)timePerFrame;
+    if (!m_active)
+    {
+        return;
+    }
+
+    float distance = m_speed
+                   * static_cast<float>(m_direction)
+                   * timePerFrame.asSeconds();
+
+    m_body.move(distance, 0.f);
 }
 
 void Goomba::Render(sf::RenderWindow& window) const
