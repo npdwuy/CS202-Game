@@ -3,6 +3,8 @@
 #include "entities/enemies/Goomba.hpp"
 #include "entities/items/Coin.hpp"
 
+#include <algorithm>
+
 PlayState::PlayState()
 {
     m_enemies.push_back(
@@ -50,6 +52,30 @@ void PlayState::Update(sf::Time timePerFrame)
     {
         item->Update(timePerFrame);
     }
+
+    m_enemies.erase(
+        std::remove_if(
+            m_enemies.begin(),
+            m_enemies.end(),
+            [](const std::unique_ptr<Enemy>& enemy)
+            {
+                return !enemy->IsActive();
+            }
+        ),
+        m_enemies.end()
+    );
+
+    m_items.erase(
+        std::remove_if(
+            m_items.begin(),
+            m_items.end(),
+            [](const std::unique_ptr<Item>& item)
+            {
+                return item->IsCollected();
+            }
+        ),
+        m_items.end()
+    );
 }
 
 void PlayState::Render(sf::RenderWindow& window)
