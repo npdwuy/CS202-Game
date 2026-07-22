@@ -24,7 +24,19 @@ PlayState::PlayState()
 
 void PlayState::Input(const sf::Event& event)
 {
-    (void)event;
+    if (event.type != sf::Event::KeyPressed)
+    {
+        return;
+    }
+
+    if (event.key.code == sf::Keyboard::C && !m_items.empty())
+    {
+        m_items.front()->Collect();
+    }
+    else if (event.key.code == sf::Keyboard::K && !m_enemies.empty())
+    {
+        m_enemies.front()->Deactivate();
+    }
 }
 
 void PlayState::Update(sf::Time timePerFrame)
