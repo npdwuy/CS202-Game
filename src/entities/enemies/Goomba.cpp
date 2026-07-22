@@ -9,6 +9,8 @@ Goomba::Goomba(sf::Vector2f position,
     : m_speed(speed),
       m_leftBoundary(leftBoundary),
       m_rightBoundary(rightBoundary),
+      m_animationTime(0.f),
+      m_currentFrame(0),
       m_direction(1),
       m_active(true)
 {
@@ -43,6 +45,20 @@ void Goomba::Update(sf::Time timePerFrame)
     if (!m_active)
     {
         return;
+    }
+
+    m_animationTime += timePerFrame.asSeconds();
+
+    const float frameDuration = 0.18f;
+
+    if (m_animationTime >= frameDuration)
+    {
+        m_animationTime = 0.f;
+        m_currentFrame = (m_currentFrame + 1) % 2;
+
+        m_sprite.setTextureRect(
+            sf::IntRect(m_currentFrame * 16, 0, 16, 16)
+        );
     }
 
     float distance = m_speed

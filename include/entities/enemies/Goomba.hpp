@@ -27,6 +27,9 @@ private:
     float m_leftBoundary;
     float m_rightBoundary;
 
+    float m_animationTime;
+    int m_currentFrame;
+
     int m_direction;
     bool m_active;
 };
