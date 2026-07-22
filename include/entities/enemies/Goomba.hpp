@@ -20,7 +20,8 @@ public:
     void Deactivate() override;
 
 private:
-    sf::RectangleShape m_body;
+    sf::Texture m_texture;
+    sf::Sprite m_sprite;
 
     float m_speed;
     float m_leftBoundary;

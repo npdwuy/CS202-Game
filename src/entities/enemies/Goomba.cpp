@@ -1,11 +1,12 @@
 #include "entities/enemies/Goomba.hpp"
 
+#include <stdexcept>
+
 Goomba::Goomba(sf::Vector2f position,
                float speed,
                float leftBoundary,
                float rightBoundary)
-    : m_body(sf::Vector2f(48.f, 48.f)),
-      m_speed(speed),
+    : m_speed(speed),
       m_leftBoundary(leftBoundary),
       m_rightBoundary(rightBoundary),
       m_direction(1),
@@ -18,8 +19,23 @@ Goomba::Goomba(sf::Vector2f position,
         m_rightBoundary = temp;
     }
 
-    m_body.setPosition(position);
-    m_body.setFillColor(sf::Color(139, 69, 19));
+    if (!m_texture.loadFromFile(
+            "assets/sprites/enemies/goomba_walk.png"))
+    {
+        throw std::runtime_error(
+            "Failed to load Goomba sprite."
+        );
+    }
+
+    m_sprite.setTexture(m_texture);
+
+    // Use the first 16 x 16 frame.
+    m_sprite.setTextureRect(sf::IntRect(0, 0, 16, 16));
+
+    // Scale the original sprite to 48 x 48 pixels.
+    m_sprite.setScale(3.f, 3.f);
+
+    m_sprite.setPosition(position);
 }
 
 void Goomba::Update(sf::Time timePerFrame)
@@ -33,20 +49,25 @@ void Goomba::Update(sf::Time timePerFrame)
                    * static_cast<float>(m_direction)
                    * timePerFrame.asSeconds();
 
-    m_body.move(distance, 0.f);
+    m_sprite.move(distance, 0.f);
 
-    float currentX = m_body.getPosition().x;
+    float currentX = m_sprite.getPosition().x;
+    float spriteWidth = m_sprite.getGlobalBounds().width;
 
     if (currentX <= m_leftBoundary)
     {
-        m_body.setPosition(m_leftBoundary, m_body.getPosition().y);
+        m_sprite.setPosition(
+            m_leftBoundary,
+            m_sprite.getPosition().y
+        );
+
         m_direction = 1;
     }
-    else if (currentX + m_body.getSize().x >= m_rightBoundary)
+    else if (currentX + spriteWidth >= m_rightBoundary)
     {
-        m_body.setPosition(
-            m_rightBoundary - m_body.getSize().x,
-            m_body.getPosition().y
+        m_sprite.setPosition(
+            m_rightBoundary - spriteWidth,
+            m_sprite.getPosition().y
         );
 
         m_direction = -1;
@@ -57,13 +78,13 @@ void Goomba::Render(sf::RenderWindow& window) const
 {
     if (m_active)
     {
-        window.draw(m_body);
+        window.draw(m_sprite);
     }
 }
 
 sf::FloatRect Goomba::GetBounds() const
 {
-    return m_body.getGlobalBounds();
+    return m_sprite.getGlobalBounds();
 }
 
 bool Goomba::IsActive() const
