@@ -29,10 +29,26 @@ void PlayState::Input(const sf::Event& event)
 
 void PlayState::Update(sf::Time timePerFrame)
 {
-    (void)timePerFrame;
+    for (auto& enemy : m_enemies)
+    {
+        enemy->Update(timePerFrame);
+    }
+
+    for (auto& item : m_items)
+    {
+        item->Update(timePerFrame);
+    }
 }
 
 void PlayState::Render(sf::RenderWindow& window)
 {
-    (void)window;
+    for (const auto& enemy : m_enemies)
+    {
+        enemy->Render(window);
+    }
+
+    for (const auto& item : m_items)
+    {
+        item->Render(window);
+    }
 }
