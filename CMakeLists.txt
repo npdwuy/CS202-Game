@@ -29,9 +29,28 @@ endif()
 # Locate additional lib*.dll files (common in MinGW builds)
 file(GLOB SFML_LIB_DLLS "SFML/bin/lib*.dll")
 
-# Copy required SFML DLLs and the assets directory to the build output folder post-build
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SFML_DLLS} ${SFML_LIB_DLLS} $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
-    COMMENT "Copying SFML DLLs and Assets to build directory..."
+# Combine all runtime DLL files
+set(SFML_RUNTIME_DLLS
+    ${SFML_DLLS}
+    ${SFML_LIB_DLLS}
 )
+
+# Copy SFML DLLs only when the list is not empty
+if(SFML_RUNTIME_DLLS)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${SFML_RUNTIME_DLLS}
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying SFML DLLs to build directory..."
+    )
+endif()
+
+# Copy assets to the executable directory
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
+        COMMENT "Copying assets to build directory..."
+    )
+endif()
