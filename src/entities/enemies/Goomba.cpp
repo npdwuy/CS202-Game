@@ -34,6 +34,23 @@ void Goomba::Update(sf::Time timePerFrame)
                    * timePerFrame.asSeconds();
 
     m_body.move(distance, 0.f);
+
+    float currentX = m_body.getPosition().x;
+
+    if (currentX <= m_leftBoundary)
+    {
+        m_body.setPosition(m_leftBoundary, m_body.getPosition().y);
+        m_direction = 1;
+    }
+    else if (currentX + m_body.getSize().x >= m_rightBoundary)
+    {
+        m_body.setPosition(
+            m_rightBoundary - m_body.getSize().x,
+            m_body.getPosition().y
+        );
+
+        m_direction = -1;
+    }
 }
 
 void Goomba::Render(sf::RenderWindow& window) const
