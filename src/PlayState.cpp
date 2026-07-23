@@ -5,6 +5,8 @@
 #include "entities/items/Coin.hpp"
 #include "entities/strategies/PatrolStrategy.hpp"
 
+#include "entities/enemies/FlyingEnemy.hpp"
+#include "entities/strategies/FlyingStrategy.hpp"
 #include <algorithm>
 
 PlayState::PlayState()
@@ -27,6 +29,17 @@ PlayState::PlayState()
             std::make_unique<PatrolStrategy>(
                 600.f,
                 1150.f
+            )
+        )
+    );
+
+    m_enemies.push_back(
+        std::make_unique<FlyingEnemy>(
+            sf::Vector2f(1100.f, 450.f),
+            100.f,
+            std::make_unique<FlyingStrategy>(
+                350.f,
+                800.f
             )
         )
     );
