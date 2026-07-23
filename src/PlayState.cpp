@@ -2,6 +2,7 @@
 
 #include "entities/enemies/Goomba.hpp"
 #include "entities/items/Coin.hpp"
+#include "entities/strategies/PatrolStrategy.hpp"
 
 #include <algorithm>
 
@@ -11,8 +12,10 @@ PlayState::PlayState()
         std::make_unique<Goomba>(
             sf::Vector2f(300.f, 850.f),
             120.f,
-            250.f,
-            900.f
+            std::make_unique<PatrolStrategy>(
+                250.f,
+                900.f
+            )
         )
     );
 

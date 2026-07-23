@@ -1,13 +1,17 @@
 #pragma once
 
 #include "entities/Enemy.hpp"
+#include "entities/strategies/MovementStrategy.hpp"
+
+#include <memory>
 
 class Goomba : public Enemy {
 public:
-    Goomba(sf::Vector2f position,
-           float speed,
-           float leftBoundary,
-           float rightBoundary);
+    Goomba(
+        sf::Vector2f position,
+        float speed,
+        std::unique_ptr<MovementStrategy> movementStrategy
+    );
 
     ~Goomba() override = default;
 
@@ -23,13 +27,11 @@ private:
     sf::Texture m_texture;
     sf::Sprite m_sprite;
 
+    std::unique_ptr<MovementStrategy> m_movementStrategy;
+
     float m_speed;
-    float m_leftBoundary;
-    float m_rightBoundary;
-
     float m_animationTime;
-    int m_currentFrame;
 
-    int m_direction;
+    int m_currentFrame;
     bool m_active;
 };

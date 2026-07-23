@@ -1,24 +1,24 @@
 #include "entities/enemies/Goomba.hpp"
 
 #include <stdexcept>
+#include <utility>
 
-Goomba::Goomba(sf::Vector2f position,
-               float speed,
-               float leftBoundary,
-               float rightBoundary)
-    : m_speed(speed),
-      m_leftBoundary(leftBoundary),
-      m_rightBoundary(rightBoundary),
+Goomba::Goomba(
+    sf::Vector2f position,
+    float speed,
+    std::unique_ptr<MovementStrategy> movementStrategy
+)
+    : m_movementStrategy(std::move(movementStrategy)),
+      m_speed(speed),
       m_animationTime(0.f),
       m_currentFrame(0),
-      m_direction(1),
       m_active(true)
 {
-    if (m_leftBoundary > m_rightBoundary)
+    if (!m_movementStrategy)
     {
-        float temp = m_leftBoundary;
-        m_leftBoundary = m_rightBoundary;
-        m_rightBoundary = temp;
+        throw std::invalid_argument(
+            "Goomba requires a movement strategy."
+        );
     }
 
     if (!m_texture.loadFromFile(
@@ -30,13 +30,8 @@ Goomba::Goomba(sf::Vector2f position,
     }
 
     m_sprite.setTexture(m_texture);
-
-    // Use the first 16 x 16 frame.
     m_sprite.setTextureRect(sf::IntRect(0, 0, 16, 16));
-
-    // Scale the original sprite to 48 x 48 pixels.
     m_sprite.setScale(3.f, 3.f);
-
     m_sprite.setPosition(position);
 }
 
@@ -61,33 +56,11 @@ void Goomba::Update(sf::Time timePerFrame)
         );
     }
 
-    float distance = m_speed
-                   * static_cast<float>(m_direction)
-                   * timePerFrame.asSeconds();
-
-    m_sprite.move(distance, 0.f);
-
-    float currentX = m_sprite.getPosition().x;
-    float spriteWidth = m_sprite.getGlobalBounds().width;
-
-    if (currentX <= m_leftBoundary)
-    {
-        m_sprite.setPosition(
-            m_leftBoundary,
-            m_sprite.getPosition().y
-        );
-
-        m_direction = 1;
-    }
-    else if (currentX + spriteWidth >= m_rightBoundary)
-    {
-        m_sprite.setPosition(
-            m_rightBoundary - spriteWidth,
-            m_sprite.getPosition().y
-        );
-
-        m_direction = -1;
-    }
+    m_movementStrategy->Update(
+        m_sprite,
+        m_speed,
+        timePerFrame
+    );
 }
 
 void Goomba::Render(sf::RenderWindow& window) const
