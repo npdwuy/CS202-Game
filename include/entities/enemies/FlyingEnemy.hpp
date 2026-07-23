@@ -5,15 +5,15 @@
 
 #include <memory>
 
-class Goomba : public Enemy {
+class FlyingEnemy : public Enemy {
 public:
-    Goomba(
+    FlyingEnemy(
         sf::Vector2f position,
         float speed,
         std::unique_ptr<MovementStrategy> movementStrategy
     );
 
-    ~Goomba() override = default;
+    ~FlyingEnemy() override = default;
 
     void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) const override;

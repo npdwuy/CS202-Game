@@ -1,9 +1,9 @@
-#include "entities/enemies/Goomba.hpp"
+#include "entities/enemies/FlyingEnemy.hpp"
 
 #include <stdexcept>
 #include <utility>
 
-Goomba::Goomba(
+FlyingEnemy::FlyingEnemy(
     sf::Vector2f position,
     float speed,
     std::unique_ptr<MovementStrategy> movementStrategy
@@ -17,25 +17,26 @@ Goomba::Goomba(
     if (!m_movementStrategy)
     {
         throw std::invalid_argument(
-            "Goomba requires a movement strategy."
+            "FlyingEnemy requires a movement strategy."
         );
     }
 
     if (!m_texture.loadFromFile(
-            "assets/sprites/enemies/goomba_walk.png"))
+            "assets/sprites/enemies/flying_enemy.png"))
     {
         throw std::runtime_error(
-            "Failed to load Goomba sprite."
+            "Failed to load FlyingEnemy sprite."
         );
     }
 
     m_sprite.setTexture(m_texture);
-    m_sprite.setTextureRect(sf::IntRect(0, 0, 16, 16));
-    m_sprite.setScale(3.f, 3.f);
+    m_sprite.setTextureRect(
+        sf::IntRect(0, 0, 48, 48)
+    );
     m_sprite.setPosition(position);
 }
 
-void Goomba::Update(sf::Time timePerFrame)
+void FlyingEnemy::Update(sf::Time timePerFrame)
 {
     if (!m_active)
     {
@@ -44,7 +45,7 @@ void Goomba::Update(sf::Time timePerFrame)
 
     m_animationTime += timePerFrame.asSeconds();
 
-    const float frameDuration = 0.18f;
+    const float frameDuration = 0.2f;
 
     if (m_animationTime >= frameDuration)
     {
@@ -52,7 +53,12 @@ void Goomba::Update(sf::Time timePerFrame)
         m_currentFrame = (m_currentFrame + 1) % 2;
 
         m_sprite.setTextureRect(
-            sf::IntRect(m_currentFrame * 16, 0, 16, 16)
+            sf::IntRect(
+                m_currentFrame * 48,
+                0,
+                48,
+                48
+            )
         );
     }
 
@@ -63,7 +69,7 @@ void Goomba::Update(sf::Time timePerFrame)
     );
 }
 
-void Goomba::Render(sf::RenderWindow& window) const
+void FlyingEnemy::Render(sf::RenderWindow& window) const
 {
     if (m_active)
     {
@@ -71,17 +77,17 @@ void Goomba::Render(sf::RenderWindow& window) const
     }
 }
 
-sf::FloatRect Goomba::GetBounds() const
+sf::FloatRect FlyingEnemy::GetBounds() const
 {
     return m_sprite.getGlobalBounds();
 }
 
-bool Goomba::IsActive() const
+bool FlyingEnemy::IsActive() const
 {
     return m_active;
 }
 
-void Goomba::Deactivate()
+void FlyingEnemy::Deactivate()
 {
     m_active = false;
 }

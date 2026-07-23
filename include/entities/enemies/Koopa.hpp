@@ -5,15 +5,15 @@
 
 #include <memory>
 
-class Goomba : public Enemy {
+class Koopa : public Enemy {
 public:
-    Goomba(
+    Koopa(
         sf::Vector2f position,
         float speed,
         std::unique_ptr<MovementStrategy> movementStrategy
     );
 
-    ~Goomba() override = default;
+    ~Koopa() override = default;
 
     void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) const override;

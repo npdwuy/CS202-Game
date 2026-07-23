@@ -1,8 +1,12 @@
 #include "PlayState.hpp"
 
 #include "entities/enemies/Goomba.hpp"
+#include "entities/enemies/Koopa.hpp"
 #include "entities/items/Coin.hpp"
+#include "entities/strategies/PatrolStrategy.hpp"
 
+#include "entities/enemies/FlyingEnemy.hpp"
+#include "entities/strategies/FlyingStrategy.hpp"
 #include <algorithm>
 
 PlayState::PlayState()
@@ -11,8 +15,32 @@ PlayState::PlayState()
         std::make_unique<Goomba>(
             sf::Vector2f(300.f, 850.f),
             120.f,
-            250.f,
-            900.f
+            std::make_unique<PatrolStrategy>(
+                250.f,
+                900.f
+            )
+        )
+    );
+
+    m_enemies.push_back(
+        std::make_unique<Koopa>(
+            sf::Vector2f(700.f, 850.f),
+            80.f,
+            std::make_unique<PatrolStrategy>(
+                600.f,
+                1150.f
+            )
+        )
+    );
+
+    m_enemies.push_back(
+        std::make_unique<FlyingEnemy>(
+            sf::Vector2f(1100.f, 450.f),
+            100.f,
+            std::make_unique<FlyingStrategy>(
+                350.f,
+                800.f
+            )
         )
     );
 
