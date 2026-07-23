@@ -12,6 +12,7 @@ public:
     void Render(sf::RenderWindow& window) const override;
 
     sf::FloatRect GetBounds() const override;
+    ItemEffect GetEffect() const override;
 
     void Collect() override;
     bool IsCollected() const override;
