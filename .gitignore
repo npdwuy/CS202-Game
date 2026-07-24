@@ -9,3 +9,6 @@ compile_commands.json
 *.app
 
 *.dll
+
+# Keep bundled SFML runtime libraries
+!SFML/bin/msvc/*.dll
