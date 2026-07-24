@@ -1,4 +1,5 @@
 #include <SFML/System.hpp>
+#include <SFML/Graphics.hpp>
 
 class Entity{
 protected:
@@ -12,8 +13,8 @@ public:
 
     virtual ~Entity() = default;
     virtual std::string name()const = 0;
-    virtual void draw() const = 0;
-    virtual void update() = 0;
+    virtual void draw(sf::RenderWindow& window) const = 0;
+    virtual void update(sf::Time timePerFrame) = 0;
 
     sf::Vector2f position()const{
         return position_;
