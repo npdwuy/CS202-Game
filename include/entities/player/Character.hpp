@@ -1,3 +1,4 @@
+#pragma once
 #include "Entity.hpp"
 
 class Character: public Entity{
@@ -27,8 +28,8 @@ public:
     void moveCharacter(sf::Time dt){
         setOnGround(false);
     
-        sf::Vector2f position = Entity::position();
-        sf::Vector2f velocity = Entity::velocity();
+        sf::Vector2f position = position_;
+        sf::Vector2f velocity = velocity_;
         
         const float width = Entity::width();
         const float height = Entity::height();
@@ -80,6 +81,17 @@ public:
         //     }
         //     velocity.y = 0.0f;
         // }
+
+        /* Test mới mặt đất ảo
+        */
+            const float groundY = 500.0f;
+            if (velocity.y > 0.0f&& position.y + height >= groundY) {
+                position.y = groundY - height; 
+                velocity.y = 0.0f;
+                
+                setOnGround(true); 
+            }
+        /**/
 
         // Cập nhật lại vị trí và vận tốc cuối cùng vào SFML Character
         setPosition(position);

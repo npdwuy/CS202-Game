@@ -7,6 +7,9 @@
 
 #include "entities/enemies/FlyingEnemy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
+
+#include "entities/player/Mario.hpp"
+
 #include <algorithm>
 
 PlayState::PlayState()
@@ -50,6 +53,13 @@ PlayState::PlayState()
             1
         )
     );
+
+    m_player.push_back(
+        std::make_unique<Mario>(
+            sf::Vector2f(700.f, 400.f)
+        )
+    );
+
 }
 
 void PlayState::Input(const sf::Event& event)
@@ -104,6 +114,11 @@ void PlayState::Update(sf::Time timePerFrame)
         ),
         m_items.end()
     );
+
+    for(auto& player: m_player){
+        player->update(timePerFrame);
+    }
+
 }
 
 void PlayState::Render(sf::RenderWindow& window)
@@ -117,4 +132,9 @@ void PlayState::Render(sf::RenderWindow& window)
     {
         item->Render(window);
     }
+
+    for(const auto& player : m_player){
+        player->Render(window);
+    }
+
 }

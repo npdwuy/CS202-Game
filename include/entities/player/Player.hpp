@@ -1,15 +1,18 @@
+#pragma once
 #include "Character.hpp"
+#include "SFML/Window/Keyboard.hpp"
 
 class Player : public Character {
 protected:
-    int coyoteTimer_ = 0.0f;
+    float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
     float speed_ = 280.0f;
     float jumpPower_ = 660.0f;
     float animationTime_ = 0.0f;
     bool movedThisFrame_ = false;
-    bool jumpBufferTimer_ = false;
+    float jumpBufferTimer_ = 0.0f;
     std::string label_;
+    
     void performJump();
 public:
     Player(sf:: Vector2f position, std::string label, float speed, float jumpPower)
@@ -21,6 +24,7 @@ public:
         return label_;
     }
 
+    // void Render(sf::RenderWindow& window) const override = 0;
     void update(sf::Time timePerFrame) override;
 
     void moveLeft();

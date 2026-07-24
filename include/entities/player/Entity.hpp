@@ -1,3 +1,4 @@
+#pragma once
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -13,7 +14,7 @@ public:
 
     virtual ~Entity() = default;
     virtual std::string name()const = 0;
-    virtual void draw(sf::RenderWindow& window) const = 0;
+    virtual void Render(sf::RenderWindow& window) const = 0;
     virtual void update(sf::Time timePerFrame) = 0;
 
     sf::Vector2f position()const{

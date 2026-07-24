@@ -1,4 +1,4 @@
-#include "Player.hpp"
+#include "entities/player/Player.hpp"
 
 
 void Player:: moveLeft(){
@@ -25,6 +25,17 @@ void Player:: performJump(){
 
 void Player:: update(sf::Time timePerFrame){
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+        moveLeft();
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+        moveRight();
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)
+        ||sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+        jump();
+    }
+    
     if(onGround_){
         coyoteTimer_ = 0.12f;
     }
