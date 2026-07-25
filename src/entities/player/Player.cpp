@@ -55,7 +55,7 @@ void Player:: update(sf::Time timePerFrame){
     }
     
     jumpBufferTimer_ = std::max(0.0f, jumpBufferTimer_ - timePerFrame.asSeconds());
-    const float gravityScale = velocity_.y > 0.0f ? 0.88f : 1.0f;
+    const float gravityScale = velocity_.y > 0.0f ? 1.0f : 0.88f ;
     velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
     moveCharacter(timePerFrame);
 
