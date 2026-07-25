@@ -17,26 +17,9 @@ Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 720.0f){
 void Mario::update(sf::Time timePerFrame) {
     Player::update(timePerFrame);
 
-    enum class State { Stand, Walk, Jump, Fall };
-    State newState = State::Stand;
-
-    if (velocity_.y < 0.0f) {
-        newState = State::Jump;
-    } else if (velocity_.y > 0.0f) {
-        newState = State::Fall;
-    } else if (std::abs(velocity_.x) > 0.1f) { 
-        newState = State::Walk;
-    }
-
-    static State currentState = State::Stand; 
-    if (newState != currentState) {
-        currentState = newState;
-        currentFrame_ = 0;
-        animationTime_ = 0.f;
-    }
-
     // Cú pháp: sf::IntRect(Tọa_độ_X, Tọa_độ_Y, Chiều_Rộng, Chiều_Cao)
     
+
     // 1. Đứng yên (Lấy khung hình "Stand" chuẩn)
     std::vector<sf::IntRect> framesStand = {
         sf::IntRect(144, 25, 20, 32)
@@ -66,19 +49,27 @@ void Mario::update(sf::Time timePerFrame) {
         sf::IntRect(92, 120, 24, 30)
     };
 
+    // 5. Nhảy đụng trần
+    std::vector<sf::IntRect> framesHitRoof = {
+        sf::IntRect(92, 120, 24, 30)
+    };
+
     // --- KẾT THÚC BẢNG TỌA ĐỘ ---
 
     std::vector<sf::IntRect>* currentAnim = &framesStand;
     if (currentState == State::Walk) currentAnim = &framesWalk;
     else if (currentState == State::Jump) currentAnim = &framesJump;
     else if (currentState == State::Fall) currentAnim = &framesFall;
+    else if(currentState == State::HitRoof) currentAnim = &framesHitRoof;
 
     const float frameDuration = 0.10f; 
-    animationTime_ += timePerFrame.asSeconds();
+    // animationTime_ += timePerFrame.asSeconds();
 
     if (animationTime_ >= frameDuration) {
         animationTime_ -= frameDuration;
         currentFrame_ = (currentFrame_ + 1) % currentAnim->size();
+        // Nhảy đùng trần 2 frame -> rơi xuống 
+        if(currentState == State::HitRoof && currentFrame_ == 2)hitRoof_ = false;
     }
 
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];

@@ -5,6 +5,7 @@ class Character: public Entity{
 protected:
     int facing_ = 1;
     bool onGround_ = false;
+    bool hitRoof_ = false;
 public:
     
     Character(sf:: Vector2f position, float width, float height) : Entity(position, width, height){}
@@ -66,7 +67,8 @@ public:
         //         const int tileY = static_cast<int>(std::floor((vertical.top + vertical.height) / kTileSize));
         //         position.y = static_cast<float>(tileY * kTileSize) - vertical.height - 0.01f;
         //         character.setOnGround(true);
-        //     } else if (velocity.y < 0.0f) { // Đang nhảy lên -> Cụng đầu vào trần
+        //     } 
+        //     else if (velocity.y < 0.0f) { // Đang nhảy lên -> Cụng đầu vào trần
         //         const int tileY = static_cast<int>(std::floor(vertical.top / kTileSize));
                 
         //         if (Player* player = dynamic_cast<Player*>(&character)) {
@@ -78,6 +80,7 @@ public:
         //             }
         //         }
         //         position.y = static_cast<float>((tileY + 1) * kTileSize) + 0.01f;
+        //         HitRoof_ = true;
         //     }
         //     velocity.y = 0.0f;
         // }

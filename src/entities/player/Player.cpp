@@ -58,5 +58,25 @@ void Player:: update(sf::Time timePerFrame){
     const float gravityScale = velocity_.y > 0.0f ? 0.88f : 1.0f;
     velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
     moveCharacter(timePerFrame);
+
+
+    State newState = State::Stand;
+    if(hitRoof_ = true)newState = State::HitRoof;
+    else if (velocity_.y < 0.0f) {
+        newState = State::Jump;
+    } else if (velocity_.y > 0.0f) {
+        newState = State::Fall;
+    } else if (std::abs(velocity_.x) > 0.1f) { 
+        if(movedThisFrame_)
+            newState = State::Walk;
+        else newState = State::TransitionStand;
+    }
+
+    if (newState != currentState) {
+        currentState = newState;
+        currentFrame_ = 0;
+        animationTime_ = 0.f;
+    }
     animationTime_+=timePerFrame.asSeconds();
+
 }
