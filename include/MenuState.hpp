@@ -20,6 +20,7 @@ private:
     bool m_exitGame = false;
 
     sf::Texture m_backgroundTexture;
+    sf::Texture m_buttonTexture;
     sf::Sprite m_backgroundSprite;
     sf::Font m_font;
 

@@ -9,17 +9,22 @@ MenuState::MenuState() {
     }
     m_backgroundSprite.setTexture(m_backgroundTexture);
 
+    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
+        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
+    }
+
     if (!m_font.loadFromFile("assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf")) {
         throw std::runtime_error("Failed to load assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf");
     }
 
     // Position buttons in the middle of the screen (assuming 1920x1080 resolution)
-    m_playButton = std::make_unique<Button>("PLAY", m_font, sf::Vector2f(960.f, 550.f), sf::Vector2f(300.f, 70.f), 36);
-    m_exitButton = std::make_unique<Button>("EXIT", m_font, sf::Vector2f(960.f, 670.f), sf::Vector2f(300.f, 70.f), 36);
+    // Custom button aspect ratio is ~2.48. A size of 350x140 matches this aspect ratio perfectly.
+    m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(350.f, 140.f), 40);
+    m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 700.f), sf::Vector2f(350.f, 140.f), 40);
 
-    // Customize button colors (transparent/gray background, colored highlight on hover)
-    m_playButton->setColors(sf::Color(40, 40, 40, 200), sf::Color(100, 100, 250, 220), sf::Color::White);
-    m_exitButton->setColors(sf::Color(40, 40, 40, 200), sf::Color(250, 100, 100, 220), sf::Color::White);
+    // Customize button colors (White keeps the original texture colors; hover uses a warm tint/dimming)
+    m_playButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_exitButton->setColors(sf::Color::White, sf::Color(255, 210, 210, 255), sf::Color(245, 222, 179));
 }
 
 void MenuState::Input(const sf::Event &event) {

@@ -11,6 +11,13 @@ public:
            sf::Vector2f size = sf::Vector2f(300.f, 60.f),
            unsigned int characterSize = 28);
 
+    Button(const std::string &textStr,
+           const sf::Font &font,
+           const sf::Texture &texture,
+           sf::Vector2f position,
+           sf::Vector2f size = sf::Vector2f(300.f, 60.f),
+           unsigned int characterSize = 28);
+
     ~Button() = default;
 
     void update(sf::Vector2f mousePos);

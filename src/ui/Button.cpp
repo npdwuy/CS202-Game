@@ -23,6 +23,16 @@ Button::Button(const std::string &textStr, const sf::Font &font,
     centerText();
 }
 
+Button::Button(const std::string &textStr, const sf::Font &font,
+               const sf::Texture &texture,
+               sf::Vector2f position, sf::Vector2f size,
+               unsigned int characterSize) :
+               Button(textStr, font, position, size, characterSize)
+{
+    m_shape.setTexture(&texture);
+    m_shape.setOutlineThickness(0.f);
+}
+
 void Button::centerText() {
     sf::FloatRect textBounds = m_text.getLocalBounds();
     m_text.setOrigin(textBounds.left + textBounds.width / 2.f,
