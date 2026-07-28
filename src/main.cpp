@@ -49,6 +49,9 @@ int main() {
         // Apply state transition if requested
         if (currentState != nullptr && currentState->hasNextState()) {
             currentState = currentState->getNextState();
+            if (currentState == nullptr) {
+                window.close();
+            }
         }
 
         window.clear(sf::Color::Black);

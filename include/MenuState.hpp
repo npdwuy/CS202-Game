@@ -1,5 +1,6 @@
 #pragma once
 #include "GameState.hpp"
+#include "ui/Button.hpp"
 #include <memory>
 
 class MenuState : public GameState {
@@ -16,4 +17,12 @@ public:
 
 private:
     bool m_transitionToPlay = false;
+    bool m_exitGame = false;
+
+    sf::Texture m_backgroundTexture;
+    sf::Sprite m_backgroundSprite;
+    sf::Font m_font;
+
+    std::unique_ptr<Button> m_playButton;
+    std::unique_ptr<Button> m_exitButton;
 };
