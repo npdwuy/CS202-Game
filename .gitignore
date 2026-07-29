@@ -12,3 +12,6 @@ compile_commands.json
 
 # Keep bundled SFML runtime libraries
 !SFML/bin/msvc/*.dll
+
+# Ignore scripts directory
+scripts/
