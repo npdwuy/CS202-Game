@@ -2,13 +2,11 @@
 
 #include "entities/enemies/Goomba.hpp"
 #include "entities/enemies/Koopa.hpp"
-#include "entities/items/Coin.hpp"
 #include "entities/strategies/PatrolStrategy.hpp"
 
 #include "entities/enemies/FlyingEnemy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
-#include "entities/items/Mushroom.hpp"
-#include "entities/items/FireFlower.hpp"
+#include "factories/ItemFactory.hpp"
 #include <algorithm>
 
 PlayState::PlayState()
@@ -47,19 +45,22 @@ PlayState::PlayState()
     );
 
     m_items.push_back(
-        std::make_unique<Coin>(
-            sf::Vector2f(700.f, 700.f),
-            1
+        ItemFactory::Create(
+            'C',
+            sf::Vector2f(500.f, 700.f)
         )
     );
 
     m_items.push_back(
-        std::make_unique<Mushroom>(
+        ItemFactory::Create(
+            'M',
             sf::Vector2f(850.f, 700.f)
         )
     );
+
     m_items.push_back(
-        std::make_unique<FireFlower>(
+        ItemFactory::Create(
+            'F',
             sf::Vector2f(1050.f, 700.f)
         )
     );
