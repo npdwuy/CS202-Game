@@ -73,8 +73,9 @@ void AboutState::initUI() {
 }
 
 void AboutState::Input(const sf::Event &event) {
-    sf::Vector2i pixelPos = sf::Mouse::getPosition(GameManager::getInstance().getWindow());
-    sf::Vector2f mousePos(static_cast<float>(pixelPos.x), static_cast<float>(pixelPos.y));
+    sf::RenderWindow &window = GameManager::getInstance().getWindow();
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos);
 
     if (event.type == sf::Event::MouseMoved) {
         m_backButton->update(mousePos);

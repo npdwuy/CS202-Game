@@ -1,11 +1,13 @@
 #include "GameManager.hpp"
 #include <iostream>
 
-GameManager::GameManager() 
-    : m_window(sf::VideoMode(1920, 1080), "CS202-Group5")
-    , m_isRunning(true) 
+GameManager::GameManager() : m_window(sf::VideoMode(1920, 1080), "CS202-Group5", sf::Style::Default),
+                             m_isRunning(true) 
 {
-    m_window.setFramerateLimit(60);
+    m_window.setFramerateLimit(30);
+    m_gameView.setSize(1920.f, 1080.f);
+    m_gameView.setCenter(960.f, 540.f);
+    updateView(m_window.getSize().x, m_window.getSize().y);
 }
 
 GameManager& GameManager::getInstance() {
@@ -37,7 +39,7 @@ void GameManager::changeState(std::unique_ptr<GameState> state) {
 void GameManager::run() {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
-    const sf::Time timePerFrame = sf::seconds(1.f / 60.f);
+    const sf::Time timePerFrame = sf::seconds(1.f / 30.f);
 
     while (m_isRunning && m_window.isOpen()) {
         sf::Time elapsedTime = clock.restart();
@@ -73,12 +75,44 @@ SettingsManager& GameManager::getSettings() {
     return m_settings;
 }
 
+const sf::View& GameManager::getGameView() const {
+    return m_gameView;
+}
+
+void GameManager::updateView(unsigned int windowWidth, unsigned int windowHeight) {
+    if (windowWidth == 0 || windowHeight == 0) return;
+
+    const float targetRatio = 1920.f / 1080.f; // 16:9
+    float windowRatio = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
+
+    float viewportX = 0.f;
+    float viewportY = 0.f;
+    float viewportWidth = 1.f;
+    float viewportHeight = 1.f;
+
+    if (windowRatio > targetRatio) {
+        // Window is wider than 16:9 -> Fit height, black bars left & right (Pillarboxing)
+        viewportWidth = targetRatio / windowRatio;
+        viewportX = (1.f - viewportWidth) / 2.f;
+    } else {
+        // Window is taller than 16:9 -> Fit width, black bars top & bottom (Letterboxing)
+        viewportHeight = windowRatio / targetRatio;
+        viewportY = (1.f - viewportHeight) / 2.f;
+    }
+
+    m_gameView.setViewport(sf::FloatRect(viewportX, viewportY, viewportWidth, viewportHeight));
+    m_window.setView(m_gameView);
+}
+
 void GameManager::processInput() {
     sf::Event event;
     while (m_window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
             quit();
             return;
+        }
+        if (event.type == sf::Event::Resized) {
+            updateView(event.size.width, event.size.height);
         }
         if (!m_states.empty()) {
             m_states.back()->Input(event);
@@ -108,3 +142,4 @@ void GameManager::render() {
 
     m_window.display();
 }
+

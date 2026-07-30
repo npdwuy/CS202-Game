@@ -23,6 +23,7 @@ public:
 
     sf::RenderWindow& getWindow();
     SettingsManager& getSettings();
+    const sf::View& getGameView() const;
 
 private:
     GameManager();
@@ -31,10 +32,13 @@ private:
     void processInput();
     void update(sf::Time timePerFrame);
     void render();
+    void updateView(unsigned int windowWidth, unsigned int windowHeight);
 
 private:
     sf::RenderWindow m_window;
+    sf::View m_gameView;
     std::vector<std::unique_ptr<GameState>> m_states;
     SettingsManager m_settings;
     bool m_isRunning = true;
 };
+
