@@ -8,6 +8,7 @@
 #include "entities/enemies/FlyingEnemy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
 #include "entities/items/Mushroom.hpp"
+#include "entities/items/FireFlower.hpp"
 #include <algorithm>
 
 PlayState::PlayState()
@@ -55,6 +56,11 @@ PlayState::PlayState()
     m_items.push_back(
         std::make_unique<Mushroom>(
             sf::Vector2f(850.f, 700.f)
+        )
+    );
+    m_items.push_back(
+        std::make_unique<FireFlower>(
+            sf::Vector2f(1050.f, 700.f)
         )
     );
 }
