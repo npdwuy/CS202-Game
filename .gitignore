@@ -3,6 +3,9 @@ build/
 
 .vscode/
 compile_commands.json
+savegame.txt
+savegame.txt.tmp
+settings.txt
 
 *.exe
 *.out

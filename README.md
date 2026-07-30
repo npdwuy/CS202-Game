@@ -1,58 +1,159 @@
-# CS202 - Programming System
+# Super Mario Flashback
 
-## Group 5 - Course Project
+Super Mario Flashback is Group 5's CS202 object-oriented programming project.
+It is a C++17 and SFML platform game built around state, strategy, factory, and
+resource-management patterns.
 
-### Project Details
-* **Game Name:** Super Mario Flashback
-* **Repository:** [GitHub Repository](https://github.com/npdwuy/CS202-Game.git)
+## Team
 
-### Team Members
-
-| No. | Student ID | Full Name | Group |
-| :---: | :---: | :--- | :---: |
+| No. | Student ID | Full name | Group |
+|---:|:---:|---|:---:|
 | 8 | 25125015 | Nguyen Pham Duc Huy | 5 |
 | 9 | 25125018 | Nguyen Minh Khang | 5 |
 | 16 | 25125034 | Tran Quyet Thang | 5 |
 | 22 | 25125052 | Vo Thanh Dat | 5 |
 
-## Enemy and Item Base System
+## Current features
 
-This milestone introduces the initial enemy and collectible item architecture.
+- Menu, options, about, pause, gameplay, game-over, and victory flows
+- Mario movement, jumping, animation, tile collision, and pit detection
+- Goomba, Koopa, boss, coin, Mushroom, and FireFlower gameplay objects
+- Three external text-file levels with increasing difficulty
+- Map-driven spawning through `LevelObjectFactory`
+- Score, lives, level progression, power-up state, and boss-gated final exit
+- Background music and jump, coin, power-up, enemy, and game-over effects
+- Cached textures, fonts, and sound buffers through `ResourceManager`
+- Versioned save/load files with optional position and power-up persistence
 
-### Implemented Features
+## Build and run
 
-- Abstract `Enemy` interface
-- Abstract `Item` interface
-- `Goomba` enemy implementation
-- `Coin` item implementation
-- Goomba horizontal patrol behavior
-- Two-frame Goomba walking animation
-- Coin floating idle animation
-- Polymorphic enemy and item collections in `PlayState`
-- Automatic removal of inactive enemies and collected items
-- SFML runtime DLL setup for Windows
+The repository includes SFML 2 binaries for Visual Studio and MinGW on Windows.
 
-### Test Controls
+### Visual Studio
 
-After starting the game, press `Enter` to enter `PlayState`.
+```powershell
+cmake -S . -B build
+cmake --build build --config Release
+.\build\Release\CS202-Group5.exe
+```
 
-- Press `C` to collect the first Coin.
-- Press `K` to deactivate the first Goomba.
+### MinGW
 
-These controls are temporary and will later be replaced by player collision handling.
+```powershell
+cmake -S . -B build -G "MinGW Makefiles"
+cmake --build build
+.\build\CS202-Group5.exe
+```
 
-### Project Structure
+CMake copies `assets/`, `levels/`, and the required SFML runtime DLLs beside the
+executable after a successful build. Run the executable from that directory so
+relative resource paths resolve correctly.
 
-- `include/entities/Enemy.hpp`: Base enemy interface
-- `include/entities/Item.hpp`: Base item interface
-- `include/entities/enemies/Goomba.hpp`: Goomba declaration
-- `include/entities/items/Coin.hpp`: Coin declaration
-- `src/entities/enemies/Goomba.cpp`: Goomba implementation
-- `src/entities/items/Coin.cpp`: Coin implementation
-- `docs/class-diagrams/enemy-item-system.md`: Class diagram and design summary
+## Controls
 
-### Object-Oriented Design
+| Input | Action |
+|---|---|
+| Left/Right arrows | Move |
+| Up arrow or Space | Jump |
+| Escape | Pause |
+| F5 | Save the current game |
+| F9 | Load `savegame.txt` |
+| R | Restart after game over or victory |
+| Enter | Return to menu after victory |
 
-`Goomba` inherits from `Enemy`, while `Coin` inherits from `Item`.
+The main menu also provides separate **Play** and **Load** buttons.
 
-`PlayState` owns enemies and items using `std::unique_ptr`. Update and render operations are executed through base-class pointers, demonstrating abstraction, inheritance, encapsulation, and runtime polymorphism.
+## External level format
+
+Each file in `levels/` contains metadata followed by a rectangular `@map`.
+
+```text
+@name=Example Level
+@difficulty=Easy
+@tile_size=48
+@map
+........................................
+.P...C....G.........................X...
+########################################
+```
+
+`LevelLoader` rejects missing starts/exits, inconsistent row widths, invalid
+metadata, and unsupported symbols.
+
+| Symbol | Meaning | Factory result |
+|:---:|---|---|
+| `#` | Solid ground/block | Tile collision and rendering |
+| `.` | Empty space | None |
+| `P` | Player start | Mario spawn point |
+| `C` | Coin | `Coin` |
+| `M` | Mushroom | `PowerUpPickup(Mushroom)` |
+| `F` | FireFlower | `PowerUpPickup(FireFlower)` |
+| `G` | Goomba | `Goomba` |
+| `K` | Koopa | `Koopa` |
+| `B` | Boss | `BossEnemy` |
+| `X` | Level exit | Finish trigger |
+
+The loader produces `LevelSpawnRequest` values and never constructs gameplay
+classes directly. `LevelObjectFactory` is the integration boundary for Member
+3's enemy/item implementations. A concrete Mushroom or FireFlower can therefore
+replace the current lightweight pickup adapter without changing the loader or
+any level file.
+
+## Levels
+
+| Level | Difficulty | Main content | Goal |
+|---|---|---|---|
+| Green Hill Start | Easy | Flat ground, safe platforms, many coins | Teach movement and jumping |
+| Broken Bridge Run | Medium | Three pits, tighter platforms, more enemies | Test collision and enemy interaction |
+| Bowser's Last Stand | Hard | Alternating pits, elevated rewards, boss-gated exit | Final challenge and showcase |
+
+## Save format
+
+`SaveManager` writes `savegame.txt` through a temporary file, and `LoadManager`
+validates every required field before accepting it:
+
+- format version
+- current level
+- score
+- remaining lives
+- selected character (`Mario` or `Luigi`)
+- optional player position
+- power-up state
+
+Invalid or incompatible saves are rejected without replacing the current
+session.
+
+## Validation
+
+The data test verifies all three maps and save/load round trips:
+
+```bash
+g++ -std=c++17 -Iinclude -ISFML/include \
+    tests/member4_data_tests.cpp \
+    src/levels/LevelLoader.cpp \
+    src/persistence/SaveManager.cpp \
+    src/persistence/LoadManager.cpp \
+    -o member4_data_tests
+./member4_data_tests
+```
+
+With a configured Windows CMake toolchain, the same test is available through
+CTest:
+
+```powershell
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+## Documentation
+
+- [Member 4 design documentation](docs/member4-design.md)
+- [Member 4 class diagram](docs/class-diagrams/member4-systems.md)
+- [Enemy and item diagram](docs/class-diagrams/enemy-item-system.md)
+- [Player diagram](docs/class-diagrams/player.md)
+- [Demo video outline](docs/demo-video-outline.md)
+- [Final report materials](docs/final-report-materials.md)
+
+The included WAV files are original synthesized chiptune assets generated by
+`tools/generate_audio_assets.py`; they do not reproduce commercial Mario audio.
