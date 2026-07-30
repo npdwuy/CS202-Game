@@ -2,11 +2,11 @@
 
 #include "entities/Item.hpp"
 
-class Coin : public Item {
+class Mushroom : public Item {
 public:
-    Coin(sf::Vector2f position, int value);
+    explicit Mushroom(sf::Vector2f position);
 
-    ~Coin() override = default;
+    ~Mushroom() override = default;
 
     void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) const override;
@@ -14,18 +14,15 @@ public:
     sf::FloatRect GetBounds() const override;
     ItemEffect GetEffect() const override;
 
-    void Collect() override;
     bool IsCollected() const override;
-
-    int GetValue() const;
+    void Collect() override;
 
 private:
     sf::Texture m_texture;
     sf::Sprite m_sprite;
 
-    float m_baseY;
     float m_animationTime;
+    float m_startY;
 
-    int m_value;
     bool m_collected;
 };

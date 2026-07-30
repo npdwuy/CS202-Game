@@ -65,6 +65,14 @@ sf::FloatRect Coin::GetBounds() const
     return m_sprite.getGlobalBounds();
 }
 
+ItemEffect Coin::GetEffect() const
+{
+    return {
+        ItemEffectType::AddScore,
+        m_value
+    };
+}
+
 void Coin::Collect()
 {
     m_collected = true;

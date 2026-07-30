@@ -3,6 +3,13 @@
 #include "GameManager.hpp"
 #include "PauseState.hpp"
 
+#include "entities/enemies/Goomba.hpp"
+#include "entities/enemies/Koopa.hpp"
+#include "entities/strategies/PatrolStrategy.hpp"
+
+#include "entities/enemies/FlyingEnemy.hpp"
+#include "entities/strategies/FlyingStrategy.hpp"
+#include "factories/ItemFactory.hpp"
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
 #include "entities/items/Coin.hpp"
@@ -39,29 +46,67 @@ PlayState::PlayState(bool loadSavedGame) {
     m_statusText.setOutlineColor(sf::Color::Black);
     m_statusText.setOutlineThickness(3.f);
 
-    SettingsManager& settings = GameManager::getInstance().getSettings();
+    SettingsManager& settings =
+        GameManager::getInstance().getSettings();
+
     AudioManager& audio = AudioManager::getInstance();
+
     audio.setMusicVolume(settings.getBGMVolume());
     audio.setEffectsVolume(settings.getSFXVolume());
     audio.initialize();
     audio.playMusic();
 
-    if (loadSavedGame) {
-        const std::optional<SaveData> loadedData = LoadManager::load();
-        if (loadedData) {
+    if (loadSavedGame)
+    {
+        const std::optional<SaveData> loadedData =
+            LoadManager::load();
+
+        if (loadedData)
+        {
             m_saveData = *loadedData;
             loadLevel(m_saveData.currentLevel, true);
             showStatus("Save loaded");
-        } else {
-            loadLevel(1, false);
-            showStatus("No valid save found - starting Level 1", 3.f);
         }
-    } else {
+        else
+        {
+            loadLevel(1, false);
+            showStatus(
+                "No valid save found - starting Level 1",
+                3.f
+            );
+        }
+    }
+    else
+    {
         loadLevel(1, false);
-        showStatus("Level 1 - Green Hill Start", 2.5f);
+        showStatus(
+            "Level 1 - Green Hill Start",
+            2.5f
+        );
     }
 
     updateHud();
+
+    m_items.push_back(
+        ItemFactory::Create(
+            'C',
+            sf::Vector2f(500.f, 700.f)
+        )
+    );
+
+    m_items.push_back(
+        ItemFactory::Create(
+            'M',
+            sf::Vector2f(850.f, 700.f)
+        )
+    );
+
+    m_items.push_back(
+        ItemFactory::Create(
+            'F',
+            sf::Vector2f(1050.f, 700.f)
+        )
+    );
 }
 
 PlayState::~PlayState() {
