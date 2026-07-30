@@ -1,5 +1,8 @@
 #include "MenuState.hpp"
 #include "PlayState.hpp"
+#include "AboutState.hpp"
+#include "OptionsState.hpp"
+#include "GameManager.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -17,55 +20,73 @@ MenuState::MenuState() {
         throw std::runtime_error("Failed to load assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf");
     }
 
-    // Position buttons in the middle of the screen (assuming 1920x1080 resolution)
-    // Custom button aspect ratio is ~2.48. A size of 350x140 matches this aspect ratio perfectly.
-    m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(350.f, 140.f), 40);
-    m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 700.f), sf::Vector2f(350.f, 140.f), 40);
+    // Centered vertical layout
+    sf::Vector2f btnSize(300.f, 120.f);
+    m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 450.f), btnSize, 36);
+    m_aboutButton = std::make_unique<Button>("ABOUT", m_font, m_buttonTexture, sf::Vector2f(960.f, 580.f), btnSize, 36);
+    m_optionsButton = std::make_unique<Button>("OPTIONS", m_font, m_buttonTexture, sf::Vector2f(960.f, 710.f), btnSize, 36);
+    m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 840.f), btnSize, 36);
 
-    // Customize button colors (White keeps the original texture colors; hover uses a warm tint/dimming)
+    // Set colors
     m_playButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_aboutButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_optionsButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
     m_exitButton->setColors(sf::Color::White, sf::Color(255, 210, 210, 255), sf::Color(245, 222, 179));
+
+    // Button callbacks
+    m_playButton->setCallback([]() {
+        std::cout << "Transitioning to PlayState...\n";
+        GameManager::getInstance().changeState(std::make_unique<PlayState>());
+    });
+
+    m_aboutButton->setCallback([]() {
+        std::cout << "Opening AboutState...\n";
+        GameManager::getInstance().pushState(std::make_unique<AboutState>());
+    });
+
+    m_optionsButton->setCallback([]() {
+        std::cout << "Opening OptionsState...\n";
+        GameManager::getInstance().pushState(std::make_unique<OptionsState>());
+    });
+
+    m_exitButton->setCallback([]() {
+        std::cout << "Exiting game from Main Menu...\n";
+        GameManager::getInstance().quit();
+    });
 }
 
 void MenuState::Input(const sf::Event &event) {
-    // 1. Mouse movement to update hover status
     if (event.type == sf::Event::MouseMoved) {
         sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
-        if (m_playButton) m_playButton->update(mousePos);
-        if (m_exitButton) m_exitButton->update(mousePos);
+        m_playButton->update(mousePos);
+        m_aboutButton->update(mousePos);
+        m_optionsButton->update(mousePos);
+        m_exitButton->update(mousePos);
     }
 
-    // 2. Mouse click to select option
     if (event.type == sf::Event::MouseButtonReleased) {
         sf::Vector2f mousePos(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
-        if (m_playButton && m_playButton->isClicked(event, mousePos)) {
-            std::cout << "Transitioning to PlayState...\n";
-            m_transitionToPlay = true;
-        }
-        if (m_exitButton && m_exitButton->isClicked(event, mousePos)) {
-            std::cout << "Exiting game from Main Menu...\n";
-            m_exitGame = true;
-        }
+        if (m_playButton->handleClick(event, mousePos)) return;
+        if (m_aboutButton->handleClick(event, mousePos)) return;
+        if (m_optionsButton->handleClick(event, mousePos)) return;
+        if (m_exitButton->handleClick(event, mousePos)) return;
     }
 
-    // 3. Keyboard input triggers
     if (event.type == sf::Event::KeyPressed) {
         if (event.key.code == sf::Keyboard::Enter) {
             std::cout << "Transitioning to PlayState...\n";
-            m_transitionToPlay = true;
+            GameManager::getInstance().changeState(std::make_unique<PlayState>());
         } else if (event.key.code == sf::Keyboard::Escape) {
             std::cout << "Exiting game from Main Menu...\n";
-            m_exitGame = true;
+            GameManager::getInstance().quit();
         }
     }
 }
 
 void MenuState::Update(sf::Time timePerFrame) {
-    // Update menu animations or effects if any
 }
 
 void MenuState::Render(sf::RenderWindow &window) {
-    // Scale background dynamically to window size
     sf::Vector2u windowSize = window.getSize();
     sf::Vector2u textureSize = m_backgroundTexture.getSize();
     if (textureSize.x > 0 && textureSize.y > 0) {
@@ -77,17 +98,8 @@ void MenuState::Render(sf::RenderWindow &window) {
 
     window.draw(m_backgroundSprite);
 
-    if (m_playButton) m_playButton->render(window);
-    if (m_exitButton) m_exitButton->render(window);
-}
-
-bool MenuState::hasNextState() const {
-    return m_transitionToPlay || m_exitGame;
-}
-
-std::unique_ptr<GameState> MenuState::getNextState() {
-    if (m_transitionToPlay) {
-        return std::make_unique<PlayState>();
-    }
-    return nullptr; // nullptr represents exit
+    m_playButton->render(window);
+    m_aboutButton->render(window);
+    m_optionsButton->render(window);
+    m_exitButton->render(window);
 }

@@ -60,6 +60,20 @@ bool Button::isClicked(const sf::Event &event, sf::Vector2f mousePos) const {
     return false;
 }
 
+bool Button::handleClick(const sf::Event &event, sf::Vector2f mousePos) {
+    if (isClicked(event, mousePos)) {
+        if (m_callback) {
+            m_callback();
+        }
+        return true;
+    }
+    return false;
+}
+
+void Button::setCallback(std::function<void()> callback) {
+    m_callback = callback;
+}
+
 void Button::render(sf::RenderWindow &window) const {
     window.draw(m_shape);
     window.draw(m_text);

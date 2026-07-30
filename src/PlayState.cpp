@@ -1,4 +1,6 @@
 #include "PlayState.hpp"
+#include "GameManager.hpp"
+#include "PauseState.hpp"
 
 #include "entities/enemies/Goomba.hpp"
 #include "entities/enemies/Koopa.hpp"
@@ -66,6 +68,13 @@ void PlayState::Input(const sf::Event& event)
 {
     if (event.type != sf::Event::KeyPressed)
     {
+        return;
+    }
+
+    sf::Keyboard::Key pauseKey = GameManager::getInstance().getSettings().getKeyBinding("Pause");
+    if (event.key.code == pauseKey)
+    {
+        GameManager::getInstance().pushState(std::make_unique<PauseState>());
         return;
     }
 

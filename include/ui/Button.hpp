@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <functional>
 
 class Button {
 public:
@@ -23,6 +24,8 @@ public:
     void update(sf::Vector2f mousePos);
 
     bool isClicked(const sf::Event &event, sf::Vector2f mousePos) const;
+    bool handleClick(const sf::Event &event, sf::Vector2f mousePos);
+    void setCallback(std::function<void()> callback);
 
     void render(sf::RenderWindow &window) const;
 
@@ -46,4 +49,5 @@ private: // Private Attributes
     sf::Color m_textColor;
 
     bool m_isHovered;
+    std::function<void()> m_callback;
 };
