@@ -11,6 +11,7 @@ protected:
     float animationTime_ = 0.0f;
     float jumpBufferTimer_ = 0.0f;
     bool movedThisFrame_ = false;
+    bool jumpedThisFrame_ = false;
     std::string label_;
 
     void performJump();
@@ -34,5 +35,6 @@ public:
     void moveLeft();
     void moveRight();
     void jump();
+    bool consumeJumpEvent();
 
 };

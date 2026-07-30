@@ -19,6 +19,7 @@ private:
     sf::Font m_font;
 
     std::unique_ptr<Button> m_playButton;
+    std::unique_ptr<Button> m_loadButton;
     std::unique_ptr<Button> m_aboutButton;
     std::unique_ptr<Button> m_optionsButton;
     std::unique_ptr<Button> m_exitButton;

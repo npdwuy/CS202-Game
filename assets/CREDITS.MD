@@ -31,6 +31,14 @@ All original characters, names, visual designs, and related intellectual propert
 - Creator or uploader: Add creator or uploader here
 - Modifications: None at the time of import
 
+## Chiptune Audio
+
+- Files: `audio/*.wav`
+- Content: Background loop and gameplay sound effects
+- Source: Original synthesized tones created for this project
+- Generator: `tools/generate_audio_assets.py`
+- Third-party samples: None
+
 ## Disclaimer
 
 This project is created solely for learning and teaching purposes.

@@ -3,6 +3,7 @@ project(CS202-Group5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+include(CTest)
 
 # Automatically find all .cpp source files recursively in src/
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
@@ -52,5 +53,30 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
             "${CMAKE_CURRENT_SOURCE_DIR}/assets"
             "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
         COMMENT "Copying assets to build directory..."
+    )
+endif()
+
+# Copy external text levels to the executable directory
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/levels")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/levels"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/levels"
+        COMMENT "Copying level files to build directory..."
+    )
+endif()
+
+if(BUILD_TESTING)
+    add_executable(member4_data_tests
+        tests/member4_data_tests.cpp
+        src/levels/LevelLoader.cpp
+        src/persistence/SaveManager.cpp
+        src/persistence/LoadManager.cpp
+    )
+    target_include_directories(member4_data_tests PRIVATE include SFML/include)
+    add_test(
+        NAME member4_data_tests
+        COMMAND member4_data_tests
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endif()
