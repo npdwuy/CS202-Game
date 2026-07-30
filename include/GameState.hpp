@@ -9,6 +9,7 @@ public:
     virtual void Update(sf::Time timePerFrame) = 0;
     virtual void Render(sf::RenderWindow &window) = 0;
 
-    virtual bool hasNextState() const { return false; }
-    virtual std::unique_ptr<GameState> getNextState() { return nullptr; }
+    virtual bool isOverlay() const { return false; }
+    virtual void onPause() {}
+    virtual void onResume() {}
 };
