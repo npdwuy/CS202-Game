@@ -1,5 +1,6 @@
 #include "OptionsState.hpp"
 #include "GameManager.hpp"
+#include "audio/AudioManager.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -134,6 +135,12 @@ void OptionsState::initUI() {
         settings.resetToDefaults();
         m_sfxSlider->setValue(settings.getSFXVolume());
         m_bgmSlider->setValue(settings.getBGMVolume());
+        AudioManager::getInstance().setEffectsVolume(
+            settings.getSFXVolume()
+        );
+        AudioManager::getInstance().setMusicVolume(
+            settings.getBGMVolume()
+        );
         updateButtonLabels();
         settings.saveToFile();
     });
@@ -214,10 +221,16 @@ void OptionsState::Input(const sf::Event &event) {
 
     if (m_sfxSlider->getValue() != oldSfx) {
         settings.setSFXVolume(m_sfxSlider->getValue());
+        AudioManager::getInstance().setEffectsVolume(
+            settings.getSFXVolume()
+        );
         settings.saveToFile();
     }
     if (m_bgmSlider->getValue() != oldBgm) {
         settings.setBGMVolume(m_bgmSlider->getValue());
+        AudioManager::getInstance().setMusicVolume(
+            settings.getBGMVolume()
+        );
         settings.saveToFile();
     }
 

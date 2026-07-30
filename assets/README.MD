@@ -6,8 +6,15 @@ This directory contains the visual and audio resources used in the Super Mario g
 
 ```text
 assets/
-├── README.md
-├── CREDITS.md
+├── README.MD
+├── CREDITS.MD
+├── audio/
+│   ├── background.wav
+│   ├── coin.wav
+│   ├── enemy_defeated.wav
+│   ├── game_over.wav
+│   ├── jump.wav
+│   └── power_up.wav
 └── sprites/
     └── raw/
         ├── mario_sheet.png
@@ -38,6 +45,12 @@ assets/sprites/items/
 The original sprite sheets inside `sprites/raw` should not be modified directly.
 
 Cropped, resized, or edited sprites should be saved as separate files.
+
+## Audio
+
+The audio directory contains an original background loop and five synthesized
+effects. Regenerate them with `python tools/generate_audio_assets.py`. No
+third-party audio samples are used.
 
 ## Usage
 

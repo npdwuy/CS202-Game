@@ -1,5 +1,7 @@
 #include "entities/player/Player.hpp"
 
+#include <algorithm>
+#include <cmath>
 
 void Player:: moveLeft(){
     velocity_.x = - speed_;
@@ -21,6 +23,13 @@ void Player:: performJump(){
     velocity_.y = -jumpPower_;
     onGround_ = false;
     jumpBufferTimer_ = 0.0f;
+    jumpedThisFrame_ = true;
+}
+
+bool Player::consumeJumpEvent(){
+    const bool jumped = jumpedThisFrame_;
+    jumpedThisFrame_ = false;
+    return jumped;
 }
 
 void Player:: update(sf::Time timePerFrame){
