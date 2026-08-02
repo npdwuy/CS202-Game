@@ -7,12 +7,16 @@
 #include "entities/Enemy.hpp"
 #include "entities/Item.hpp"
 #include "entities/player/Player.hpp"
+#include "events/GameEventListener.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-class PlayState : public GameState {
+class PlayState
+    : public GameState,
+      public GameEventListener
+{
 public:
     explicit PlayState(bool loadSavedGame = false);
     ~PlayState() override;
@@ -20,6 +24,7 @@ public:
     void Input(const sf::Event& event) override;
     void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) override;
+    void OnGameEvent(const GameEvent& event) override;
 
 private:
     void loadLevel(int levelNumber, bool restoreSavedPosition);

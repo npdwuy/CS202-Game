@@ -18,6 +18,7 @@
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
+#include "events/GameEventManager.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -107,10 +108,66 @@ PlayState::PlayState(bool loadSavedGame) {
             sf::Vector2f(1050.f, 700.f)
         )
     );
+    
+    GameEventManager::GetInstance().AddListener(this);
 }
 
-PlayState::~PlayState() {
+PlayState::~PlayState()
+{
+    GameEventManager::GetInstance().RemoveListener(this);
     AudioManager::getInstance().stopMusic();
+}
+
+void PlayState::OnGameEvent(const GameEvent& event)
+{
+    switch (event.type)
+    {
+        case GameEventType::CoinCollected:
+            m_saveData.score += event.value;
+            AudioManager::getInstance().playEffect(
+                SoundEffect::Coin
+            );
+            break;
+
+        case GameEventType::PowerUpCollected:
+            m_saveData.score += event.value;
+            m_saveData.powerUpState =
+                event.data.empty() ? "None" : event.data;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::PowerUp
+            );
+
+            showStatus(
+                m_saveData.powerUpState + " collected"
+            );
+            break;
+
+        case GameEventType::EnemyDefeated:
+            m_saveData.score += event.value;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::EnemyDefeated
+            );
+
+            showStatus(
+                event.data.empty()
+                    ? "Enemy defeated"
+                    : event.data,
+                1.5f
+            );
+            break;
+
+        case GameEventType::PlayerDamaged:
+            loseLife();
+            break;
+
+        case GameEventType::LevelCompleted:
+            m_saveData.score += event.value;
+            break;
+    }
+
+    updateHud();
 }
 
 void PlayState::Input(const sf::Event& event) {
