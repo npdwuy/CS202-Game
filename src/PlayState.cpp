@@ -18,6 +18,7 @@
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
+#include "events/GameEventManager.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -107,10 +108,66 @@ PlayState::PlayState(bool loadSavedGame) {
             sf::Vector2f(1050.f, 700.f)
         )
     );
+    
+    GameEventManager::GetInstance().AddListener(this);
 }
 
-PlayState::~PlayState() {
+PlayState::~PlayState()
+{
+    GameEventManager::GetInstance().RemoveListener(this);
     AudioManager::getInstance().stopMusic();
+}
+
+void PlayState::OnGameEvent(const GameEvent& event)
+{
+    switch (event.type)
+    {
+        case GameEventType::CoinCollected:
+            m_saveData.score += event.value;
+            AudioManager::getInstance().playEffect(
+                SoundEffect::Coin
+            );
+            break;
+
+        case GameEventType::PowerUpCollected:
+            m_saveData.score += event.value;
+            m_saveData.powerUpState =
+                event.data.empty() ? "None" : event.data;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::PowerUp
+            );
+
+            showStatus(
+                m_saveData.powerUpState + " collected"
+            );
+            break;
+
+        case GameEventType::EnemyDefeated:
+            m_saveData.score += event.value;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::EnemyDefeated
+            );
+
+            showStatus(
+                event.data.empty()
+                    ? "Enemy defeated"
+                    : event.data,
+                1.5f
+            );
+            break;
+
+        case GameEventType::PlayerDamaged:
+            loseLife();
+            break;
+
+        case GameEventType::LevelCompleted:
+            m_saveData.score += event.value;
+            break;
+    }
+
+    updateHud();
 }
 
 void PlayState::Input(const sf::Event& event) {
@@ -317,81 +374,116 @@ void PlayState::loadGame() {
     updateHud();
 }
 
-void PlayState::handleItemCollisions() {
+void PlayState::handleItemCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& item : m_items) {
-        if (item->IsCollected() || !bounds.intersects(item->GetBounds())) {
+    for (auto& item : m_items)
+    {
+        if (
+            item->IsCollected() ||
+            !bounds.intersects(item->GetBounds())
+        )
+        {
             continue;
         }
 
+        const ItemEffect effect = item->GetEffect();
         item->Collect();
 
-        if (const auto* coin = dynamic_cast<const Coin*>(item.get())) {
-            m_saveData.score += coin->GetValue();
-            AudioManager::getInstance().playEffect(SoundEffect::Coin);
-        } else if (
-            const auto* powerUp =
-                dynamic_cast<const PowerUpPickup*>(item.get())
-        ) {
-            m_saveData.score += 500;
-            m_saveData.powerUpState =
-                powerUp->getKind() == PowerUpKind::Mushroom
-                    ? "Mushroom"
-                    : "FireFlower";
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-            showStatus(m_saveData.powerUpState + " collected");
-#if __has_include("entities/items/ItemEffect.hpp")
-        } else {
-            const ItemEffect effect = item->GetEffect();
-            if (effect.type == ItemEffectType::GrowPlayer) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "Mushroom";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("Mushroom collected");
-            } else if (effect.type == ItemEffectType::EnableFirePower) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "FireFlower";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("FireFlower collected");
-            }
-#endif
+        switch (effect.type)
+        {
+            case ItemEffectType::AddScore:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::CoinCollected,
+                        effect.amount,
+                        ""
+                    }
+                );
+                break;
+
+            case ItemEffectType::GrowPlayer:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "Mushroom"
+                    }
+                );
+                break;
+
+            case ItemEffectType::EnableFirePower:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "FireFlower"
+                    }
+                );
+                break;
         }
     }
 }
 
-bool PlayState::handleEnemyCollisions() {
+bool PlayState::handleEnemyCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& enemy : m_enemies) {
-        if (!enemy->IsActive() || !bounds.intersects(enemy->GetBounds())) {
+    for (auto& enemy : m_enemies)
+    {
+        if (
+            !enemy->IsActive() ||
+            !bounds.intersects(enemy->GetBounds())
+        )
+        {
             continue;
         }
 
-        const sf::FloatRect enemyBounds = enemy->GetBounds();
+        const sf::FloatRect enemyBounds =
+            enemy->GetBounds();
+
         const bool stomped =
             m_player->velocity().y > 0.f &&
             bounds.top + bounds.height <=
-                enemyBounds.top + enemyBounds.height * 0.65f;
+                enemyBounds.top +
+                enemyBounds.height * 0.65f;
 
-        if (stomped) {
+        const bool isBoss =
+            dynamic_cast<const BossEnemy*>(
+                enemy.get()
+            ) != nullptr;
+
+        if (stomped)
+        {
             enemy->Deactivate();
-            sf::Vector2f velocity = m_player->velocity();
+
+            sf::Vector2f velocity =
+                m_player->velocity();
+
             velocity.y = -330.f;
             m_player->setVelocity(velocity);
-            m_saveData.score +=
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr ? 2000 : 200;
-            AudioManager::getInstance().playEffect(
-                SoundEffect::EnemyDefeated
+
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    isBoss ? 2000 : 200,
+                    isBoss
+                        ? "Boss defeated - the exit is open!"
+                        : "Enemy defeated"
+                }
             );
-            showStatus(
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr
-                    ? "Boss defeated - the exit is open!"
-                    : "Enemy defeated",
-                1.5f
+        }
+        else
+        {
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::PlayerDamaged,
+                    0,
+                    ""
+                }
             );
-        } else {
-            loseLife();
+
             return true;
         }
     }
@@ -399,12 +491,20 @@ bool PlayState::handleEnemyCollisions() {
     return false;
 }
 
-void PlayState::handlePlayerFall() {
+void PlayState::handlePlayerFall()
+{
     if (
         m_player->position().y >
         m_tileMap.worldBounds().height + 180.f
-    ) {
-        loseLife();
+    )
+    {
+        GameEventManager::GetInstance().Notify(
+            {
+                GameEventType::PlayerDamaged,
+                0,
+                "Player fell out of the level"
+            }
+        );
     }
 }
 
@@ -418,7 +518,13 @@ void PlayState::handleLevelExit() {
         return;
     }
 
-    m_saveData.score += 1000;
+    GameEventManager::GetInstance().Notify(
+    {
+        GameEventType::LevelCompleted,
+        1000,
+        "Level completed"
+    }
+    );
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {

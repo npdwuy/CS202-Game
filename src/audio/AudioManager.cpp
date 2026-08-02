@@ -68,6 +68,19 @@ void AudioManager::stopMusic() {
     }
 }
 
+void AudioManager::shutdown()
+{
+    m_backgroundMusic.stop();
+
+    for (auto& entry : m_sounds)
+    {
+        entry.second.stop();
+    }
+
+    m_sounds.clear();
+    m_initialized = false;
+}
+
 void AudioManager::playEffect(SoundEffect effect) {
     if (!m_initialized && !initialize()) {
         return;

@@ -1,4 +1,8 @@
 #include "GameManager.hpp"
+
+#include "audio/AudioManager.hpp"
+#include "resources/ResourceManager.hpp"
+
 #include <iostream>
 
 GameManager::GameManager() : m_window(sf::VideoMode(1920, 1080), "CS202-Group5", sf::Style::Default),
@@ -36,16 +40,18 @@ void GameManager::changeState(std::unique_ptr<GameState> state) {
     m_states.push_back(std::move(state));
 }
 
-void GameManager::run() {
+void GameManager::run()
+{
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
     const sf::Time timePerFrame = sf::seconds(1.f / 30.f);
 
-    while (m_isRunning && m_window.isOpen()) {
+    while (m_isRunning && m_window.isOpen())
+    {
         sf::Time elapsedTime = clock.restart();
 
-        // Prevent spiral of death
-        if (elapsedTime > sf::seconds(0.25f)) {
+        if (elapsedTime > sf::seconds(0.25f))
+        {
             elapsedTime = sf::seconds(0.25f);
         }
 
@@ -53,13 +59,23 @@ void GameManager::run() {
 
         processInput();
 
-        while (timeSinceLastUpdate >= timePerFrame) {
+        if (!m_isRunning || !m_window.isOpen())
+        {
+            break;
+        }
+
+        while (timeSinceLastUpdate >= timePerFrame)
+        {
             timeSinceLastUpdate -= timePerFrame;
             update(timePerFrame);
         }
 
         render();
     }
+
+    m_states.clear();
+    AudioManager::getInstance().shutdown();
+    ResourceManager::getInstance().clear();
 }
 
 void GameManager::quit() {
