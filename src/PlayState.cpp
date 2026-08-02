@@ -426,38 +426,64 @@ void PlayState::handleItemCollisions()
     }
 }
 
-bool PlayState::handleEnemyCollisions() {
+bool PlayState::handleEnemyCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& enemy : m_enemies) {
-        if (!enemy->IsActive() || !bounds.intersects(enemy->GetBounds())) {
+    for (auto& enemy : m_enemies)
+    {
+        if (
+            !enemy->IsActive() ||
+            !bounds.intersects(enemy->GetBounds())
+        )
+        {
             continue;
         }
 
-        const sf::FloatRect enemyBounds = enemy->GetBounds();
+        const sf::FloatRect enemyBounds =
+            enemy->GetBounds();
+
         const bool stomped =
             m_player->velocity().y > 0.f &&
             bounds.top + bounds.height <=
-                enemyBounds.top + enemyBounds.height * 0.65f;
+                enemyBounds.top +
+                enemyBounds.height * 0.65f;
 
-        if (stomped) {
+        const bool isBoss =
+            dynamic_cast<const BossEnemy*>(
+                enemy.get()
+            ) != nullptr;
+
+        if (stomped)
+        {
             enemy->Deactivate();
-            sf::Vector2f velocity = m_player->velocity();
+
+            sf::Vector2f velocity =
+                m_player->velocity();
+
             velocity.y = -330.f;
             m_player->setVelocity(velocity);
-            m_saveData.score +=
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr ? 2000 : 200;
-            AudioManager::getInstance().playEffect(
-                SoundEffect::EnemyDefeated
+
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    isBoss ? 2000 : 200,
+                    isBoss
+                        ? "Boss defeated - the exit is open!"
+                        : "Enemy defeated"
+                }
             );
-            showStatus(
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr
-                    ? "Boss defeated - the exit is open!"
-                    : "Enemy defeated",
-                1.5f
+        }
+        else
+        {
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::PlayerDamaged,
+                    0,
+                    ""
+                }
             );
-        } else {
-            loseLife();
+
             return true;
         }
     }
