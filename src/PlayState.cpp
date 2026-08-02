@@ -491,12 +491,20 @@ bool PlayState::handleEnemyCollisions()
     return false;
 }
 
-void PlayState::handlePlayerFall() {
+void PlayState::handlePlayerFall()
+{
     if (
         m_player->position().y >
         m_tileMap.worldBounds().height + 180.f
-    ) {
-        loseLife();
+    )
+    {
+        GameEventManager::GetInstance().Notify(
+            {
+                GameEventType::PlayerDamaged,
+                0,
+                "Player fell out of the level"
+            }
+        );
     }
 }
 
@@ -510,7 +518,13 @@ void PlayState::handleLevelExit() {
         return;
     }
 
-    m_saveData.score += 1000;
+    GameEventManager::GetInstance().Notify(
+    {
+        GameEventType::LevelCompleted,
+        1000,
+        "Level completed"
+    }
+    );
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {
