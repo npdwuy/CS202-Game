@@ -2,15 +2,7 @@
 
 #include "factories/EnemyFactory.hpp"
 
-#include "entities/items/Coin.hpp"
-#include "entities/items/PowerUpPickup.hpp"
-
-#if __has_include("entities/items/Mushroom.hpp")
-#include "entities/items/Mushroom.hpp"
-#endif
-
-#include <stdexcept>
-#include <string>
+#include "factories/ItemFactory.hpp"
 
 std::unique_ptr<Enemy> LevelObjectFactory::createEnemy(
     char symbol,
@@ -30,29 +22,12 @@ std::unique_ptr<Enemy> LevelObjectFactory::createEnemy(
 std::unique_ptr<Item> LevelObjectFactory::createItem(
     char symbol,
     sf::Vector2f position
-) const {
-    switch (symbol) {
-        case 'C':
-            return std::make_unique<Coin>(position, 100);
-        case 'M':
-#if __has_include("entities/items/Mushroom.hpp")
-            return std::make_unique<Mushroom>(position);
-#else
-            return std::make_unique<PowerUpPickup>(
-                position,
-                PowerUpKind::Mushroom
-            );
-#endif
-        case 'F':
-            return std::make_unique<PowerUpPickup>(
-                position,
-                PowerUpKind::FireFlower
-            );
-        default:
-            throw std::invalid_argument(
-                "Unsupported item map symbol: " + std::string(1, symbol)
-            );
-    }
+) const
+{
+    return ItemFactory::Create(
+        symbol,
+        position
+    );
 }
 
 bool LevelObjectFactory::isEnemySymbol(char symbol)
