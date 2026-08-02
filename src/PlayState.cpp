@@ -374,45 +374,54 @@ void PlayState::loadGame() {
     updateHud();
 }
 
-void PlayState::handleItemCollisions() {
+void PlayState::handleItemCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& item : m_items) {
-        if (item->IsCollected() || !bounds.intersects(item->GetBounds())) {
+    for (auto& item : m_items)
+    {
+        if (
+            item->IsCollected() ||
+            !bounds.intersects(item->GetBounds())
+        )
+        {
             continue;
         }
 
+        const ItemEffect effect = item->GetEffect();
         item->Collect();
 
-        if (const auto* coin = dynamic_cast<const Coin*>(item.get())) {
-            m_saveData.score += coin->GetValue();
-            AudioManager::getInstance().playEffect(SoundEffect::Coin);
-        } else if (
-            const auto* powerUp =
-                dynamic_cast<const PowerUpPickup*>(item.get())
-        ) {
-            m_saveData.score += 500;
-            m_saveData.powerUpState =
-                powerUp->getKind() == PowerUpKind::Mushroom
-                    ? "Mushroom"
-                    : "FireFlower";
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-            showStatus(m_saveData.powerUpState + " collected");
-#if __has_include("entities/items/ItemEffect.hpp")
-        } else {
-            const ItemEffect effect = item->GetEffect();
-            if (effect.type == ItemEffectType::GrowPlayer) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "Mushroom";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("Mushroom collected");
-            } else if (effect.type == ItemEffectType::EnableFirePower) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "FireFlower";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("FireFlower collected");
-            }
-#endif
+        switch (effect.type)
+        {
+            case ItemEffectType::AddScore:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::CoinCollected,
+                        effect.amount,
+                        ""
+                    }
+                );
+                break;
+
+            case ItemEffectType::GrowPlayer:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "Mushroom"
+                    }
+                );
+                break;
+
+            case ItemEffectType::EnableFirePower:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "FireFlower"
+                    }
+                );
+                break;
         }
     }
 }
