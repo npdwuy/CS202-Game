@@ -19,7 +19,9 @@ public:
     bool initialize();
     void playMusic();
     void stopMusic();
+    void shutdown();
     void playEffect(SoundEffect effect);
+
 
     void setMusicVolume(float volume);
     void setEffectsVolume(float volume);
