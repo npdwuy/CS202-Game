@@ -18,9 +18,9 @@ Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 720.0f){
     
     // Đặt khung hình mặc định ban đầu tránh bị lỗi tàng hình
     sprite_.setTextureRect(sf::IntRect(144, 25, 20, 32)); 
-    sprite_.setOrigin(0.f, 0.f);
+    sprite_.setOrigin(10.f, 32.f);
     sprite_.setScale(1.5f, 1.5f);
-    sprite_.setPosition(position);
+    sprite_.setPosition(position.x + width() / 2.0f, position.y + height());
 }
 
 void Mario::update(sf::Time timePerFrame) {
@@ -97,17 +97,19 @@ void Mario::update(sf::Time timePerFrame) {
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
     sprite_.setTextureRect(currentRect);
 
+    // Đặt Origin ở điểm giữa cạnh dưới của hình ảnh
+    sprite_.setOrigin(currentRect.width / 2.0f, static_cast<float>(currentRect.height));
+
     // Lật mặt và xử lý Scale
-    const float scaleAbs = 1.5f; // Độ to của nhân vật (3x)
+    const float scaleAbs = 1.5f; // Độ to của nhân vật
     if (velocity_.x < 0.0f) {
-        sprite_.setOrigin(static_cast<float>(currentRect.width), 0.f);
         sprite_.setScale(-scaleAbs, scaleAbs);
     } else if (velocity_.x > 0.0f) {
-        sprite_.setOrigin(0.f, 0.f);
         sprite_.setScale(scaleAbs, scaleAbs);
     }
     
-    sprite_.setPosition(position_);
+    // Vẽ sprite tại điểm giữa cạnh dưới của khung va chạm (collision box)
+    sprite_.setPosition(position_.x + width() / 2.0f, position_.y + height());
 }
 
 void Mario::Render(sf::RenderWindow& window) const {
