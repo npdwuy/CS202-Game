@@ -75,7 +75,6 @@ void Mario::update(sf::Time timePerFrame) {
         sf::IntRect(108, 12, 35, 50)
     };
 
-    // --- KẾT THÚC BẢNG TỌA ĐỘ ---
 
     std::vector<sf::IntRect>* currentAnim = &framesStand;
     if (currentState == State::Walk) currentAnim = &framesWalk;
