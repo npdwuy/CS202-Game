@@ -62,10 +62,10 @@ public:
         // XỬ LÝ DI CHUYỂN & VA CHẠM THEO TRỤC X (NGANG)
         // -------------------------------------------------------------
         position.x += velocity.x * dt.asSeconds();
-        
+
         // sf::FloatRect nhận tham số: (left, top, width, height)
         sf::FloatRect horizontal(position.x, position.y, width, height);
-        sf::FloatRect horizontalnew(position.x, position.y, width, height);
+        
         // if (collidesSolid(horizontal)) {
         //     if (velocity.x > 0.0f) { // Đang sang phải -> va vào vách bên trái Tile
         //         const int tileX = static_cast<int>(std::floor((horizontal.left + horizontal.width) / kTileSize));
