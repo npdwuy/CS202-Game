@@ -22,7 +22,7 @@ protected:
 
 public:
     Player(sf:: Vector2f position, std::string label, float speed, float jumpPower)
-        : Character(position, 27.0f, 30.0f),
+        : Character(position, 32.0f, 70.0f),
           speed_(speed), jumpPower_(jumpPower),
           label_(std::move(label)) {}
 
