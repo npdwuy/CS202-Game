@@ -89,7 +89,11 @@ void Mario::update(sf::Time timePerFrame) {
 
     if (animationTime_ >= frameDuration) {
         animationTime_ -= frameDuration;
-        currentFrame_ = (currentFrame_ + 1) % currentAnim->size();
+        if(currentState == State::Jump){
+            currentFrame_ = std::min(currentFrame_ + 1, static_cast<int>(currentAnim->size() - 1));
+        }
+        else
+            currentFrame_ = (currentFrame_ + 1) % currentAnim->size();
         // Nhảy đùng trần 2 frame -> rơi xuống 
         if(currentState == State::HitRoof && currentFrame_ == 1)hitRoof_ = false;
     }

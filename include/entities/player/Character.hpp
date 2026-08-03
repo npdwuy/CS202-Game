@@ -110,13 +110,13 @@ public:
 
         /* Test mới mặt đất ảo
         */
-            const float groundY = 500.0f;
-            if (velocity.y > 0.0f&& position.y + height >= groundY) {
-                position.y = groundY - height; 
-                velocity.y = 0.0f;
+            // const float groundY = 500.0f;
+            // if (velocity.y > 0.0f&& position.y + height >= groundY) {
+            //     position.y = groundY - height; 
+            //     velocity.y = 0.0f;
                 
-                setOnGround(true); 
-            }
+            //     setOnGround(true); 
+            // }
         /**/
 
         // Cập nhật lại vị trí và vận tốc cuối cùng vào SFML Character
