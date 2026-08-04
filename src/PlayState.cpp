@@ -2,6 +2,8 @@
 #include "MenuState.hpp"
 #include "GameManager.hpp"
 #include "PauseState.hpp"
+#include "GameOverState.hpp"
+#include "LevelCompleteState.hpp"
 
 #include "entities/enemies/Goomba.hpp"
 #include "entities/enemies/Koopa.hpp"
@@ -185,16 +187,6 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
-    if (event.key.code == sf::Keyboard::R && (m_gameOver || m_victory)) {
-        restartGame();
-        return;
-    }
-
-    if (m_victory && event.key.code == sf::Keyboard::Enter) {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
-    }
-
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
     if (event.key.code == pauseKey) {
@@ -209,12 +201,6 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_statusTimeRemaining - timePerFrame.asSeconds()
         );
     }
-
-    if (m_gameOver || m_victory) {
-        updateHud();
-        return;
-    }
-
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
@@ -234,10 +220,6 @@ void PlayState::Update(sf::Time timePerFrame) {
         return;
     }
     handlePlayerFall();
-    if (m_gameOver) {
-        updateHud();
-        return;
-    }
     handleLevelExit();
 
     m_enemies.erase(
@@ -281,7 +263,7 @@ void PlayState::Render(sf::RenderWindow& window) {
     }
 
     window.draw(m_hudText);
-    if (m_statusTimeRemaining > 0.f || m_gameOver || m_victory) {
+    if (m_statusTimeRemaining > 0.f) {
         window.draw(m_statusText);
     }
 }
@@ -319,8 +301,6 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     );
 
     m_saveData.hasPlayerPosition = false;
-    m_gameOver = m_saveData.remainingLives <= 0;
-    m_victory = false;
 }
 
 void PlayState::createLevelObjects() {
@@ -537,17 +517,8 @@ void PlayState::handleLevelExit() {
             2.5f
         );
     } else {
-        m_victory = true;
-        m_statusText.setString(
-            "YOU WIN! Press Enter for menu or R to restart"
-        );
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
         SaveManager::save(m_saveData);
+        GameManager::getInstance().pushState(std::make_unique<LevelCompleteState>());
     }
 }
 
@@ -558,15 +529,8 @@ void PlayState::loseLife() {
 
     if (m_saveData.remainingLives <= 0) {
         m_saveData.remainingLives = 0;
-        m_gameOver = true;
         AudioManager::getInstance().playEffect(SoundEffect::GameOver);
-        m_statusText.setString("GAME OVER - Press R to restart");
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
+        GameManager::getInstance().pushState(std::make_unique<GameOverState>());
         return;
     }
 
@@ -576,14 +540,6 @@ void PlayState::loseLife() {
         " remaining",
         2.f
     );
-}
-
-void PlayState::restartGame() {
-    m_saveData = SaveData{};
-    m_gameOver = false;
-    m_victory = false;
-    loadLevel(1, false);
-    showStatus("New game started");
 }
 
 void PlayState::updateHud() {

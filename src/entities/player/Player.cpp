@@ -32,16 +32,19 @@ bool Player::consumeJumpEvent(){
     return jumped;
 }
 
-void Player:: update(sf::Time timePerFrame){
+#include "GameManager.hpp"
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+void Player:: update(sf::Time timePerFrame){
+    auto& settings = GameManager::getInstance().getSettings();
+
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))) {
         moveLeft();
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))) {
         moveRight();
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)
-        ||sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) || 
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"))) {
         jump();
     }
     

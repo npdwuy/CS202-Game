@@ -36,7 +36,6 @@ private:
     void handlePlayerFall();
     void handleLevelExit();
     void loseLife();
-    void restartGame();
     void updateHud();
     void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
@@ -54,6 +53,4 @@ private:
     sf::Text m_hudText;
     sf::Text m_statusText;
     float m_statusTimeRemaining = 0.f;
-    bool m_gameOver = false;
-    bool m_victory = false;
 };

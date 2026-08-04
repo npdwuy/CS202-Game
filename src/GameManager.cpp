@@ -46,12 +46,10 @@ void GameManager::run()
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
     const sf::Time timePerFrame = sf::seconds(1.f / 30.f);
 
-    while (m_isRunning && m_window.isOpen())
-    {
+    while (m_isRunning && m_window.isOpen()) {
         sf::Time elapsedTime = clock.restart();
-
-        if (elapsedTime > sf::seconds(0.25f))
-        {
+        // Prevent spiral of death
+        if (elapsedTime > sf::seconds(0.25f)) {
             elapsedTime = sf::seconds(0.25f);
         }
 
@@ -98,25 +96,14 @@ const sf::View& GameManager::getGameView() const {
 void GameManager::updateView(unsigned int windowWidth, unsigned int windowHeight) {
     if (windowWidth == 0 || windowHeight == 0) return;
 
-    const float targetRatio = 1920.f / 1080.f; // 16:9
     float windowRatio = static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
 
-    float viewportX = 0.f;
-    float viewportY = 0.f;
-    float viewportWidth = 1.f;
-    float viewportHeight = 1.f;
+    // Keep height at 1080, expand/shrink width to match window ratio
+    float viewHeight = 1080.f;
+    float viewWidth = viewHeight * windowRatio;
 
-    if (windowRatio > targetRatio) {
-        // Window is wider than 16:9 -> Fit height, black bars left & right (Pillarboxing)
-        viewportWidth = targetRatio / windowRatio;
-        viewportX = (1.f - viewportWidth) / 2.f;
-    } else {
-        // Window is taller than 16:9 -> Fit width, black bars top & bottom (Letterboxing)
-        viewportHeight = windowRatio / targetRatio;
-        viewportY = (1.f - viewportHeight) / 2.f;
-    }
-
-    m_gameView.setViewport(sf::FloatRect(viewportX, viewportY, viewportWidth, viewportHeight));
+    m_gameView.setSize(viewWidth, viewHeight);
+    m_gameView.setViewport(sf::FloatRect(0.f, 0.f, 1.f, 1.f));
     m_window.setView(m_gameView);
 }
 
@@ -132,6 +119,9 @@ void GameManager::processInput() {
         }
         if (!m_states.empty()) {
             m_states.back()->Input(event);
+        }
+        if (!m_isRunning) {
+            return;
         }
     }
 }
