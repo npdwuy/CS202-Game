@@ -84,29 +84,29 @@ public:
         // -------------------------------------------------------------
         position.y += velocity.y * dt.asSeconds();
         sf::FloatRect vertical(position.x, position.y, width, height);
-
-        // if (collidesSolid(vertical)) {
-        //     if (velocity.y > 0.0f) { // Đang rơi xuống -> Chạm đất
-        //         const int tileY = static_cast<int>(std::floor((vertical.top + vertical.height) / kTileSize));
-        //         position.y = static_cast<float>(tileY * kTileSize) - vertical.height - 0.01f;
-        //         character.setOnGround(true);
-        //     } 
-        //     else if (velocity.y < 0.0f) { // Đang nhảy lên -> Cụng đầu vào trần
-        //         const int tileY = static_cast<int>(std::floor(vertical.top / kTileSize));
+///
+        if (collidesSolid(vertical)) {
+            if (velocity.y > 0.0f) { // Đang rơi xuống -> Chạm đất
+                const int tileY = static_cast<int>(std::floor((vertical.top + vertical.height) / kTileSize));
+                position.y = static_cast<float>(tileY * kTileSize) - vertical.height - 0.01f;
+                character.setOnGround(true);
+            } 
+            else if (velocity.y < 0.0f) { // Đang nhảy lên -> Cụng đầu vào trần
+                const int tileY = static_cast<int>(std::floor(vertical.top / kTileSize));
                 
-        //         if (Player* player = dynamic_cast<Player*>(&character)) {
-        //             const int left = static_cast<int>(std::floor(vertical.left / kTileSize));
-        //             const int right = static_cast<int>(std::floor((vertical.left + vertical.width - 1.0f) / kTileSize));
+                if (Player* player = dynamic_cast<Player*>(&character)) {
+                    const int left = static_cast<int>(std::floor(vertical.left / kTileSize));
+                    const int right = static_cast<int>(std::floor((vertical.left + vertical.width - 1.0f) / kTileSize));
                     
-        //             for (int x = left; x <= right; ++x) {
-        //                 handleBlockHit(*player, x, tileY);
-        //             }
-        //         }
-        //         position.y = static_cast<float>((tileY + 1) * kTileSize) + 0.01f;
-        //         HitRoof_ = true;
-        //     }
-        //     velocity.y = 0.0f;
-        // }
+                    for (int x = left; x <= right; ++x) {
+                        handleBlockHit(*player, x, tileY);
+                    }
+                }
+                position.y = static_cast<float>((tileY + 1) * kTileSize) + 0.01f;
+                HitRoof_ = true;
+            }
+            velocity.y = 0.0f;
+        }
 
         /* Test mới mặt đất ảo
         */
