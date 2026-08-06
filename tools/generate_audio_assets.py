@@ -169,10 +169,31 @@ def main() -> None:
         440.0, 523.0, 659.0, 523.0,
         392.0, 494.0, 587.0, 494.0,
     ]
-    background_notes = [
-        (frequency, 0.18, 0.10) for frequency in melody
-    ]
-    write_sequence("background.wav", background_notes)
+    melody_track = render_sequence(
+        [(frequency, 0.18, 0.085) for frequency in melody],
+        waveform="triangle",
+    )
+    harmony_track = render_sequence(
+        [(frequency * 0.5, 0.18, 0.035) for frequency in melody],
+        waveform="sine",
+    )
+    bass_track = render_sequence(
+        [
+            (131.0, 0.72, 0.07),
+            (147.0, 0.72, 0.07),
+            (165.0, 0.72, 0.07),
+            (147.0, 0.72, 0.07),
+            (131.0, 0.72, 0.07),
+            (123.0, 0.72, 0.07),
+            (110.0, 0.72, 0.07),
+            (98.0, 0.72, 0.07),
+        ],
+        waveform="sine",
+    )
+    write_samples(
+        "background.wav",
+        mix_tracks(melody_track, harmony_track, bass_track),
+    )
 
 
 if __name__ == "__main__":
