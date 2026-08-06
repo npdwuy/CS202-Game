@@ -106,7 +106,10 @@ void Mario::update(sf::Time timePerFrame) {
     sprite_.setOrigin(currentRect.width / 2.0f, static_cast<float>(currentRect.height));
 
     // Lật mặt và xử lý Scale
-    const float scaleAbs = 1.5f; // Độ to của nhân vật
+    float scaleAbs = 1.5f; // Độ to của nhân vật
+    if(mushroom_){
+        scaleAbs = 3.0f;
+    }
     if (velocity_.x < 0.0f) {
         sprite_.setScale(-scaleAbs, scaleAbs);
     } else if (velocity_.x > 0.0f) {
