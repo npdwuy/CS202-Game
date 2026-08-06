@@ -6,7 +6,7 @@ import wave
 from pathlib import Path
 
 
-SAMPLE_RATE = 22050
+SAMPLE_RATE = 44100
 OUTPUT_DIRECTORY = Path(__file__).resolve().parents[1] / "assets" / "audio"
 
 
@@ -14,37 +14,65 @@ def square_wave(phase: float) -> float:
     return 1.0 if math.sin(phase) >= 0.0 else -1.0
 
 
-def write_sequence(
-    filename: str,
+def triangle_wave(phase: float) -> float:
+    return 2.0 / math.pi * math.asin(math.sin(phase))
+
+
+def oscillator(waveform: str, phase: float) -> float:
+    if waveform == "square":
+        return square_wave(phase)
+    if waveform == "triangle":
+        return triangle_wave(phase)
+    return math.sin(phase)
+
+
+def render_sequence(
     notes: list[tuple[float, float, float]],
     waveform: str = "square",
-) -> None:
-    samples: list[int] = []
+) -> list[float]:
+    samples: list[float] = []
 
     for frequency, duration, volume in notes:
         sample_count = max(1, int(SAMPLE_RATE * duration))
-        fade_count = max(1, min(int(SAMPLE_RATE * 0.012), sample_count // 3))
+        attack_count = max(1, min(int(SAMPLE_RATE * 0.008), sample_count // 3))
+        release_count = max(1, min(int(SAMPLE_RATE * 0.025), sample_count // 3))
 
         for index in range(sample_count):
             if frequency <= 0.0:
                 value = 0.0
             else:
                 phase = 2.0 * math.pi * frequency * index / SAMPLE_RATE
-                value = (
-                    square_wave(phase)
-                    if waveform == "square"
-                    else math.sin(phase)
-                )
+                value = oscillator(waveform, phase)
 
             envelope = 1.0
-            if index < fade_count:
-                envelope *= index / fade_count
-            if index >= sample_count - fade_count:
-                envelope *= (sample_count - index - 1) / fade_count
+            if index < attack_count:
+                progress = index / attack_count
+                envelope *= math.sin(progress * math.pi / 2.0) ** 2
+            if index >= sample_count - release_count:
+                progress = (sample_count - index - 1) / release_count
+                envelope *= math.sin(max(0.0, progress) * math.pi / 2.0) ** 2
 
-            samples.append(
-                int(max(-1.0, min(1.0, value * volume * envelope)) * 32767)
-            )
+            samples.append(value * volume * envelope)
+
+    return samples
+
+
+def mix_tracks(*tracks: list[float]) -> list[float]:
+    length = max((len(track) for track in tracks), default=0)
+    mixed = [0.0] * length
+    for track in tracks:
+        for index, sample in enumerate(track):
+            mixed[index] += sample
+    return mixed
+
+
+def write_samples(filename: str, samples: list[float]) -> None:
+    peak = max((abs(sample) for sample in samples), default=1.0)
+    gain = min(1.0, 0.92 / peak) if peak > 0.0 else 1.0
+    encoded = [
+        int(max(-1.0, min(1.0, sample * gain)) * 32767)
+        for sample in samples
+    ]
 
     OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
     with wave.open(str(OUTPUT_DIRECTORY / filename), "wb") as output:
@@ -52,8 +80,16 @@ def write_sequence(
         output.setsampwidth(2)
         output.setframerate(SAMPLE_RATE)
         output.writeframes(
-            b"".join(struct.pack("<h", sample) for sample in samples)
+            b"".join(struct.pack("<h", sample) for sample in encoded)
         )
+
+
+def write_sequence(
+    filename: str,
+    notes: list[tuple[float, float, float]],
+    waveform: str = "square",
+) -> None:
+    write_samples(filename, render_sequence(notes, waveform))
 
 
 def main() -> None:
