@@ -59,4 +59,5 @@ private:
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
+    bool m_playerDamagePending = false;
 };

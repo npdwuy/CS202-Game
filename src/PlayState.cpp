@@ -144,7 +144,9 @@ void PlayState::OnGameEvent(const GameEvent& event)
             break;
 
         case GameEventType::PlayerDamaged:
-            handlePlayerDamage();
+            // Applying damage can reload the level and replace the enemy
+            // collection. Defer it until the active collision pass has ended.
+            m_playerDamagePending = true;
             break;
 
         case GameEventType::PlayerFell:
@@ -200,6 +202,10 @@ void PlayState::Update(sf::Time timePerFrame) {
 
     handleItemCollisions();
     if (handleEnemyCollisions()) {
+        if (m_playerDamagePending) {
+            m_playerDamagePending = false;
+            handlePlayerDamage();
+        }
         updateHud();
         return;
     }
@@ -268,6 +274,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     }
 
     m_saveData.currentLevel = levelNumber;
+    m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
     m_enemies.clear();
     m_items.clear();
