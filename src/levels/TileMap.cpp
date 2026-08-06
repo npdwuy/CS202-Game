@@ -373,6 +373,39 @@ void TileMap::rebuildGeometry() {
                     palette.outline
                 );
             }
+
+            sf::Color detailColor = palette.outline;
+            detailColor.a = 72U;
+            const std::size_t detailPattern = (row * 17U + column * 31U) % 3U;
+            if (detailPattern == 0U) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + 11.f, position.y + 20.f, 13.f, 3.f},
+                    detailColor
+                );
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + 28.f, position.y + 34.f, 8.f, 3.f},
+                    detailColor
+                );
+            } else if (detailPattern == 1U) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + 26.f, position.y + 17.f, 10.f, 3.f},
+                    detailColor
+                );
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + 9.f, position.y + 36.f, 7.f, 3.f},
+                    detailColor
+                );
+            } else {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + 16.f, position.y + 29.f, 15.f, 3.f},
+                    detailColor
+                );
+            }
         }
     }
 
