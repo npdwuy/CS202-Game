@@ -9,6 +9,34 @@
 
 namespace {
 
+struct TilePalette {
+    sf::Color outline;
+    sf::Color lightFill;
+    sf::Color darkFill;
+};
+
+TilePalette paletteFor(const std::string& difficulty) {
+    if (difficulty == "Medium") {
+        return {
+            sf::Color(103, 66, 34),
+            sf::Color(190, 129, 61),
+            sf::Color(158, 99, 45)
+        };
+    }
+    if (difficulty == "Hard") {
+        return {
+            sf::Color(52, 38, 45),
+            sf::Color(112, 76, 72),
+            sf::Color(82, 54, 59)
+        };
+    }
+    return {
+        sf::Color(91, 51, 31),
+        sf::Color(158, 93, 52),
+        sf::Color(139, 78, 43)
+    };
+}
+
 void appendQuad(
     sf::VertexArray& vertices,
     const sf::FloatRect& bounds,
@@ -252,6 +280,7 @@ void TileMap::rebuildGeometry() {
     m_tileVertices.clear();
 
     const float tileSize = static_cast<float>(m_data.tileSize);
+    const TilePalette palette = paletteFor(m_data.difficulty);
 
     for (std::size_t row = 0; row < m_data.rows.size(); ++row) {
         for (std::size_t column = 0; column < m_data.rows[row].size(); ++column) {
@@ -265,12 +294,12 @@ void TileMap::rebuildGeometry() {
             };
 
             const sf::Color fillColor = row % 2U == 0U
-                ? sf::Color(158, 93, 52)
-                : sf::Color(139, 78, 43);
+                ? palette.lightFill
+                : palette.darkFill;
             appendQuad(
                 m_tileVertices,
                 {position.x, position.y, tileSize, tileSize},
-                sf::Color(91, 51, 31)
+                palette.outline
             );
             appendQuad(
                 m_tileVertices,
