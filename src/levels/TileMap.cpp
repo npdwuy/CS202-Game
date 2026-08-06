@@ -15,6 +15,8 @@ struct TilePalette {
     sf::Color darkFill;
     sf::Color surface;
     sf::Color surfaceHighlight;
+    sf::Color skyTop;
+    sf::Color skyBottom;
 };
 
 TilePalette paletteFor(const std::string& difficulty) {
@@ -24,7 +26,9 @@ TilePalette paletteFor(const std::string& difficulty) {
             sf::Color(190, 129, 61),
             sf::Color(158, 99, 45),
             sf::Color(224, 178, 75),
-            sf::Color(255, 218, 117)
+            sf::Color(255, 218, 117),
+            sf::Color(113, 148, 216),
+            sf::Color(255, 210, 135)
         };
     }
     if (difficulty == "Hard") {
@@ -33,7 +37,9 @@ TilePalette paletteFor(const std::string& difficulty) {
             sf::Color(112, 76, 72),
             sf::Color(82, 54, 59),
             sf::Color(148, 53, 43),
-            sf::Color(235, 93, 50)
+            sf::Color(235, 93, 50),
+            sf::Color(35, 26, 49),
+            sf::Color(112, 49, 56)
         };
     }
     return {
@@ -41,7 +47,9 @@ TilePalette paletteFor(const std::string& difficulty) {
         sf::Color(158, 93, 52),
         sf::Color(139, 78, 43),
         sf::Color(74, 174, 70),
-        sf::Color(122, 220, 90)
+        sf::Color(122, 220, 90),
+        sf::Color(95, 190, 255),
+        sf::Color(205, 236, 255)
     };
 }
 
@@ -57,6 +65,21 @@ void appendQuad(
         color
     });
     vertices.append({{bounds.left, bounds.top + bounds.height}, color});
+}
+
+void appendGradientQuad(
+    sf::VertexArray& vertices,
+    const sf::FloatRect& bounds,
+    sf::Color topColor,
+    sf::Color bottomColor
+) {
+    vertices.append({{bounds.left, bounds.top}, topColor});
+    vertices.append({{bounds.left + bounds.width, bounds.top}, topColor});
+    vertices.append({
+        {bounds.left + bounds.width, bounds.top + bounds.height},
+        bottomColor
+    });
+    vertices.append({{bounds.left, bounds.top + bounds.height}, bottomColor});
 }
 
 sf::Color brighten(sf::Color color, unsigned int amount) {
@@ -76,6 +99,7 @@ void TileMap::load(const std::string& path) {
 }
 
 void TileMap::render(sf::RenderWindow& window) const {
+    window.draw(m_backgroundVertices);
     window.draw(m_tileVertices);
 
     window.draw(m_exitPole);
@@ -294,10 +318,23 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 }
 
 void TileMap::rebuildGeometry() {
+    m_backgroundVertices.clear();
     m_tileVertices.clear();
 
     const float tileSize = static_cast<float>(m_data.tileSize);
     const TilePalette palette = paletteFor(m_data.difficulty);
+    const sf::Vector2f worldSize = m_data.worldSize();
+    appendGradientQuad(
+        m_backgroundVertices,
+        {
+            -540.f,
+            0.f,
+            worldSize.x + 1080.f,
+            std::max(1080.f, worldSize.y)
+        },
+        palette.skyTop,
+        palette.skyBottom
+    );
 
     for (std::size_t row = 0; row < m_data.rows.size(); ++row) {
         for (std::size_t column = 0; column < m_data.rows[row].size(); ++column) {
