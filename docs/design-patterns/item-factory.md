@@ -10,6 +10,9 @@ The currently supported item types are:
 - `Coin`
 - `Mushroom`
 - `FireFlower`
+- `OneUpMushroom`
+- `Star`
+- `SpeedBoost`
 
 All items implement common update, render, collision-bound, collection, and
 effect operations.
@@ -27,8 +30,11 @@ The current effect types are:
 | Item | Effect type | Result |
 |---|---|---|
 | Coin | `AddScore` | Increases the player's score |
-| Mushroom | `GrowPlayer` | Changes the player into a larger state |
-| FireFlower | `EnableFirePower` | Enables the player's fire ability |
+| Mushroom | `GrowPlayer` | Grants a one-hit shield |
+| FireFlower | `EnableFirePower` | Grants a one-hit shield and fire state |
+| OneUpMushroom | `ExtraLife` | Adds one life |
+| Star | `Invincibility` | Defeats enemies on contact for eight seconds |
+| SpeedBoost | `SpeedBoost` | Raises movement speed for eight seconds |
 
 The actual effect will be applied during player-item collision integration.
 
@@ -51,18 +57,29 @@ classDiagram
     class Coin
     class Mushroom
     class FireFlower
+    class OneUpMushroom
+    class Star
+    class SpeedBoost
+    class FloatingItem
 
     class ItemFactory {
         +Create(symbol, position) unique_ptr~Item~
     }
 
-    Item <|.. Coin
-    Item <|.. Mushroom
-    Item <|.. FireFlower
+    Item <|-- FloatingItem
+    FloatingItem <|-- Coin
+    FloatingItem <|-- Mushroom
+    FloatingItem <|-- FireFlower
+    FloatingItem <|-- OneUpMushroom
+    FloatingItem <|-- Star
+    FloatingItem <|-- SpeedBoost
 
     ItemFactory ..> Coin : creates
     ItemFactory ..> Mushroom : creates
     ItemFactory ..> FireFlower : creates
+    ItemFactory ..> OneUpMushroom : creates
+    ItemFactory ..> Star : creates
+    ItemFactory ..> SpeedBoost : creates
 ```
 
 ## Supported Map Symbols
@@ -72,6 +89,9 @@ classDiagram
 | `C` | `Coin` |
 | `M` | `Mushroom` |
 | `F` | `FireFlower` |
+| `L` | `OneUpMushroom` |
+| `S` | `Star` |
+| `V` | `SpeedBoost` |
 
 Example:
 

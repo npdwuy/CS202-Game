@@ -5,8 +5,12 @@
 enum class GameEventType {
     CoinCollected,
     PowerUpCollected,
+    ExtraLifeCollected,
+    InvincibilityCollected,
+    SpeedBoostCollected,
     EnemyDefeated,
     PlayerDamaged,
+    PlayerFell,
     LevelCompleted
 };
 

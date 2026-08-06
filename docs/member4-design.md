@@ -29,7 +29,7 @@ the factory answers *which C++ class fulfils that request*.
 - the file must be readable and contain `@map`;
 - `tile_size` must be between 16 and 128;
 - every row must have the same non-zero width;
-- only `#.PCMFGKBX` are accepted;
+- only `#.PCMFGKEBXLSV` are accepted;
 - exactly one `P` and one `X` must exist.
 
 Invalid files throw a descriptive exception containing the source path. This
@@ -59,20 +59,18 @@ fallback ground.
 FireFlower. It emits only a symbol and world position. All concrete dependencies
 are confined to `LevelObjectFactory`.
 
-The branch currently uses `PowerUpPickup` as a small adapter for `M` and `F`.
-When Member 3's dedicated power-up classes are merged, only these two factory
-cases need to change:
+The item factory constructs dedicated classes for Mushroom, FireFlower, 1-Up,
+Star, and SpeedBoost pickups. Floating collectables inherit their animation and
+collection lifecycle from `FloatingItem`; a new effect only needs a concrete
+visual/effect class and one registered map symbol:
 
 ```cpp
-case 'M':
-    return std::make_unique<Mushroom>(position);
-case 'F':
-    return std::make_unique<FireFlower>(position);
+case 'S':
+    return std::make_unique<Star>(position);
 ```
 
-No map, parser, `TileMap`, or `PlayState` format change is required. The same
-boundary applies if Member 3 later introduces separate `EnemyFactory` and
-`ItemFactory` classes.
+No `TileMap` change is required once the new symbol is registered with the
+loader and factory.
 
 ## Resource and audio management
 
@@ -134,10 +132,11 @@ the save schema.
 | Cache/Flyweight-like resource sharing | `ResourceManager` | Avoid duplicate heavy SFML resources |
 | Data Transfer Object | `LevelData`, `LevelSpawnRequest`, `SaveData` | Move validated data between subsystems |
 | Dependency injection | `Character::setCollisionResolver` | Decouple player movement from a concrete map |
+| Template method | `FloatingItem` and concrete pickups | Share animation/collection flow while varying visuals and effects |
 
 ## Extension points
 
-- Register Member 3's final Mushroom/FireFlower classes in the factory.
+- Add more `FloatingItem` subclasses and register their level symbols.
 - Add a Luigi class and select it using `SaveData::selectedCharacter`.
 - Replace rectangle tiles with a texture atlas without changing level files.
 - Add a camera and levels wider than 40 tiles.

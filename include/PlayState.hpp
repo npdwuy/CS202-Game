@@ -33,8 +33,10 @@ private:
     void loadGame();
     void handleItemCollisions();
     bool handleEnemyCollisions();
-    void handlePlayerFall();
+    bool handlePlayerFall();
     void handleLevelExit();
+    void handlePlayerDamage();
+    void updateTimedPowerUps(sf::Time timePerFrame);
     void loseLife();
     void updateHud();
     void showStatus(const std::string& message, float duration = 2.f);
@@ -53,4 +55,7 @@ private:
     sf::Text m_hudText;
     sf::Text m_statusText;
     float m_statusTimeRemaining = 0.f;
+    float m_invincibilityTimeRemaining = 0.f;
+    float m_speedBoostTimeRemaining = 0.f;
+    float m_damageCooldown = 0.f;
 };

@@ -2,14 +2,11 @@
 
 #include "entities/items/FloatingItem.hpp"
 
-class Mushroom : public FloatingItem {
+class OneUpMushroom : public FloatingItem {
 public:
-    explicit Mushroom(sf::Vector2f position);
-
-    ~Mushroom() override = default;
+    explicit OneUpMushroom(sf::Vector2f position);
 
     void Render(sf::RenderWindow& window) const override;
-
     sf::FloatRect GetBounds() const override;
     ItemEffect GetEffect() const override;
 

@@ -2,19 +2,17 @@
 
 #include "entities/items/FloatingItem.hpp"
 
-class Mushroom : public FloatingItem {
+class Star : public FloatingItem {
 public:
-    explicit Mushroom(sf::Vector2f position);
-
-    ~Mushroom() override = default;
+    explicit Star(sf::Vector2f position);
 
     void Render(sf::RenderWindow& window) const override;
-
     sf::FloatRect GetBounds() const override;
     ItemEffect GetEffect() const override;
 
 private:
     void SetVisualPosition(sf::Vector2f position) override;
+    void Animate(sf::Time timePerFrame) override;
 
-    sf::Sprite m_sprite;
+    sf::ConvexShape m_star;
 };

@@ -20,24 +20,70 @@ GameManager& GameManager::getInstance() {
 }
 
 void GameManager::pushState(std::unique_ptr<GameState> state) {
-    if (!m_states.empty()) {
-        m_states.back()->onPause();
-    }
-    m_states.push_back(std::move(state));
+    requestStateAction({StateActionType::Push, std::move(state)});
 }
 
 void GameManager::popState() {
-    if (!m_states.empty()) {
-        m_states.pop_back();
-    }
-    if (!m_states.empty()) {
-        m_states.back()->onResume();
-    }
+    requestStateAction({StateActionType::Pop, nullptr});
 }
 
 void GameManager::changeState(std::unique_ptr<GameState> state) {
-    m_states.clear();
-    m_states.push_back(std::move(state));
+    requestStateAction({StateActionType::Change, std::move(state)});
+}
+
+void GameManager::requestStateAction(PendingStateAction action) {
+    if (m_isDispatchingState || m_isApplyingStateAction) {
+        m_pendingStateActions.push_back(std::move(action));
+        return;
+    }
+
+    applyStateAction(std::move(action));
+    applyPendingStateActions();
+}
+
+void GameManager::applyStateAction(PendingStateAction action) {
+    m_isApplyingStateAction = true;
+
+    switch (action.type) {
+        case StateActionType::Push:
+            if (action.state) {
+                if (!m_states.empty()) {
+                    m_states.back()->onPause();
+                }
+                m_states.push_back(std::move(action.state));
+            }
+            break;
+
+        case StateActionType::Pop:
+            if (!m_states.empty()) {
+                m_states.pop_back();
+            }
+            if (!m_states.empty()) {
+                m_states.back()->onResume();
+            }
+            break;
+
+        case StateActionType::Change:
+            if (action.state) {
+                m_states.clear();
+                m_states.push_back(std::move(action.state));
+            }
+            break;
+    }
+
+    m_isApplyingStateAction = false;
+}
+
+void GameManager::applyPendingStateActions() {
+    if (m_isDispatchingState || m_isApplyingStateAction) {
+        return;
+    }
+
+    while (!m_pendingStateActions.empty()) {
+        PendingStateAction action = std::move(m_pendingStateActions.front());
+        m_pendingStateActions.pop_front();
+        applyStateAction(std::move(action));
+    }
 }
 
 void GameManager::run()
@@ -118,7 +164,10 @@ void GameManager::processInput() {
             updateView(event.size.width, event.size.height);
         }
         if (!m_states.empty()) {
+            m_isDispatchingState = true;
             m_states.back()->Input(event);
+            m_isDispatchingState = false;
+            applyPendingStateActions();
         }
         if (!m_isRunning) {
             return;
@@ -128,7 +177,10 @@ void GameManager::processInput() {
 
 void GameManager::update(sf::Time timePerFrame) {
     if (!m_states.empty()) {
+        m_isDispatchingState = true;
         m_states.back()->Update(timePerFrame);
+        m_isDispatchingState = false;
+        applyPendingStateActions();
     }
 }
 
@@ -141,11 +193,13 @@ void GameManager::render() {
             startIdx--;
         }
 
+        m_isDispatchingState = true;
         for (int i = startIdx; i < static_cast<int>(m_states.size()); ++i) {
             m_states[i]->Render(m_window);
         }
+        m_isDispatchingState = false;
+        applyPendingStateActions();
     }
 
     m_window.display();
 }
-

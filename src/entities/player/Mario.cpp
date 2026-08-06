@@ -30,12 +30,12 @@ void Mario::update(sf::Time timePerFrame) {
     
 
     // 1. Đứng yên (Lấy khung hình "Stand" chuẩn)
-    std::vector<sf::IntRect> framesStand = {
+    static const std::vector<sf::IntRect> framesStand = {
          sf::IntRect(160, 15, 35, 50),
     };
     
     // 2. Đi bộ (Lấy 8 khung hình ở hàng "Walk(8)")
-    std::vector<sf::IntRect> framesWalk = {
+    static const std::vector<sf::IntRect> framesWalk = {
         sf::IntRect(13, 85, 40, 50),
          sf::IntRect(302, 85, 40, 50),
         sf::IntRect(54, 85, 40, 50),
@@ -49,27 +49,27 @@ void Mario::update(sf::Time timePerFrame) {
     };
     
     // 3. Nhảy lên (Lấy khung ở hàng "Jump(2)")
-    std::vector<sf::IntRect> framesJump = {
+    static const std::vector<sf::IntRect> framesJump = {
         sf::IntRect(22, 155, 40, 55),
         sf::IntRect(65, 155, 40, 55)
     };
     
     // 4. Rơi xuống (Lấy khung ở hàng "Fall(3)")
-    std::vector<sf::IntRect> framesFall = {
+    static const std::vector<sf::IntRect> framesFall = {
         sf::IntRect(115, 155, 40, 55),
         sf::IntRect(118, 155, 40, 55),
         sf::IntRect(200, 155, 40, 55)
     };
 
     // 5. Nhảy đụng trần
-    std::vector<sf::IntRect> framesHitRoof = {
+    static const std::vector<sf::IntRect> framesHitRoof = {
         sf::IntRect(250, 155, 42, 42),
         sf::IntRect(300, 155, 42, 42)
     };
     
     // 6. Chuyển dần sang đứng yên
 
-    std::vector<sf::IntRect> framesTransitionStand = {
+    static const std::vector<sf::IntRect> framesTransitionStand = {
         sf::IntRect(24, 15, 35, 50),
          sf::IntRect(67, 15, 35, 50),
         sf::IntRect(108, 12, 35, 50)
@@ -77,7 +77,7 @@ void Mario::update(sf::Time timePerFrame) {
 
     // --- KẾT THÚC BẢNG TỌA ĐỘ ---
 
-    std::vector<sf::IntRect>* currentAnim = &framesStand;
+    const std::vector<sf::IntRect>* currentAnim = &framesStand;
     if (currentState == State::Walk) currentAnim = &framesWalk;
     else if (currentState == State::Jump) currentAnim = &framesJump;
     else if (currentState == State::Fall) currentAnim = &framesFall;

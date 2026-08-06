@@ -19,13 +19,13 @@ public:
     sf::FloatRect exitBounds() const;
     sf::FloatRect worldBounds() const;
     bool isSolidAt(sf::Vector2f worldPosition) const;
+    bool intersectsSolid(const sf::FloatRect& bounds) const;
 
 private:
     void rebuildGeometry();
 
     LevelData m_data;
     std::vector<sf::RectangleShape> m_tiles;
-    std::vector<sf::FloatRect> m_solidBounds;
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
 };

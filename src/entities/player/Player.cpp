@@ -4,13 +4,13 @@
 #include <cmath>
 
 void Player:: moveLeft(){
-    velocity_.x = - speed_;
+    velocity_.x = -speed_ * speedMultiplier_;
     facing_ = -1;
     movedThisFrame_ = true;
 }
 
 void Player:: moveRight(){
-    velocity_.x = speed_;
+    velocity_.x = speed_ * speedMultiplier_;
     facing_ = 1;
     movedThisFrame_ = true;
 }
@@ -32,6 +32,14 @@ bool Player::consumeJumpEvent(){
     return jumped;
 }
 
+void Player::setSpeedMultiplier(float multiplier) {
+    speedMultiplier_ = std::clamp(multiplier, 0.5f, 2.0f);
+}
+
+float Player::speedMultiplier() const {
+    return speedMultiplier_;
+}
+
 #include "GameManager.hpp"
 
 void Player:: update(sf::Time timePerFrame){
@@ -43,10 +51,13 @@ void Player:: update(sf::Time timePerFrame){
     if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))) {
         moveRight();
     }
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) || 
-        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"))) {
+    const bool jumpPressed =
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"));
+    if (jumpPressed && !jumpHeld_) {
         jump();
     }
+    jumpHeld_ = jumpPressed;
     
     if(onGround_){
         coyoteTimer_ = 0.12f;

@@ -3,6 +3,9 @@
 #include "entities/items/Coin.hpp"
 #include "entities/items/FireFlower.hpp"
 #include "entities/items/Mushroom.hpp"
+#include "entities/items/OneUpMushroom.hpp"
+#include "entities/items/SpeedBoost.hpp"
+#include "entities/items/Star.hpp"
 
 #include <stdexcept>
 
@@ -26,6 +29,21 @@ std::unique_ptr<Item> ItemFactory::Create(
 
         case 'F':
             return std::make_unique<FireFlower>(
+                position
+            );
+
+        case 'L':
+            return std::make_unique<OneUpMushroom>(
+                position
+            );
+
+        case 'S':
+            return std::make_unique<Star>(
+                position
+            );
+
+        case 'V':
+            return std::make_unique<SpeedBoost>(
                 position
             );
 

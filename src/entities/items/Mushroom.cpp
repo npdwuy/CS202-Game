@@ -1,50 +1,18 @@
 #include "entities/items/Mushroom.hpp"
-
-#include <cmath>
-#include <stdexcept>
+#include "resources/ResourceManager.hpp"
 
 Mushroom::Mushroom(sf::Vector2f position)
-    : m_animationTime(0.f),
-      m_startY(position.y),
-      m_collected(false)
+    : FloatingItem(position, 6.f, 2.f)
 {
-    if (!m_texture.loadFromFile(
-            "assets/sprites/items/mushroom.png"))
-    {
-        throw std::runtime_error(
-            "Failed to load Mushroom sprite."
-        );
-    }
-
-    m_sprite.setTexture(m_texture);
+    m_sprite.setTexture(ResourceManager::getInstance().getTexture(
+        "assets/sprites/items/mushroom.png"
+    ));
     m_sprite.setPosition(position);
-}
-
-void Mushroom::Update(sf::Time timePerFrame)
-{
-    if (m_collected)
-    {
-        return;
-    }
-
-    m_animationTime += timePerFrame.asSeconds();
-
-    const float floatingDistance = 6.f;
-    const float floatingSpeed = 2.f;
-
-    float offsetY = std::sin(
-        m_animationTime * floatingSpeed
-    ) * floatingDistance;
-
-    m_sprite.setPosition(
-        m_sprite.getPosition().x,
-        m_startY + offsetY
-    );
 }
 
 void Mushroom::Render(sf::RenderWindow& window) const
 {
-    if (!m_collected)
+    if (!IsCollected())
     {
         window.draw(m_sprite);
     }
@@ -63,12 +31,6 @@ ItemEffect Mushroom::GetEffect() const
     };
 }
 
-bool Mushroom::IsCollected() const
-{
-    return m_collected;
-}
-
-void Mushroom::Collect()
-{
-    m_collected = true;
+void Mushroom::SetVisualPosition(sf::Vector2f position) {
+    m_sprite.setPosition(position);
 }

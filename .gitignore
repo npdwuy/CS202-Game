@@ -5,6 +5,7 @@ build/
 compile_commands.json
 savegame.txt
 savegame.txt.tmp
+savegame.txt.bak
 settings.txt
 
 *.exe
