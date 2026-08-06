@@ -117,7 +117,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
                 99,
                 m_saveData.remainingLives + std::max(1, event.value)
             );
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::OneUp);
             showStatus("1-Up! Extra life gained", 2.f);
             break;
 
@@ -126,7 +126,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
                 m_invincibilityTimeRemaining,
                 static_cast<float>(std::max(1, event.value))
             );
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::Invincibility);
             showStatus("Star power - invincible!", 2.f);
             break;
 
@@ -138,7 +138,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
             if (m_player) {
                 m_player->setSpeedMultiplier(1.45f);
             }
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::SpeedBoost);
             showStatus("Speed boost active!", 2.f);
             break;
 

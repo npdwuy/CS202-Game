@@ -24,6 +24,9 @@ bool AudioManager::initialize() {
             {SoundEffect::Jump, "assets/audio/jump.wav"},
             {SoundEffect::Coin, "assets/audio/coin.wav"},
             {SoundEffect::PowerUp, "assets/audio/power_up.wav"},
+            {SoundEffect::OneUp, "assets/audio/one_up.wav"},
+            {SoundEffect::Invincibility, "assets/audio/invincibility.wav"},
+            {SoundEffect::SpeedBoost, "assets/audio/speed_boost.wav"},
             {SoundEffect::EnemyDefeated, "assets/audio/enemy_defeated.wav"},
             {SoundEffect::GameOver, "assets/audio/game_over.wav"}
         };

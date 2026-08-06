@@ -10,6 +10,9 @@ enum class SoundEffect {
     Jump,
     Coin,
     PowerUp,
+    OneUp,
+    Invincibility,
+    SpeedBoost,
     EnemyDefeated,
     GameOver
 };
