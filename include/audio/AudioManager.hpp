@@ -2,6 +2,8 @@
 
 #include <SFML/Audio.hpp>
 
+#include <array>
+#include <cstddef>
 #include <map>
 
 enum class SoundEffect {
@@ -31,10 +33,17 @@ public:
     AudioManager& operator=(const AudioManager&) = delete;
 
 private:
+    static constexpr std::size_t VoicesPerEffect = 4U;
+
+    struct SoundPool {
+        std::array<sf::Sound, VoicesPerEffect> voices;
+        std::size_t nextVoice = 0U;
+    };
+
     AudioManager() = default;
 
     sf::Music m_backgroundMusic;
-    std::map<SoundEffect, sf::Sound> m_sounds;
+    std::map<SoundEffect, SoundPool> m_soundPools;
     float m_musicVolume = 80.f;
     float m_effectsVolume = 80.f;
     bool m_initialized = false;

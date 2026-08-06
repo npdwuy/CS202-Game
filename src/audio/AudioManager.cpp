@@ -29,9 +29,12 @@ bool AudioManager::initialize() {
         };
 
         for (const auto& entry : effectPaths) {
-            sf::Sound& sound = m_sounds[entry.first];
-            sound.setBuffer(resources.getSoundBuffer(entry.second));
-            sound.setVolume(m_effectsVolume);
+            SoundPool& pool = m_soundPools[entry.first];
+            const sf::SoundBuffer& buffer = resources.getSoundBuffer(entry.second);
+            for (sf::Sound& voice : pool.voices) {
+                voice.setBuffer(buffer);
+                voice.setVolume(m_effectsVolume);
+            }
         }
 
         if (!m_backgroundMusic.openFromFile("assets/audio/background.wav")) {
@@ -45,7 +48,7 @@ bool AudioManager::initialize() {
         m_initialized = true;
     } catch (const std::exception& error) {
         std::cerr << "Audio system disabled: " << error.what() << '\n';
-        m_sounds.clear();
+        m_soundPools.clear();
         m_initialized = false;
     }
 
@@ -72,12 +75,13 @@ void AudioManager::shutdown()
 {
     m_backgroundMusic.stop();
 
-    for (auto& entry : m_sounds)
-    {
-        entry.second.stop();
+    for (auto& entry : m_soundPools) {
+        for (sf::Sound& voice : entry.second.voices) {
+            voice.stop();
+        }
     }
 
-    m_sounds.clear();
+    m_soundPools.clear();
     m_initialized = false;
 }
 
@@ -86,10 +90,26 @@ void AudioManager::playEffect(SoundEffect effect) {
         return;
     }
 
-    const auto sound = m_sounds.find(effect);
-    if (sound != m_sounds.end()) {
-        sound->second.play();
+    const auto found = m_soundPools.find(effect);
+    if (found == m_soundPools.end()) {
+        return;
     }
+
+    SoundPool& pool = found->second;
+    sf::Sound* selectedVoice = nullptr;
+    for (sf::Sound& voice : pool.voices) {
+        if (voice.getStatus() != sf::SoundSource::Playing) {
+            selectedVoice = &voice;
+            break;
+        }
+    }
+
+    if (selectedVoice == nullptr) {
+        selectedVoice = &pool.voices[pool.nextVoice];
+        selectedVoice->stop();
+    }
+    pool.nextVoice = (pool.nextVoice + 1U) % pool.voices.size();
+    selectedVoice->play();
 }
 
 void AudioManager::setMusicVolume(float volume) {
@@ -101,8 +121,10 @@ void AudioManager::setMusicVolume(float volume) {
 
 void AudioManager::setEffectsVolume(float volume) {
     m_effectsVolume = std::clamp(volume, 0.f, 100.f);
-    for (auto& sound : m_sounds) {
-        sound.second.setVolume(m_effectsVolume);
+    for (auto& entry : m_soundPools) {
+        for (sf::Sound& voice : entry.second.voices) {
+            voice.setVolume(m_effectsVolume);
+        }
     }
 }
 
