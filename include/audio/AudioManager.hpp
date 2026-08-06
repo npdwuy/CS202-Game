@@ -22,6 +22,7 @@ public:
     static AudioManager& getInstance();
 
     bool initialize();
+    void update(sf::Time timePerFrame);
     void playMusic();
     void stopMusic();
     void shutdown();
@@ -48,6 +49,9 @@ private:
     sf::Music m_backgroundMusic;
     std::map<SoundEffect, SoundPool> m_soundPools;
     float m_musicVolume = 80.f;
+    float m_currentMusicVolume = 0.f;
+    float m_targetMusicVolume = 80.f;
     float m_effectsVolume = 80.f;
+    bool m_stopMusicAfterFade = false;
     bool m_initialized = false;
 };

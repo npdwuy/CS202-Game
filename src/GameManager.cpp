@@ -176,6 +176,8 @@ void GameManager::processInput() {
 }
 
 void GameManager::update(sf::Time timePerFrame) {
+    AudioManager::getInstance().update(timePerFrame);
+
     if (!m_states.empty()) {
         m_isDispatchingState = true;
         m_states.back()->Update(timePerFrame);

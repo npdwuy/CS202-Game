@@ -47,7 +47,9 @@ bool AudioManager::initialize() {
         }
 
         m_backgroundMusic.setLoop(true);
-        m_backgroundMusic.setVolume(m_musicVolume);
+        m_currentMusicVolume = 0.f;
+        m_targetMusicVolume = m_musicVolume;
+        m_backgroundMusic.setVolume(m_currentMusicVolume);
         m_initialized = true;
     } catch (const std::exception& error) {
         std::cerr << "Audio system disabled: " << error.what() << '\n';
@@ -58,19 +60,49 @@ bool AudioManager::initialize() {
     return m_initialized;
 }
 
+void AudioManager::update(sf::Time timePerFrame) {
+    if (!m_initialized) {
+        return;
+    }
+
+    const float maximumChange = 120.f * timePerFrame.asSeconds();
+    if (m_currentMusicVolume < m_targetMusicVolume) {
+        m_currentMusicVolume = std::min(
+            m_targetMusicVolume,
+            m_currentMusicVolume + maximumChange
+        );
+    } else if (m_currentMusicVolume > m_targetMusicVolume) {
+        m_currentMusicVolume = std::max(
+            m_targetMusicVolume,
+            m_currentMusicVolume - maximumChange
+        );
+    }
+
+    m_backgroundMusic.setVolume(m_currentMusicVolume);
+    if (m_stopMusicAfterFade && m_currentMusicVolume <= 0.01f) {
+        m_backgroundMusic.stop();
+        m_stopMusicAfterFade = false;
+    }
+}
+
 void AudioManager::playMusic() {
     if (!m_initialized && !initialize()) {
         return;
     }
 
+    m_stopMusicAfterFade = false;
+    m_targetMusicVolume = m_musicVolume;
     if (m_backgroundMusic.getStatus() != sf::SoundSource::Playing) {
+        m_currentMusicVolume = 0.f;
+        m_backgroundMusic.setVolume(0.f);
         m_backgroundMusic.play();
     }
 }
 
 void AudioManager::stopMusic() {
     if (m_initialized) {
-        m_backgroundMusic.stop();
+        m_targetMusicVolume = 0.f;
+        m_stopMusicAfterFade = true;
     }
 }
 
@@ -85,6 +117,9 @@ void AudioManager::shutdown()
     }
 
     m_soundPools.clear();
+    m_currentMusicVolume = 0.f;
+    m_targetMusicVolume = m_musicVolume;
+    m_stopMusicAfterFade = false;
     m_initialized = false;
 }
 
@@ -117,8 +152,8 @@ void AudioManager::playEffect(SoundEffect effect) {
 
 void AudioManager::setMusicVolume(float volume) {
     m_musicVolume = std::clamp(volume, 0.f, 100.f);
-    if (m_initialized) {
-        m_backgroundMusic.setVolume(m_musicVolume);
+    if (m_initialized && !m_stopMusicAfterFade) {
+        m_targetMusicVolume = m_musicVolume;
     }
 }
 
