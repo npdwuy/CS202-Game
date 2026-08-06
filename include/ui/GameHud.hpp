@@ -30,6 +30,7 @@ private:
     GameHudData m_data;
     int m_displayedScore = 0;
     float m_statusTimeRemaining = 0.f;
+    float m_scorePulseRemaining = 0.f;
 
     sf::RectangleShape m_scoreShadow;
     sf::RectangleShape m_scorePanel;
@@ -40,5 +41,6 @@ private:
     sf::Text m_scoreText;
     sf::Text m_infoText;
     sf::Text m_powerText;
+    sf::Text m_controlsText;
     sf::Text m_statusText;
 };
