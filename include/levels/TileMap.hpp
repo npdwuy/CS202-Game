@@ -5,7 +5,6 @@
 #include <SFML/Graphics.hpp>
 
 #include <string>
-#include <vector>
 
 class Character;
 
@@ -19,13 +18,15 @@ public:
     sf::FloatRect exitBounds() const;
     sf::FloatRect worldBounds() const;
     bool isSolidAt(sf::Vector2f worldPosition) const;
+    bool intersectsSolid(const sf::FloatRect& bounds) const;
 
 private:
     void rebuildGeometry();
 
     LevelData m_data;
-    std::vector<sf::RectangleShape> m_tiles;
-    std::vector<sf::FloatRect> m_solidBounds;
+    sf::VertexArray m_backgroundVertices{sf::Quads};
+    sf::VertexArray m_sceneryVertices{sf::Triangles};
+    sf::VertexArray m_tileVertices{sf::Quads};
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
 };

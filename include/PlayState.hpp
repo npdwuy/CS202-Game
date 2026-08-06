@@ -8,6 +8,8 @@
 #include "entities/Item.hpp"
 #include "entities/player/Player.hpp"
 #include "events/GameEventListener.hpp"
+#include "ui/GameHud.hpp"
+#include "camera/PlayerCamera.hpp"
 
 #include <memory>
 #include <string>
@@ -33,11 +35,14 @@ private:
     void loadGame();
     void handleItemCollisions();
     bool handleEnemyCollisions();
-    void handlePlayerFall();
+    bool handlePlayerFall();
     void handleLevelExit();
+    void handlePlayerDamage();
+    void updateTimedPowerUps(sf::Time timePerFrame);
+    void resetTransientEffects();
     void loseLife();
-    void restartGame();
     void updateHud();
+    void updateCamera(sf::Time timePerFrame);
     void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
     bool hasActiveBoss() const;
@@ -50,10 +55,10 @@ private:
     std::unique_ptr<Player> m_player;
 
     SaveData m_saveData;
-    const sf::Font* m_hudFont = nullptr;
-    sf::Text m_hudText;
-    sf::Text m_statusText;
-    float m_statusTimeRemaining = 0.f;
-    bool m_gameOver = false;
-    bool m_victory = false;
+    GameHud m_hud;
+    PlayerCamera m_camera;
+    float m_invincibilityTimeRemaining = 0.f;
+    float m_speedBoostTimeRemaining = 0.f;
+    float m_damageCooldown = 0.f;
+    bool m_playerDamagePending = false;
 };

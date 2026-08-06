@@ -4,13 +4,13 @@
 #include <cmath>
 
 void Player:: moveLeft(){
-    velocity_.x = - speed_;
+    velocity_.x = -speed_ * speedMultiplier_;
     facing_ = -1;
     movedThisFrame_ = true;
 }
 
 void Player:: moveRight(){
-    velocity_.x = speed_;
+    velocity_.x = speed_ * speedMultiplier_;
     facing_ = 1;
     movedThisFrame_ = true;
 }
@@ -32,18 +32,32 @@ bool Player::consumeJumpEvent(){
     return jumped;
 }
 
-void Player:: update(sf::Time timePerFrame){
+void Player::setSpeedMultiplier(float multiplier) {
+    speedMultiplier_ = std::clamp(multiplier, 0.5f, 2.0f);
+}
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+float Player::speedMultiplier() const {
+    return speedMultiplier_;
+}
+
+#include "GameManager.hpp"
+
+void Player:: update(sf::Time timePerFrame){
+    auto& settings = GameManager::getInstance().getSettings();
+
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))) {
         moveLeft();
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))) {
         moveRight();
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)
-        ||sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+    const bool jumpPressed =
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"));
+    if (jumpPressed && !jumpHeld_) {
         jump();
     }
+    jumpHeld_ = jumpPressed;
     
     if(onGround_){
         coyoteTimer_ = 0.12f;
@@ -57,7 +71,13 @@ void Player:: update(sf::Time timePerFrame){
     }
 
     if(!movedThisFrame_){
-        velocity_.x *=0.78f;
+        constexpr float ReferenceFrameSeconds = 1.f / 30.f;
+        constexpr float ReferenceDamping = 0.78f;
+        const float damping = std::pow(
+            ReferenceDamping,
+            timePerFrame.asSeconds() / ReferenceFrameSeconds
+        );
+        velocity_.x *= damping;
         if(std::abs(velocity_.x) < 7.0f){
             velocity_.x = 0.0f;
         }

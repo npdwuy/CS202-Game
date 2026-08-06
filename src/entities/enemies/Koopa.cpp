@@ -1,4 +1,5 @@
 #include "entities/enemies/Koopa.hpp"
+#include "resources/ResourceManager.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -21,15 +22,9 @@ Koopa::Koopa(
         );
     }
 
-    if (!m_texture.loadFromFile(
-            "assets/sprites/enemies/koopa_walk.png"))
-    {
-        throw std::runtime_error(
-            "Failed to load Koopa sprite."
-        );
-    }
-
-    m_sprite.setTexture(m_texture);
+    m_sprite.setTexture(ResourceManager::getInstance().getTexture(
+        "assets/sprites/enemies/koopa_walk.png"
+    ));
     m_sprite.setTextureRect(
         sf::IntRect(0, 0, 48, 48)
     );

@@ -27,8 +27,12 @@ Supported event types:
 
 - `CoinCollected`
 - `PowerUpCollected`
+- `ExtraLifeCollected`
+- `InvincibilityCollected`
+- `SpeedBoostCollected`
 - `EnemyDefeated`
 - `PlayerDamaged`
+- `PlayerFell`
 - `LevelCompleted`
 
 ### GameEventListener

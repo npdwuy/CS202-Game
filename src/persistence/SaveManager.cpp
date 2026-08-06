@@ -88,17 +88,55 @@ bool SaveManager::save(const SaveData& data, const std::string& path) {
 
     output.close();
 
+    std::filesystem::path backupPath = savePath;
+    backupPath += ".bak";
+
     std::error_code fileError;
-    std::filesystem::remove(savePath, fileError);
+    std::filesystem::remove(backupPath, fileError);
     fileError.clear();
+
+    const bool hadExistingSave = std::filesystem::exists(savePath, fileError);
+    if (fileError) {
+        std::cerr << "Failed to inspect existing save file: "
+                  << fileError.message() << '\n';
+        std::filesystem::remove(temporaryPath, fileError);
+        return false;
+    }
+
+    if (hadExistingSave) {
+        std::filesystem::rename(savePath, backupPath, fileError);
+        if (fileError) {
+            std::cerr << "Failed to preserve existing save file: "
+                      << fileError.message() << '\n';
+            std::error_code removeError;
+            std::filesystem::remove(temporaryPath, removeError);
+            return false;
+        }
+    }
+
     std::filesystem::rename(temporaryPath, savePath, fileError);
 
     if (fileError) {
         std::cerr << "Failed to finalize save file: "
                   << fileError.message() << '\n';
+
+        if (hadExistingSave) {
+            std::error_code restoreError;
+            std::filesystem::rename(backupPath, savePath, restoreError);
+            if (restoreError) {
+                std::cerr << "Failed to restore the previous save file: "
+                          << restoreError.message() << '\n';
+            }
+        }
+
         std::error_code removeError;
         std::filesystem::remove(temporaryPath, removeError);
         return false;
+    }
+
+    if (hadExistingSave) {
+        std::error_code removeError;
+        std::filesystem::remove(backupPath, removeError);
     }
 
     return true;

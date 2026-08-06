@@ -2,18 +2,11 @@
 #include "MenuState.hpp"
 #include "GameManager.hpp"
 #include "PauseState.hpp"
+#include "GameOverState.hpp"
+#include "LevelCompleteState.hpp"
 
-#include "entities/enemies/Goomba.hpp"
-#include "entities/enemies/Koopa.hpp"
-#include "entities/strategies/PatrolStrategy.hpp"
-
-#include "entities/enemies/FlyingEnemy.hpp"
-#include "entities/strategies/FlyingStrategy.hpp"
-#include "factories/ItemFactory.hpp"
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
-#include "entities/items/Coin.hpp"
-#include "entities/items/PowerUpPickup.hpp"
 #include "entities/player/Mario.hpp"
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
@@ -21,32 +14,15 @@
 #include "events/GameEventManager.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
-#if __has_include("entities/items/ItemEffect.hpp")
-#include "entities/items/ItemEffect.hpp"
-#endif
-
-PlayState::PlayState(bool loadSavedGame) {
-    m_hudFont = &ResourceManager::getInstance().getFont(
-        "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
-    );
-
-    m_hudText.setFont(*m_hudFont);
-    m_hudText.setCharacterSize(24);
-    m_hudText.setFillColor(sf::Color::White);
-    m_hudText.setOutlineColor(sf::Color::Black);
-    m_hudText.setOutlineThickness(2.f);
-    m_hudText.setPosition(18.f, 14.f);
-
-    m_statusText.setFont(*m_hudFont);
-    m_statusText.setCharacterSize(34);
-    m_statusText.setFillColor(sf::Color(255, 235, 120));
-    m_statusText.setOutlineColor(sf::Color::Black);
-    m_statusText.setOutlineThickness(3.f);
-
+PlayState::PlayState(bool loadSavedGame)
+    : m_hud(ResourceManager::getInstance().getFont(
+          "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
+      )) {
     SettingsManager& settings =
         GameManager::getInstance().getSettings();
 
@@ -88,27 +64,6 @@ PlayState::PlayState(bool loadSavedGame) {
 
     updateHud();
 
-    m_items.push_back(
-        ItemFactory::Create(
-            'C',
-            sf::Vector2f(500.f, 700.f)
-        )
-    );
-
-    m_items.push_back(
-        ItemFactory::Create(
-            'M',
-            sf::Vector2f(850.f, 700.f)
-        )
-    );
-
-    m_items.push_back(
-        ItemFactory::Create(
-            'F',
-            sf::Vector2f(1050.f, 700.f)
-        )
-    );
-    
     GameEventManager::GetInstance().AddListener(this);
 }
 
@@ -143,6 +98,36 @@ void PlayState::OnGameEvent(const GameEvent& event)
             );
             break;
 
+        case GameEventType::ExtraLifeCollected:
+            m_saveData.remainingLives = std::min(
+                99,
+                m_saveData.remainingLives + std::max(1, event.value)
+            );
+            AudioManager::getInstance().playEffect(SoundEffect::OneUp);
+            showStatus("1-Up! Extra life gained", 2.f);
+            break;
+
+        case GameEventType::InvincibilityCollected:
+            m_invincibilityTimeRemaining = std::max(
+                m_invincibilityTimeRemaining,
+                static_cast<float>(std::max(1, event.value))
+            );
+            AudioManager::getInstance().playEffect(SoundEffect::Invincibility);
+            showStatus("Star power - invincible!", 2.f);
+            break;
+
+        case GameEventType::SpeedBoostCollected:
+            m_speedBoostTimeRemaining = std::max(
+                m_speedBoostTimeRemaining,
+                static_cast<float>(std::max(1, event.value))
+            );
+            if (m_player) {
+                m_player->setSpeedMultiplier(1.45f);
+            }
+            AudioManager::getInstance().playEffect(SoundEffect::SpeedBoost);
+            showStatus("Speed boost active!", 2.f);
+            break;
+
         case GameEventType::EnemyDefeated:
             m_saveData.score += event.value;
 
@@ -159,6 +144,12 @@ void PlayState::OnGameEvent(const GameEvent& event)
             break;
 
         case GameEventType::PlayerDamaged:
+            // Applying damage can reload the level and replace the enemy
+            // collection. Defer it until the active collision pass has ended.
+            m_playerDamagePending = true;
+            break;
+
+        case GameEventType::PlayerFell:
             loseLife();
             break;
 
@@ -185,16 +176,6 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
-    if (event.key.code == sf::Keyboard::R && (m_gameOver || m_victory)) {
-        restartGame();
-        return;
-    }
-
-    if (m_victory && event.key.code == sf::Keyboard::Enter) {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
-    }
-
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
     if (event.key.code == pauseKey) {
@@ -203,22 +184,13 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
-    if (m_statusTimeRemaining > 0.f) {
-        m_statusTimeRemaining = std::max(
-            0.f,
-            m_statusTimeRemaining - timePerFrame.asSeconds()
-        );
-    }
-
-    if (m_gameOver || m_victory) {
-        updateHud();
-        return;
-    }
-
+    updateTimedPowerUps(timePerFrame);
+    m_hud.update(timePerFrame);
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
     }
+    updateCamera(timePerFrame);
 
     for (auto& enemy : m_enemies) {
         enemy->Update(timePerFrame);
@@ -230,11 +202,14 @@ void PlayState::Update(sf::Time timePerFrame) {
 
     handleItemCollisions();
     if (handleEnemyCollisions()) {
+        if (m_playerDamagePending) {
+            m_playerDamagePending = false;
+            handlePlayerDamage();
+        }
         updateHud();
         return;
     }
-    handlePlayerFall();
-    if (m_gameOver) {
+    if (handlePlayerFall()) {
         updateHud();
         return;
     }
@@ -266,24 +241,31 @@ void PlayState::Update(sf::Time timePerFrame) {
 }
 
 void PlayState::Render(sf::RenderWindow& window) {
+    const sf::View& screenView = GameManager::getInstance().getGameView();
+    window.setView(m_camera.view());
+    const sf::FloatRect visibleWorld = m_camera.visibleBounds(96.f);
+
     m_tileMap.render(window);
 
     for (const auto& enemy : m_enemies) {
-        enemy->Render(window);
+        if (visibleWorld.intersects(enemy->GetBounds())) {
+            enemy->Render(window);
+        }
     }
 
     for (const auto& item : m_items) {
-        item->Render(window);
+        if (visibleWorld.intersects(item->GetBounds())) {
+            item->Render(window);
+        }
     }
 
     if (m_player) {
         m_player->Render(window);
     }
 
-    window.draw(m_hudText);
-    if (m_statusTimeRemaining > 0.f || m_gameOver || m_victory) {
-        window.draw(m_statusText);
-    }
+    window.setView(screenView);
+    m_hud.layout(screenView);
+    m_hud.render(window);
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
@@ -292,6 +274,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     }
 
     m_saveData.currentLevel = levelNumber;
+    m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
     m_enemies.clear();
     m_items.clear();
@@ -303,24 +286,46 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
             m_saveData.playerX,
             m_saveData.playerY
         };
+        const sf::FloatRect savedBounds(
+            savedPosition.x,
+            savedPosition.y,
+            Player::CollisionWidth,
+            Player::CollisionHeight
+        );
+        const sf::FloatRect worldBounds = m_tileMap.worldBounds();
         if (
-            m_tileMap.worldBounds().contains(savedPosition) &&
-            !m_tileMap.isSolidAt(savedPosition)
+            worldBounds.contains(savedBounds.left, savedBounds.top) &&
+            worldBounds.contains(
+                savedBounds.left + savedBounds.width,
+                savedBounds.top + savedBounds.height
+            ) &&
+            !m_tileMap.intersectsSolid(savedBounds)
         ) {
             spawnPosition = savedPosition;
         }
     }
 
     m_player = std::make_unique<Mario>(spawnPosition);
+    if (m_speedBoostTimeRemaining > 0.f) {
+        m_player->setSpeedMultiplier(1.45f);
+    }
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
         }
     );
 
+    const sf::Vector2f playerCenter = spawnPosition + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.reset(
+        playerCenter,
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView()
+    );
+
     m_saveData.hasPlayerPosition = false;
-    m_gameOver = m_saveData.remainingLives <= 0;
-    m_victory = false;
 }
 
 void PlayState::createLevelObjects() {
@@ -369,6 +374,7 @@ void PlayState::loadGame() {
     }
 
     m_saveData = *loadedData;
+    resetTransientEffects();
     loadLevel(m_saveData.currentLevel, true);
     showStatus("Game loaded");
     updateHud();
@@ -422,6 +428,36 @@ void PlayState::handleItemCollisions()
                     }
                 );
                 break;
+
+            case ItemEffectType::ExtraLife:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::ExtraLifeCollected,
+                        effect.amount,
+                        "1-Up Mushroom"
+                    }
+                );
+                break;
+
+            case ItemEffectType::Invincibility:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::InvincibilityCollected,
+                        effect.amount,
+                        "Star"
+                    }
+                );
+                break;
+
+            case ItemEffectType::SpeedBoost:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::SpeedBoostCollected,
+                        effect.amount,
+                        "Speed Boost"
+                    }
+                );
+                break;
         }
     }
 }
@@ -454,6 +490,21 @@ bool PlayState::handleEnemyCollisions()
                 enemy.get()
             ) != nullptr;
 
+        if (m_invincibilityTimeRemaining > 0.f)
+        {
+            enemy->Deactivate();
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    isBoss ? 2000 : 200,
+                    isBoss
+                        ? "Boss defeated - the exit is open!"
+                        : "Enemy defeated by Star power"
+                }
+            );
+            continue;
+        }
+
         if (stomped)
         {
             enemy->Deactivate();
@@ -476,6 +527,17 @@ bool PlayState::handleEnemyCollisions()
         }
         else
         {
+            if (m_damageCooldown > 0.f) {
+                continue;
+            }
+
+            sf::Vector2f knockback = m_player->velocity();
+            const float playerCenter = bounds.left + bounds.width * 0.5f;
+            const float enemyCenter = enemyBounds.left + enemyBounds.width * 0.5f;
+            knockback.x = playerCenter < enemyCenter ? -240.f : 240.f;
+            knockback.y = -320.f;
+            m_player->setVelocity(knockback);
+
             GameEventManager::GetInstance().Notify(
                 {
                     GameEventType::PlayerDamaged,
@@ -491,7 +553,7 @@ bool PlayState::handleEnemyCollisions()
     return false;
 }
 
-void PlayState::handlePlayerFall()
+bool PlayState::handlePlayerFall()
 {
     if (
         m_player->position().y >
@@ -500,11 +562,64 @@ void PlayState::handlePlayerFall()
     {
         GameEventManager::GetInstance().Notify(
             {
-                GameEventType::PlayerDamaged,
+                GameEventType::PlayerFell,
                 0,
                 "Player fell out of the level"
             }
         );
+        return true;
+    }
+
+    return false;
+}
+
+void PlayState::handlePlayerDamage() {
+    if (m_damageCooldown > 0.f || m_invincibilityTimeRemaining > 0.f) {
+        return;
+    }
+
+    if (m_saveData.powerUpState != "None") {
+        m_saveData.powerUpState = "None";
+        m_damageCooldown = 1.5f;
+        showStatus("Power-up absorbed the hit", 1.5f);
+        updateHud();
+        return;
+    }
+
+    loseLife();
+}
+
+void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
+    const float deltaTime = timePerFrame.asSeconds();
+    m_damageCooldown = std::max(0.f, m_damageCooldown - deltaTime);
+    m_invincibilityTimeRemaining = std::max(
+        0.f,
+        m_invincibilityTimeRemaining - deltaTime
+    );
+
+    const float previousSpeedTime = m_speedBoostTimeRemaining;
+    m_speedBoostTimeRemaining = std::max(
+        0.f,
+        m_speedBoostTimeRemaining - deltaTime
+    );
+    if (
+        previousSpeedTime > 0.f &&
+        m_speedBoostTimeRemaining <= 0.f &&
+        m_player
+    ) {
+        m_player->setSpeedMultiplier(1.f);
+        showStatus("Speed boost ended", 1.f);
+    }
+}
+
+void PlayState::resetTransientEffects() {
+    m_invincibilityTimeRemaining = 0.f;
+    m_speedBoostTimeRemaining = 0.f;
+    m_damageCooldown = 0.f;
+    m_playerDamagePending = false;
+
+    if (m_player) {
+        m_player->setSpeedMultiplier(1.f);
     }
 }
 
@@ -537,17 +652,8 @@ void PlayState::handleLevelExit() {
             2.5f
         );
     } else {
-        m_victory = true;
-        m_statusText.setString(
-            "YOU WIN! Press Enter for menu or R to restart"
-        );
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
         SaveManager::save(m_saveData);
+        GameManager::getInstance().pushState(std::make_unique<LevelCompleteState>());
     }
 }
 
@@ -555,18 +661,12 @@ void PlayState::loseLife() {
     --m_saveData.remainingLives;
     m_saveData.powerUpState = "None";
     m_saveData.hasPlayerPosition = false;
+    resetTransientEffects();
 
     if (m_saveData.remainingLives <= 0) {
         m_saveData.remainingLives = 0;
-        m_gameOver = true;
         AudioManager::getInstance().playEffect(SoundEffect::GameOver);
-        m_statusText.setString("GAME OVER - Press R to restart");
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
+        GameManager::getInstance().pushState(std::make_unique<GameOverState>());
         return;
     }
 
@@ -578,35 +678,37 @@ void PlayState::loseLife() {
     );
 }
 
-void PlayState::restartGame() {
-    m_saveData = SaveData{};
-    m_gameOver = false;
-    m_victory = false;
-    loadLevel(1, false);
-    showStatus("New game started");
+void PlayState::updateHud() {
+    m_hud.setData({
+        m_saveData.currentLevel,
+        m_saveData.score,
+        m_saveData.remainingLives,
+        m_saveData.powerUpState,
+        m_invincibilityTimeRemaining,
+        m_speedBoostTimeRemaining
+    });
 }
 
-void PlayState::updateHud() {
-    std::string status =
-        "LEVEL " + std::to_string(m_saveData.currentLevel) +
-        "   SCORE " + std::to_string(m_saveData.score) +
-        "   LIVES " + std::to_string(m_saveData.remainingLives) +
-        "   CHARACTER " + m_saveData.selectedCharacter +
-        "   POWER " + m_saveData.powerUpState +
-        "   [F5 SAVE / F9 LOAD]";
+void PlayState::updateCamera(sf::Time timePerFrame) {
+    if (!m_player) {
+        return;
+    }
 
-    m_hudText.setString(status);
+    const sf::Vector2f playerCenter = m_player->position() + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.update(
+        playerCenter,
+        m_player->velocity(),
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView(),
+        timePerFrame
+    );
 }
 
 void PlayState::showStatus(const std::string& message, float duration) {
-    m_statusText.setString(message);
-    const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-    m_statusText.setOrigin(
-        textBounds.left + textBounds.width / 2.f,
-        textBounds.top + textBounds.height / 2.f
-    );
-    m_statusText.setPosition(960.f, 120.f);
-    m_statusTimeRemaining = duration;
+    m_hud.showStatus(message, duration);
 }
 
 sf::FloatRect PlayState::playerBounds() const {

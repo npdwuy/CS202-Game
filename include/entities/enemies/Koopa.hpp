@@ -24,7 +24,6 @@ public:
     void Deactivate() override;
 
 private:
-    sf::Texture m_texture;
     sf::Sprite m_sprite;
 
     std::unique_ptr<MovementStrategy> m_movementStrategy;

@@ -29,7 +29,7 @@ the factory answers *which C++ class fulfils that request*.
 - the file must be readable and contain `@map`;
 - `tile_size` must be between 16 and 128;
 - every row must have the same non-zero width;
-- only `#.PCMFGKBX` are accepted;
+- only `#.PCMFGKEBXLSV` are accepted;
 - exactly one `P` and one `X` must exist.
 
 Invalid files throw a descriptive exception containing the source path. This
@@ -53,26 +53,32 @@ existing coyote-time and jump-buffer logic. `Character` accepts an injected
 collision resolver, so it remains usable in isolated tests with its former
 fallback ground.
 
+## Tile rendering
+
+`TileMap` batches terrain, sky gradients, and distant scenery into vertex
+arrays. Solid cells receive a palette selected from level difficulty, a bright
+surface cap, exposed-edge shading, and deterministic texture accents. This
+keeps the collision data unchanged while reducing terrain rendering to a few
+draw calls and giving each level a distinct visual atmosphere.
+
 ## Factory coordination with Member 3
 
 `LevelLoader` has no includes for `Goomba`, `Koopa`, `Coin`, Mushroom, or
 FireFlower. It emits only a symbol and world position. All concrete dependencies
 are confined to `LevelObjectFactory`.
 
-The branch currently uses `PowerUpPickup` as a small adapter for `M` and `F`.
-When Member 3's dedicated power-up classes are merged, only these two factory
-cases need to change:
+The item factory constructs dedicated classes for Mushroom, FireFlower, 1-Up,
+Star, and SpeedBoost pickups. Floating collectables inherit their animation and
+collection lifecycle from `FloatingItem`; a new effect only needs a concrete
+visual/effect class and one registered map symbol:
 
 ```cpp
-case 'M':
-    return std::make_unique<Mushroom>(position);
-case 'F':
-    return std::make_unique<FireFlower>(position);
+case 'S':
+    return std::make_unique<Star>(position);
 ```
 
-No map, parser, `TileMap`, or `PlayState` format change is required. The same
-boundary applies if Member 3 later introduces separate `EnemyFactory` and
-`ItemFactory` classes.
+No `TileMap` change is required once the new symbol is registered with the
+loader and factory.
 
 ## Resource and audio management
 
@@ -81,16 +87,20 @@ and sound buffers for the lifetime of the application and returns stable
 references. Repeated requests therefore avoid duplicate disk reads and keep
 SFML resources alive as long as sprites, text, or sounds reference them.
 
-`AudioManager` owns the streaming background `sf::Music` and reusable
-`sf::Sound` objects. It reads BGM/SFX volume from `SettingsManager` when
-`PlayState` begins. An audio-load failure disables audio with a console message
-instead of terminating gameplay.
+`AudioManager` owns the streaming background `sf::Music` and pooled `sf::Sound`
+voices. It reads BGM/SFX volume from `SettingsManager`, fades music changes over
+time, and lets repeated effects overlap without restarting a single voice. An
+audio-load failure disables audio with a console message instead of terminating
+gameplay.
 
 | Event | Audio file |
 |---|---|
 | Jump starts | `jump.wav` |
 | Coin collected | `coin.wav` |
 | Power-up collected | `power_up.wav` |
+| Extra life collected | `one_up.wav` |
+| Star collected | `invincibility.wav` |
+| Speed boost collected | `speed_boost.wav` |
 | Enemy/boss stomped | `enemy_defeated.wav` |
 | Lives reach zero | `game_over.wav` |
 | Gameplay active | `background.wav` |
@@ -134,10 +144,11 @@ the save schema.
 | Cache/Flyweight-like resource sharing | `ResourceManager` | Avoid duplicate heavy SFML resources |
 | Data Transfer Object | `LevelData`, `LevelSpawnRequest`, `SaveData` | Move validated data between subsystems |
 | Dependency injection | `Character::setCollisionResolver` | Decouple player movement from a concrete map |
+| Template method | `FloatingItem` and concrete pickups | Share animation/collection flow while varying visuals and effects |
 
 ## Extension points
 
-- Register Member 3's final Mushroom/FireFlower classes in the factory.
+- Add more `FloatingItem` subclasses and register their level symbols.
 - Add a Luigi class and select it using `SaveData::selectedCharacter`.
 - Replace rectangle tiles with a texture atlas without changing level files.
 - Add a camera and levels wider than 40 tiles.

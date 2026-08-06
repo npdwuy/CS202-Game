@@ -59,6 +59,28 @@ int main() {
         "unsupported level symbols are rejected"
     );
 
+    const std::filesystem::path extendedLevelPath =
+        std::filesystem::temp_directory_path() /
+        "cs202_extended_item_level_test.txt";
+    {
+        std::ofstream extendedLevel(extendedLevelPath, std::ios::trunc);
+        extendedLevel
+            << "@name=Extended Items\n"
+            << "@difficulty=Test\n"
+            << "@tile_size=48\n"
+            << "@map\n"
+            << "PLSVECMFGKBX\n"
+            << "############\n";
+    }
+
+    const LevelData extendedLevel = LevelLoader::loadFromFile(
+        extendedLevelPath.string()
+    );
+    passed &= require(
+        extendedLevel.spawnRequests.size() == 10U,
+        "new item and flying-enemy symbols create spawn requests"
+    );
+
     const std::filesystem::path savePath =
         std::filesystem::temp_directory_path() / "cs202_member4_save_test.txt";
 
@@ -103,6 +125,20 @@ int main() {
         );
     }
 
+    SaveData replacement = expected;
+    replacement.score = 3100;
+    replacement.remainingLives = 4;
+    passed &= require(
+        SaveManager::save(replacement, savePath.string()),
+        "an existing save can be replaced safely"
+    );
+    const std::optional<SaveData> replaced =
+        LoadManager::load(savePath.string());
+    passed &= require(
+        replaced && replaced->score == 3100 && replaced->remainingLives == 4,
+        "replacement save data round-trips"
+    );
+
     {
         std::ofstream corrupted(savePath, std::ios::trunc);
         corrupted
@@ -123,6 +159,8 @@ int main() {
 
     std::error_code removeError;
     std::filesystem::remove(invalidLevelPath, removeError);
+    removeError.clear();
+    std::filesystem::remove(extendedLevelPath, removeError);
     removeError.clear();
     std::filesystem::remove(savePath, removeError);
 

@@ -3,6 +3,7 @@
 #include "GameManager.hpp"
 #include "OptionsState.hpp"
 #include "PlayState.hpp"
+#include "commands/MenuCommands.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -26,12 +27,12 @@ MenuState::MenuState() {
   }
 
   // Centered vertical layout
-  sf::Vector2f btnSize(300.f, 120.f);
-  m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 390.f), btnSize, 36);
-  m_loadButton = std::make_unique<Button>("LOAD", m_font, m_buttonTexture, sf::Vector2f(960.f, 510.f), btnSize, 36);
-  m_optionsButton = std::make_unique<Button>("OPTIONS", m_font, m_buttonTexture, sf::Vector2f(960.f, 630.f), btnSize, 36);
-  m_aboutButton = std::make_unique<Button>("ABOUT", m_font, m_buttonTexture, sf::Vector2f(960.f, 750.f), btnSize, 36);
-  m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 870.f), btnSize, 36);
+  sf::Vector2f btnSize(380.f, 120.f);
+  m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 390.f), btnSize, 33);
+  m_loadButton = std::make_unique<Button>("LOAD", m_font, m_buttonTexture, sf::Vector2f(960.f, 510.f), btnSize, 33);
+  m_optionsButton = std::make_unique<Button>("OPTIONS", m_font, m_buttonTexture, sf::Vector2f(960.f, 630.f), btnSize, 33);
+  m_aboutButton = std::make_unique<Button>("ABOUT", m_font, m_buttonTexture, sf::Vector2f(960.f, 750.f), btnSize, 33);
+  m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 870.f), btnSize, 33);
 
   // Set colors
   m_playButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
@@ -41,30 +42,27 @@ MenuState::MenuState() {
   m_exitButton->setColors(sf::Color::White, sf::Color(255, 210, 210, 255), sf::Color(245, 222, 179));
 
   // Button callbacks
-  m_playButton->setCallback([]() {
+  m_playButton->setCommand(std::make_unique<LambdaCommand>([]() {
     std::cout << "Transitioning to PlayState...\n";
     GameManager::getInstance().changeState(std::make_unique<PlayState>());
-  });
+  }));
 
-  m_loadButton->setCallback([]() {
+  m_loadButton->setCommand(std::make_unique<LambdaCommand>([]() {
     std::cout << "Loading saved game...\n";
     GameManager::getInstance().changeState(std::make_unique<PlayState>(true));
-  });
+  }));
 
-  m_aboutButton->setCallback([]() {
+  m_aboutButton->setCommand(std::make_unique<LambdaCommand>([]() {
     std::cout << "Opening AboutState...\n";
     GameManager::getInstance().pushState(std::make_unique<AboutState>());
-  });
+  }));
 
-  m_optionsButton->setCallback([]() {
+  m_optionsButton->setCommand(std::make_unique<LambdaCommand>([]() {
     std::cout << "Opening OptionsState...\n";
     GameManager::getInstance().pushState(std::make_unique<OptionsState>());
-  });
+  }));
 
-  m_exitButton->setCallback([]() {
-    std::cout << "Exiting game from Main Menu...\n";
-    GameManager::getInstance().quit();
-  });
+  m_exitButton->setCommand(std::make_unique<ExitGameCommand>());
 }
 
 void MenuState::Input(const sf::Event &event) {

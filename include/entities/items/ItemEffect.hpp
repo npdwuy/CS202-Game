@@ -3,7 +3,10 @@
 enum class ItemEffectType {
     AddScore,
     GrowPlayer,
-    EnableFirePower
+    EnableFirePower,
+    ExtraLife,
+    Invincibility,
+    SpeedBoost
 };
 
 struct ItemEffect {

@@ -1,28 +1,20 @@
 #pragma once
 
-#include "entities/Item.hpp"
+#include "entities/items/FloatingItem.hpp"
 
-class FireFlower : public Item {
+class FireFlower : public FloatingItem {
 public:
     explicit FireFlower(sf::Vector2f position);
 
     ~FireFlower() override = default;
 
-    void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) const override;
 
     sf::FloatRect GetBounds() const override;
     ItemEffect GetEffect() const override;
 
-    bool IsCollected() const override;
-    void Collect() override;
-
 private:
-    sf::Texture m_texture;
+    void SetVisualPosition(sf::Vector2f position) override;
+
     sf::Sprite m_sprite;
-
-    float m_animationTime;
-    float m_startY;
-
-    bool m_collected;
 };

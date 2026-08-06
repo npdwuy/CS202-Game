@@ -1,28 +1,22 @@
 #include "entities/items/Coin.hpp"
-
-#include <cmath>
-#include <stdexcept>
+#include "resources/ResourceManager.hpp"
 
 Coin::Coin(sf::Vector2f position, int value)
-    : m_baseY(position.y),
-      m_animationTime(0.f),
-      m_value(value),
-      m_collected(false)
+    : FloatingItem(position, 5.f, 3.f),
+      m_value(value)
 {
     if (m_value <= 0)
     {
         m_value = 1;
     }
 
-    if (!m_texture.loadFromFile("assets/sprites/items/coin.png"))
-    {
-        throw std::runtime_error("Failed to load Coin sprite.");
-    }
-
-    m_sprite.setTexture(m_texture);
+    const sf::Texture& texture = ResourceManager::getInstance().getTexture(
+        "assets/sprites/items/coin.png"
+    );
+    m_sprite.setTexture(texture);
 
     const float targetSize = 32.f;
-    sf::Vector2u textureSize = m_texture.getSize();
+    const sf::Vector2u textureSize = texture.getSize();
 
     m_sprite.setScale(
         targetSize / static_cast<float>(textureSize.x),
@@ -32,29 +26,9 @@ Coin::Coin(sf::Vector2f position, int value)
     m_sprite.setPosition(position);
 }
 
-void Coin::Update(sf::Time timePerFrame)
-{
-    if (m_collected)
-    {
-        return;
-    }
-
-    m_animationTime += timePerFrame.asSeconds();
-
-    const float amplitude = 5.f;
-    const float frequency = 3.f;
-
-    float offsetY = std::sin(m_animationTime * frequency) * amplitude;
-
-    m_sprite.setPosition(
-        m_sprite.getPosition().x,
-        m_baseY + offsetY
-    );
-}
-
 void Coin::Render(sf::RenderWindow& window) const
 {
-    if (!m_collected)
+    if (!IsCollected())
     {
         window.draw(m_sprite);
     }
@@ -73,17 +47,11 @@ ItemEffect Coin::GetEffect() const
     };
 }
 
-void Coin::Collect()
-{
-    m_collected = true;
-}
-
-bool Coin::IsCollected() const
-{
-    return m_collected;
-}
-
 int Coin::GetValue() const
 {
     return m_value;
+}
+
+void Coin::SetVisualPosition(sf::Vector2f position) {
+    m_sprite.setPosition(position);
 }
