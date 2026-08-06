@@ -237,15 +237,20 @@ void PlayState::Update(sf::Time timePerFrame) {
 void PlayState::Render(sf::RenderWindow& window) {
     const sf::View& screenView = GameManager::getInstance().getGameView();
     window.setView(m_camera.view());
+    const sf::FloatRect visibleWorld = m_camera.visibleBounds(96.f);
 
     m_tileMap.render(window);
 
     for (const auto& enemy : m_enemies) {
-        enemy->Render(window);
+        if (visibleWorld.intersects(enemy->GetBounds())) {
+            enemy->Render(window);
+        }
     }
 
     for (const auto& item : m_items) {
-        item->Render(window);
+        if (visibleWorld.intersects(item->GetBounds())) {
+            item->Render(window);
+        }
     }
 
     if (m_player) {
