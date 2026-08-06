@@ -7,15 +7,31 @@
 #include <cmath>
 #include <stdexcept>
 
+namespace {
+
+void appendQuad(
+    sf::VertexArray& vertices,
+    const sf::FloatRect& bounds,
+    sf::Color color
+) {
+    vertices.append({{bounds.left, bounds.top}, color});
+    vertices.append({{bounds.left + bounds.width, bounds.top}, color});
+    vertices.append({
+        {bounds.left + bounds.width, bounds.top + bounds.height},
+        color
+    });
+    vertices.append({{bounds.left, bounds.top + bounds.height}, color});
+}
+
+}
+
 void TileMap::load(const std::string& path) {
     m_data = LevelLoader::loadFromFile(path);
     rebuildGeometry();
 }
 
 void TileMap::render(sf::RenderWindow& window) const {
-    for (const sf::RectangleShape& tile : m_tiles) {
-        window.draw(tile);
-    }
+    window.draw(m_tileVertices);
 
     window.draw(m_exitPole);
     window.draw(m_exitFlag);
@@ -233,7 +249,7 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 }
 
 void TileMap::rebuildGeometry() {
-    m_tiles.clear();
+    m_tileVertices.clear();
 
     const float tileSize = static_cast<float>(m_data.tileSize);
 
@@ -248,17 +264,24 @@ void TileMap::rebuildGeometry() {
                 static_cast<float>(row) * tileSize
             };
 
-            sf::RectangleShape tile({tileSize, tileSize});
-            tile.setPosition(position);
-            tile.setFillColor(
-                row % 2U == 0U
-                    ? sf::Color(158, 93, 52)
-                    : sf::Color(139, 78, 43)
+            const sf::Color fillColor = row % 2U == 0U
+                ? sf::Color(158, 93, 52)
+                : sf::Color(139, 78, 43);
+            appendQuad(
+                m_tileVertices,
+                {position.x, position.y, tileSize, tileSize},
+                sf::Color(91, 51, 31)
             );
-            tile.setOutlineColor(sf::Color(91, 51, 31));
-            tile.setOutlineThickness(-2.f);
-
-            m_tiles.push_back(tile);
+            appendQuad(
+                m_tileVertices,
+                {
+                    position.x + 2.f,
+                    position.y + 2.f,
+                    tileSize - 4.f,
+                    tileSize - 4.f
+                },
+                fillColor
+            );
         }
     }
 
