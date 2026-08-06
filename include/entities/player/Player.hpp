@@ -12,7 +12,7 @@ protected:
     int currentFrame_ = 0;
     float speed_ = 280.0f;
     float speedMultiplier_ = 1.0f;
-    float jumpPower_ = 660.0f;
+    float jumpPower_ = 670.0f;
     float animationTime_ = 0.0f;
     float jumpBufferTimer_ = 0.0f;
     bool movedThisFrame_ = false;

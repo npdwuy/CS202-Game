@@ -1,7 +1,7 @@
 #include "entities/player/Mario.hpp"
 #include <cmath> 
 
-Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 720.0f){
+Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 830.0f){
     sf::Image image;
     if (!image.loadFromFile("assets/sprites/player/mario.png")) {
         throw std::runtime_error("Failed to load mario image.");

@@ -1,5 +1,5 @@
 #include "entities/player/Player.hpp"
-
+#include "GameManager.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -40,7 +40,7 @@ float Player::speedMultiplier() const {
     return speedMultiplier_;
 }
 
-#include "GameManager.hpp"
+
 
 void Player:: update(sf::Time timePerFrame){
     auto& settings = GameManager::getInstance().getSettings();
