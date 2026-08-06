@@ -20,6 +20,7 @@ resource-management patterns.
 - Goomba, Koopa, flying enemy, boss, and six collectable item types
 - Three external text-file levels with increasing difficulty
 - Map-driven spawning through `LevelObjectFactory`
+- Batched, level-themed terrain with surface shading and atmospheric backdrops
 - Score, lives, level progression, power-up state, and boss-gated final exit
 - Background music and jump, coin, power-up, enemy, and game-over effects
 - Cached textures, fonts, and sound buffers through `ResourceManager`

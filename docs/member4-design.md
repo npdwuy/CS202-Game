@@ -53,6 +53,14 @@ existing coyote-time and jump-buffer logic. `Character` accepts an injected
 collision resolver, so it remains usable in isolated tests with its former
 fallback ground.
 
+## Tile rendering
+
+`TileMap` batches terrain, sky gradients, and distant scenery into vertex
+arrays. Solid cells receive a palette selected from level difficulty, a bright
+surface cap, exposed-edge shading, and deterministic texture accents. This
+keeps the collision data unchanged while reducing terrain rendering to a few
+draw calls and giving each level a distinct visual atmosphere.
+
 ## Factory coordination with Member 3
 
 `LevelLoader` has no includes for `Goomba`, `Koopa`, `Coin`, Mushroom, or

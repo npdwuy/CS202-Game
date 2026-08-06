@@ -25,6 +25,7 @@ private:
 
     LevelData m_data;
     sf::VertexArray m_backgroundVertices{sf::Quads};
+    sf::VertexArray m_sceneryVertices{sf::Triangles};
     sf::VertexArray m_tileVertices{sf::Quads};
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
