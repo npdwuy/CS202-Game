@@ -2,6 +2,7 @@
 #include "GameManager.hpp"
 #include "MenuState.hpp"
 #include "OptionsState.hpp"
+#include "commands/MenuCommands.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -70,26 +71,25 @@ void PauseState::initUI() {
                           sf::Color(245, 222, 179));
 
   // Callbacks
-  m_resumeButton->setCallback([]() { GameManager::getInstance().popState(); });
+  m_resumeButton->setCommand(std::make_unique<PopStateCommand>());
 
-  m_optionsButton->setCallback([]() {
+  m_optionsButton->setCommand(std::make_unique<LambdaCommand>([]() {
     GameManager::getInstance().pushState(std::make_unique<OptionsState>());
-  });
+  }));
 
-  m_menuButton->setCallback([]() {
+  m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
     GameManager::getInstance().changeState(std::make_unique<MenuState>());
-  });
+  }));
 
-  m_exitButton->setCallback([]() { GameManager::getInstance().quit(); });
+  m_exitButton->setCommand(std::make_unique<ExitGameCommand>());
 }
 
 void PauseState::Input(const sf::Event &event) {
-  sf::Vector2i pixelPos =
-      sf::Mouse::getPosition(GameManager::getInstance().getWindow());
-  sf::Vector2f mousePos(static_cast<float>(pixelPos.x),
-                        static_cast<float>(pixelPos.y));
+  sf::RenderWindow &window = GameManager::getInstance().getWindow();
 
   if (event.type == sf::Event::MouseMoved) {
+    sf::Vector2f mousePos = window.mapPixelToCoords(
+        sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
     m_resumeButton->update(mousePos);
     m_optionsButton->update(mousePos);
     m_menuButton->update(mousePos);
@@ -97,6 +97,8 @@ void PauseState::Input(const sf::Event &event) {
   }
 
   if (event.type == sf::Event::MouseButtonReleased) {
+    sf::Vector2f mousePos = window.mapPixelToCoords(
+        sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
     if (m_resumeButton->handleClick(event, mousePos))
       return;
     if (m_optionsButton->handleClick(event, mousePos))

@@ -1,6 +1,7 @@
 #include "OptionsState.hpp"
 #include "GameManager.hpp"
 #include "audio/AudioManager.hpp"
+#include "commands/MenuCommands.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -72,7 +73,7 @@ void OptionsState::initUI() {
         m_font, m_buttonTexture, sf::Vector2f(1050.f, 255.f), sf::Vector2f(240.f, 50.f), 24
     );
     m_difficultyButton->setColors(sf::Color(60, 60, 60), sf::Color(80, 80, 80), sf::Color::White);
-    m_difficultyButton->setCallback([this]() {
+    m_difficultyButton->setCommand(std::make_unique<LambdaCommand>([this]() {
         auto& settings = GameManager::getInstance().getSettings();
         Difficulty current = settings.getDifficulty();
         Difficulty next = Difficulty::Normal;
@@ -82,7 +83,7 @@ void OptionsState::initUI() {
         settings.setDifficulty(next);
         updateButtonLabels();
         settings.saveToFile();
-    });
+    }));
 
     // 2. Sound Section
     createSectionHeader("Sound", 315.f);
@@ -118,10 +119,10 @@ void OptionsState::initUI() {
         btn->setColors(sf::Color(60, 60, 60), sf::Color(80, 80, 80), sf::Color::White);
         
         std::string actionKey = actions[i].second;
-        btn->setCallback([this, actionKey]() {
+        btn->setCommand(std::make_unique<LambdaCommand>([this, actionKey]() {
             m_rebindingAction = actionKey;
             updateButtonLabels();
-        });
+        }));
         m_bindButtons[actionKey] = std::move(btn);
     }
 
@@ -130,7 +131,7 @@ void OptionsState::initUI() {
         "RESET DEFAULTS", m_font, m_buttonTexture, sf::Vector2f(960.f, 825.f), sf::Vector2f(300.f, 50.f), 22
     );
     m_resetButton->setColors(sf::Color(120, 40, 40), sf::Color(150, 60, 60), sf::Color::White);
-    m_resetButton->setCallback([this]() {
+    m_resetButton->setCommand(std::make_unique<LambdaCommand>([this]() {
         auto& settings = GameManager::getInstance().getSettings();
         settings.resetToDefaults();
         m_sfxSlider->setValue(settings.getSFXVolume());
@@ -143,16 +144,14 @@ void OptionsState::initUI() {
         );
         updateButtonLabels();
         settings.saveToFile();
-    });
+    }));
 
     // Back Button
     m_backButton = std::make_unique<Button>(
         "BACK", m_font, m_buttonTexture, sf::Vector2f(960.f, 895.f), sf::Vector2f(300.f, 50.f), 22
     );
     m_backButton->setColors(sf::Color(40, 100, 40), sf::Color(60, 130, 60), sf::Color::White);
-    m_backButton->setCallback([]() {
-        GameManager::getInstance().popState();
-    });
+    m_backButton->setCommand(std::make_unique<PopStateCommand>());
 }
 
 void OptionsState::updateButtonLabels() {
@@ -189,8 +188,9 @@ void OptionsState::Input(const sf::Event &event) {
     }
 
     // Normal Input Routing
-    sf::Vector2i pixelPos = sf::Mouse::getPosition(GameManager::getInstance().getWindow());
-    sf::Vector2f mousePos(static_cast<float>(pixelPos.x), static_cast<float>(pixelPos.y));
+    sf::RenderWindow &window = GameManager::getInstance().getWindow();
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos);
 
     // Handle mouse move updates (hover)
     if (event.type == sf::Event::MouseMoved) {

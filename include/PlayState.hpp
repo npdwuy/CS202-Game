@@ -7,12 +7,16 @@
 #include "entities/Enemy.hpp"
 #include "entities/Item.hpp"
 #include "entities/player/Player.hpp"
+#include "events/GameEventListener.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-class PlayState : public GameState {
+class PlayState
+    : public GameState,
+      public GameEventListener
+{
 public:
     explicit PlayState(bool loadSavedGame = false);
     ~PlayState() override;
@@ -20,6 +24,7 @@ public:
     void Input(const sf::Event& event) override;
     void Update(sf::Time timePerFrame) override;
     void Render(sf::RenderWindow& window) override;
+    void OnGameEvent(const GameEvent& event) override;
 
 private:
     void loadLevel(int levelNumber, bool restoreSavedPosition);
@@ -28,10 +33,11 @@ private:
     void loadGame();
     void handleItemCollisions();
     bool handleEnemyCollisions();
-    void handlePlayerFall();
+    bool handlePlayerFall();
     void handleLevelExit();
+    void handlePlayerDamage();
+    void updateTimedPowerUps(sf::Time timePerFrame);
     void loseLife();
-    void restartGame();
     void updateHud();
     void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
@@ -49,6 +55,7 @@ private:
     sf::Text m_hudText;
     sf::Text m_statusText;
     float m_statusTimeRemaining = 0.f;
-    bool m_gameOver = false;
-    bool m_victory = false;
+    float m_invincibilityTimeRemaining = 0.f;
+    float m_speedBoostTimeRemaining = 0.f;
+    float m_damageCooldown = 0.f;
 };

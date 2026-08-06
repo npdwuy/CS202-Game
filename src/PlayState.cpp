@@ -2,24 +2,22 @@
 #include "MenuState.hpp"
 #include "GameManager.hpp"
 #include "PauseState.hpp"
+#include "GameOverState.hpp"
+#include "LevelCompleteState.hpp"
 
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
-#include "entities/items/Coin.hpp"
-#include "entities/items/PowerUpPickup.hpp"
 #include "entities/player/Mario.hpp"
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
+#include "events/GameEventManager.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <string>
-
-#if __has_include("entities/items/ItemEffect.hpp")
-#include "entities/items/ItemEffect.hpp"
-#endif
 
 PlayState::PlayState(bool loadSavedGame) {
     m_hudFont = &ResourceManager::getInstance().getFont(
@@ -39,33 +37,140 @@ PlayState::PlayState(bool loadSavedGame) {
     m_statusText.setOutlineColor(sf::Color::Black);
     m_statusText.setOutlineThickness(3.f);
 
-    SettingsManager& settings = GameManager::getInstance().getSettings();
+    SettingsManager& settings =
+        GameManager::getInstance().getSettings();
+
     AudioManager& audio = AudioManager::getInstance();
+
     audio.setMusicVolume(settings.getBGMVolume());
     audio.setEffectsVolume(settings.getSFXVolume());
     audio.initialize();
     audio.playMusic();
 
-    if (loadSavedGame) {
-        const std::optional<SaveData> loadedData = LoadManager::load();
-        if (loadedData) {
+    if (loadSavedGame)
+    {
+        const std::optional<SaveData> loadedData =
+            LoadManager::load();
+
+        if (loadedData)
+        {
             m_saveData = *loadedData;
             loadLevel(m_saveData.currentLevel, true);
             showStatus("Save loaded");
-        } else {
-            loadLevel(1, false);
-            showStatus("No valid save found - starting Level 1", 3.f);
         }
-    } else {
+        else
+        {
+            loadLevel(1, false);
+            showStatus(
+                "No valid save found - starting Level 1",
+                3.f
+            );
+        }
+    }
+    else
+    {
         loadLevel(1, false);
-        showStatus("Level 1 - Green Hill Start", 2.5f);
+        showStatus(
+            "Level 1 - Green Hill Start",
+            2.5f
+        );
     }
 
     updateHud();
+
+    GameEventManager::GetInstance().AddListener(this);
 }
 
-PlayState::~PlayState() {
+PlayState::~PlayState()
+{
+    GameEventManager::GetInstance().RemoveListener(this);
     AudioManager::getInstance().stopMusic();
+}
+
+void PlayState::OnGameEvent(const GameEvent& event)
+{
+    switch (event.type)
+    {
+        case GameEventType::CoinCollected:
+            m_saveData.score += event.value;
+            AudioManager::getInstance().playEffect(
+                SoundEffect::Coin
+            );
+            break;
+
+        case GameEventType::PowerUpCollected:
+            m_saveData.score += event.value;
+            m_saveData.powerUpState =
+                event.data.empty() ? "None" : event.data;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::PowerUp
+            );
+
+            showStatus(
+                m_saveData.powerUpState + " collected"
+            );
+            break;
+
+        case GameEventType::ExtraLifeCollected:
+            m_saveData.remainingLives = std::min(
+                99,
+                m_saveData.remainingLives + std::max(1, event.value)
+            );
+            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            showStatus("1-Up! Extra life gained", 2.f);
+            break;
+
+        case GameEventType::InvincibilityCollected:
+            m_invincibilityTimeRemaining = std::max(
+                m_invincibilityTimeRemaining,
+                static_cast<float>(std::max(1, event.value))
+            );
+            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            showStatus("Star power - invincible!", 2.f);
+            break;
+
+        case GameEventType::SpeedBoostCollected:
+            m_speedBoostTimeRemaining = std::max(
+                m_speedBoostTimeRemaining,
+                static_cast<float>(std::max(1, event.value))
+            );
+            if (m_player) {
+                m_player->setSpeedMultiplier(1.45f);
+            }
+            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            showStatus("Speed boost active!", 2.f);
+            break;
+
+        case GameEventType::EnemyDefeated:
+            m_saveData.score += event.value;
+
+            AudioManager::getInstance().playEffect(
+                SoundEffect::EnemyDefeated
+            );
+
+            showStatus(
+                event.data.empty()
+                    ? "Enemy defeated"
+                    : event.data,
+                1.5f
+            );
+            break;
+
+        case GameEventType::PlayerDamaged:
+            handlePlayerDamage();
+            break;
+
+        case GameEventType::PlayerFell:
+            loseLife();
+            break;
+
+        case GameEventType::LevelCompleted:
+            m_saveData.score += event.value;
+            break;
+    }
+
+    updateHud();
 }
 
 void PlayState::Input(const sf::Event& event) {
@@ -83,16 +188,6 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
-    if (event.key.code == sf::Keyboard::R && (m_gameOver || m_victory)) {
-        restartGame();
-        return;
-    }
-
-    if (m_victory && event.key.code == sf::Keyboard::Enter) {
-        GameManager::getInstance().changeState(std::make_unique<MenuState>());
-        return;
-    }
-
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
     if (event.key.code == pauseKey) {
@@ -101,18 +196,14 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
+    updateTimedPowerUps(timePerFrame);
+
     if (m_statusTimeRemaining > 0.f) {
         m_statusTimeRemaining = std::max(
             0.f,
             m_statusTimeRemaining - timePerFrame.asSeconds()
         );
     }
-
-    if (m_gameOver || m_victory) {
-        updateHud();
-        return;
-    }
-
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
@@ -131,8 +222,7 @@ void PlayState::Update(sf::Time timePerFrame) {
         updateHud();
         return;
     }
-    handlePlayerFall();
-    if (m_gameOver) {
+    if (handlePlayerFall()) {
         updateHud();
         return;
     }
@@ -179,7 +269,7 @@ void PlayState::Render(sf::RenderWindow& window) {
     }
 
     window.draw(m_hudText);
-    if (m_statusTimeRemaining > 0.f || m_gameOver || m_victory) {
+    if (m_statusTimeRemaining > 0.f) {
         window.draw(m_statusText);
     }
 }
@@ -201,15 +291,29 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
             m_saveData.playerX,
             m_saveData.playerY
         };
+        const sf::FloatRect savedBounds(
+            savedPosition.x,
+            savedPosition.y,
+            Player::CollisionWidth,
+            Player::CollisionHeight
+        );
+        const sf::FloatRect worldBounds = m_tileMap.worldBounds();
         if (
-            m_tileMap.worldBounds().contains(savedPosition) &&
-            !m_tileMap.isSolidAt(savedPosition)
+            worldBounds.contains(savedBounds.left, savedBounds.top) &&
+            worldBounds.contains(
+                savedBounds.left + savedBounds.width,
+                savedBounds.top + savedBounds.height
+            ) &&
+            !m_tileMap.intersectsSolid(savedBounds)
         ) {
             spawnPosition = savedPosition;
         }
     }
 
     m_player = std::make_unique<Mario>(spawnPosition);
+    if (m_speedBoostTimeRemaining > 0.f) {
+        m_player->setSpeedMultiplier(1.45f);
+    }
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
@@ -217,8 +321,6 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     );
 
     m_saveData.hasPlayerPosition = false;
-    m_gameOver = m_saveData.remainingLives <= 0;
-    m_victory = false;
 }
 
 void PlayState::createLevelObjects() {
@@ -272,81 +374,172 @@ void PlayState::loadGame() {
     updateHud();
 }
 
-void PlayState::handleItemCollisions() {
+void PlayState::handleItemCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& item : m_items) {
-        if (item->IsCollected() || !bounds.intersects(item->GetBounds())) {
+    for (auto& item : m_items)
+    {
+        if (
+            item->IsCollected() ||
+            !bounds.intersects(item->GetBounds())
+        )
+        {
             continue;
         }
 
+        const ItemEffect effect = item->GetEffect();
         item->Collect();
 
-        if (const auto* coin = dynamic_cast<const Coin*>(item.get())) {
-            m_saveData.score += coin->GetValue();
-            AudioManager::getInstance().playEffect(SoundEffect::Coin);
-        } else if (
-            const auto* powerUp =
-                dynamic_cast<const PowerUpPickup*>(item.get())
-        ) {
-            m_saveData.score += 500;
-            m_saveData.powerUpState =
-                powerUp->getKind() == PowerUpKind::Mushroom
-                    ? "Mushroom"
-                    : "FireFlower";
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-            showStatus(m_saveData.powerUpState + " collected");
-#if __has_include("entities/items/ItemEffect.hpp")
-        } else {
-            const ItemEffect effect = item->GetEffect();
-            if (effect.type == ItemEffectType::GrowPlayer) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "Mushroom";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("Mushroom collected");
-            } else if (effect.type == ItemEffectType::EnableFirePower) {
-                m_saveData.score += 500;
-                m_saveData.powerUpState = "FireFlower";
-                AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
-                showStatus("FireFlower collected");
-            }
-#endif
+        switch (effect.type)
+        {
+            case ItemEffectType::AddScore:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::CoinCollected,
+                        effect.amount,
+                        ""
+                    }
+                );
+                break;
+
+            case ItemEffectType::GrowPlayer:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "Mushroom"
+                    }
+                );
+                break;
+
+            case ItemEffectType::EnableFirePower:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::PowerUpCollected,
+                        500,
+                        "FireFlower"
+                    }
+                );
+                break;
+
+            case ItemEffectType::ExtraLife:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::ExtraLifeCollected,
+                        effect.amount,
+                        "1-Up Mushroom"
+                    }
+                );
+                break;
+
+            case ItemEffectType::Invincibility:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::InvincibilityCollected,
+                        effect.amount,
+                        "Star"
+                    }
+                );
+                break;
+
+            case ItemEffectType::SpeedBoost:
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::SpeedBoostCollected,
+                        effect.amount,
+                        "Speed Boost"
+                    }
+                );
+                break;
         }
     }
 }
 
-bool PlayState::handleEnemyCollisions() {
+bool PlayState::handleEnemyCollisions()
+{
     const sf::FloatRect bounds = playerBounds();
 
-    for (auto& enemy : m_enemies) {
-        if (!enemy->IsActive() || !bounds.intersects(enemy->GetBounds())) {
+    for (auto& enemy : m_enemies)
+    {
+        if (
+            !enemy->IsActive() ||
+            !bounds.intersects(enemy->GetBounds())
+        )
+        {
             continue;
         }
 
-        const sf::FloatRect enemyBounds = enemy->GetBounds();
+        const sf::FloatRect enemyBounds =
+            enemy->GetBounds();
+
         const bool stomped =
             m_player->velocity().y > 0.f &&
             bounds.top + bounds.height <=
-                enemyBounds.top + enemyBounds.height * 0.65f;
+                enemyBounds.top +
+                enemyBounds.height * 0.65f;
 
-        if (stomped) {
+        const bool isBoss =
+            dynamic_cast<const BossEnemy*>(
+                enemy.get()
+            ) != nullptr;
+
+        if (m_invincibilityTimeRemaining > 0.f)
+        {
             enemy->Deactivate();
-            sf::Vector2f velocity = m_player->velocity();
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    isBoss ? 2000 : 200,
+                    isBoss
+                        ? "Boss defeated - the exit is open!"
+                        : "Enemy defeated by Star power"
+                }
+            );
+            continue;
+        }
+
+        if (stomped)
+        {
+            enemy->Deactivate();
+
+            sf::Vector2f velocity =
+                m_player->velocity();
+
             velocity.y = -330.f;
             m_player->setVelocity(velocity);
-            m_saveData.score +=
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr ? 2000 : 200;
-            AudioManager::getInstance().playEffect(
-                SoundEffect::EnemyDefeated
+
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    isBoss ? 2000 : 200,
+                    isBoss
+                        ? "Boss defeated - the exit is open!"
+                        : "Enemy defeated"
+                }
             );
-            showStatus(
-                dynamic_cast<BossEnemy*>(enemy.get()) != nullptr
-                    ? "Boss defeated - the exit is open!"
-                    : "Enemy defeated",
-                1.5f
+        }
+        else
+        {
+            if (m_damageCooldown > 0.f) {
+                continue;
+            }
+
+            sf::Vector2f knockback = m_player->velocity();
+            const float playerCenter = bounds.left + bounds.width * 0.5f;
+            const float enemyCenter = enemyBounds.left + enemyBounds.width * 0.5f;
+            knockback.x = playerCenter < enemyCenter ? -240.f : 240.f;
+            knockback.y = -320.f;
+            m_player->setVelocity(knockback);
+
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::PlayerDamaged,
+                    0,
+                    ""
+                }
             );
-        } else {
-            loseLife();
+
             return true;
         }
     }
@@ -354,12 +547,62 @@ bool PlayState::handleEnemyCollisions() {
     return false;
 }
 
-void PlayState::handlePlayerFall() {
+bool PlayState::handlePlayerFall()
+{
     if (
         m_player->position().y >
         m_tileMap.worldBounds().height + 180.f
+    )
+    {
+        GameEventManager::GetInstance().Notify(
+            {
+                GameEventType::PlayerFell,
+                0,
+                "Player fell out of the level"
+            }
+        );
+        return true;
+    }
+
+    return false;
+}
+
+void PlayState::handlePlayerDamage() {
+    if (m_damageCooldown > 0.f || m_invincibilityTimeRemaining > 0.f) {
+        return;
+    }
+
+    if (m_saveData.powerUpState != "None") {
+        m_saveData.powerUpState = "None";
+        m_damageCooldown = 1.5f;
+        showStatus("Power-up absorbed the hit", 1.5f);
+        updateHud();
+        return;
+    }
+
+    loseLife();
+}
+
+void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
+    const float deltaTime = timePerFrame.asSeconds();
+    m_damageCooldown = std::max(0.f, m_damageCooldown - deltaTime);
+    m_invincibilityTimeRemaining = std::max(
+        0.f,
+        m_invincibilityTimeRemaining - deltaTime
+    );
+
+    const float previousSpeedTime = m_speedBoostTimeRemaining;
+    m_speedBoostTimeRemaining = std::max(
+        0.f,
+        m_speedBoostTimeRemaining - deltaTime
+    );
+    if (
+        previousSpeedTime > 0.f &&
+        m_speedBoostTimeRemaining <= 0.f &&
+        m_player
     ) {
-        loseLife();
+        m_player->setSpeedMultiplier(1.f);
+        showStatus("Speed boost ended", 1.f);
     }
 }
 
@@ -373,7 +616,13 @@ void PlayState::handleLevelExit() {
         return;
     }
 
-    m_saveData.score += 1000;
+    GameEventManager::GetInstance().Notify(
+    {
+        GameEventType::LevelCompleted,
+        1000,
+        "Level completed"
+    }
+    );
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {
@@ -386,17 +635,8 @@ void PlayState::handleLevelExit() {
             2.5f
         );
     } else {
-        m_victory = true;
-        m_statusText.setString(
-            "YOU WIN! Press Enter for menu or R to restart"
-        );
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
         SaveManager::save(m_saveData);
+        GameManager::getInstance().pushState(std::make_unique<LevelCompleteState>());
     }
 }
 
@@ -404,18 +644,14 @@ void PlayState::loseLife() {
     --m_saveData.remainingLives;
     m_saveData.powerUpState = "None";
     m_saveData.hasPlayerPosition = false;
+    m_invincibilityTimeRemaining = 0.f;
+    m_speedBoostTimeRemaining = 0.f;
+    m_damageCooldown = 0.f;
 
     if (m_saveData.remainingLives <= 0) {
         m_saveData.remainingLives = 0;
-        m_gameOver = true;
         AudioManager::getInstance().playEffect(SoundEffect::GameOver);
-        m_statusText.setString("GAME OVER - Press R to restart");
-        const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-        m_statusText.setOrigin(
-            textBounds.left + textBounds.width / 2.f,
-            textBounds.top + textBounds.height / 2.f
-        );
-        m_statusText.setPosition(960.f, 180.f);
+        GameManager::getInstance().pushState(std::make_unique<GameOverState>());
         return;
     }
 
@@ -427,14 +663,6 @@ void PlayState::loseLife() {
     );
 }
 
-void PlayState::restartGame() {
-    m_saveData = SaveData{};
-    m_gameOver = false;
-    m_victory = false;
-    loadLevel(1, false);
-    showStatus("New game started");
-}
-
 void PlayState::updateHud() {
     std::string status =
         "LEVEL " + std::to_string(m_saveData.currentLevel) +
@@ -443,6 +671,17 @@ void PlayState::updateHud() {
         "   CHARACTER " + m_saveData.selectedCharacter +
         "   POWER " + m_saveData.powerUpState +
         "   [F5 SAVE / F9 LOAD]";
+
+    if (m_invincibilityTimeRemaining > 0.f) {
+        status += "   STAR " + std::to_string(
+            static_cast<int>(std::ceil(m_invincibilityTimeRemaining))
+        ) + "s";
+    }
+    if (m_speedBoostTimeRemaining > 0.f) {
+        status += "   SPEED " + std::to_string(
+            static_cast<int>(std::ceil(m_speedBoostTimeRemaining))
+        ) + "s";
+    }
 
     m_hudText.setString(status);
 }

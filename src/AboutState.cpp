@@ -1,5 +1,6 @@
 #include "AboutState.hpp"
 #include "GameManager.hpp"
+#include "commands/MenuCommands.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -67,14 +68,13 @@ void AboutState::initUI() {
         "BACK", m_font, m_buttonTexture, sf::Vector2f(960.f, 720.f), sf::Vector2f(260.f, 60.f), 24
     );
     m_backButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
-    m_backButton->setCallback([]() {
-        GameManager::getInstance().popState();
-    });
+    m_backButton->setCommand(std::make_unique<PopStateCommand>());
 }
 
 void AboutState::Input(const sf::Event &event) {
-    sf::Vector2i pixelPos = sf::Mouse::getPosition(GameManager::getInstance().getWindow());
-    sf::Vector2f mousePos(static_cast<float>(pixelPos.x), static_cast<float>(pixelPos.y));
+    sf::RenderWindow &window = GameManager::getInstance().getWindow();
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos);
 
     if (event.type == sf::Event::MouseMoved) {
         m_backButton->update(mousePos);

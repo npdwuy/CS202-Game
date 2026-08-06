@@ -3,15 +3,21 @@
 #include "SFML/Window/Keyboard.hpp"
 
 class Player : public Character {
+public:
+    static constexpr float CollisionWidth = 32.f;
+    static constexpr float CollisionHeight = 70.f;
+
 protected:
     float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
     float speed_ = 280.0f;
+    float speedMultiplier_ = 1.0f;
     float jumpPower_ = 660.0f;
     float animationTime_ = 0.0f;
     float jumpBufferTimer_ = 0.0f;
     bool movedThisFrame_ = false;
     bool jumpedThisFrame_ = false;
+    bool jumpHeld_ = false;
     std::string label_;
 
     void performJump();
@@ -22,7 +28,7 @@ protected:
 
 public:
     Player(sf:: Vector2f position, std::string label, float speed, float jumpPower)
-        : Character(position, 27.0f, 30.0f),
+        : Character(position, CollisionWidth, CollisionHeight),
           speed_(speed), jumpPower_(jumpPower),
           label_(std::move(label)) {}
 
@@ -36,5 +42,7 @@ public:
     void moveRight();
     void jump();
     bool consumeJumpEvent();
+    void setSpeedMultiplier(float multiplier);
+    float speedMultiplier() const;
 
 };

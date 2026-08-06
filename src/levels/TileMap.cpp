@@ -38,12 +38,60 @@ void TileMap::resolveCollision(
     character.setOnGround(false);
     character.setHitRoof(false);
 
+    const auto forEachNearbySolid = [this](
+        const sf::FloatRect& bounds,
+        const auto& visitor
+    ) {
+        if (m_data.rows.empty() || m_data.tileSize == 0U) {
+            return;
+        }
+
+        const float tileSize = static_cast<float>(m_data.tileSize);
+        const float right = bounds.left + bounds.width - 0.001f;
+        const float bottom = bounds.top + bounds.height - 0.001f;
+
+        int firstColumn = static_cast<int>(std::floor(bounds.left / tileSize));
+        int lastColumn = static_cast<int>(std::floor(right / tileSize));
+        int firstRow = static_cast<int>(std::floor(bounds.top / tileSize));
+        int lastRow = static_cast<int>(std::floor(bottom / tileSize));
+
+        firstColumn = std::max(0, firstColumn);
+        firstRow = std::max(0, firstRow);
+        lastColumn = std::min(
+            static_cast<int>(m_data.widthInTiles()) - 1,
+            lastColumn
+        );
+        lastRow = std::min(
+            static_cast<int>(m_data.heightInTiles()) - 1,
+            lastRow
+        );
+
+        if (firstColumn > lastColumn || firstRow > lastRow) {
+            return;
+        }
+
+        for (int row = firstRow; row <= lastRow; ++row) {
+            for (int column = firstColumn; column <= lastColumn; ++column) {
+                if (m_data.rows[row][column] != '#') {
+                    continue;
+                }
+
+                visitor(sf::FloatRect(
+                    static_cast<float>(column) * tileSize,
+                    static_cast<float>(row) * tileSize,
+                    tileSize,
+                    tileSize
+                ));
+            }
+        }
+    };
+
     position.x += velocity.x * deltaTime;
     sf::FloatRect horizontalBounds(position.x, position.y, width, height);
 
-    for (const sf::FloatRect& tile : m_solidBounds) {
+    forEachNearbySolid(horizontalBounds, [&](const sf::FloatRect& tile) {
         if (!horizontalBounds.intersects(tile)) {
-            continue;
+            return;
         }
 
         if (velocity.x > 0.f) {
@@ -54,7 +102,7 @@ void TileMap::resolveCollision(
 
         velocity.x = 0.f;
         horizontalBounds.left = position.x;
-    }
+    });
 
     const float maximumX = std::max(0.f, m_data.worldSize().x - width);
     if (position.x < 0.f) {
@@ -68,9 +116,9 @@ void TileMap::resolveCollision(
     position.y += velocity.y * deltaTime;
     sf::FloatRect verticalBounds(position.x, position.y, width, height);
 
-    for (const sf::FloatRect& tile : m_solidBounds) {
+    forEachNearbySolid(verticalBounds, [&](const sf::FloatRect& tile) {
         if (!verticalBounds.intersects(tile)) {
-            continue;
+            return;
         }
 
         if (velocity.y > 0.f) {
@@ -83,7 +131,7 @@ void TileMap::resolveCollision(
 
         velocity.y = 0.f;
         verticalBounds.top = position.y;
-    }
+    });
 
     character.setPosition(position);
     character.setVelocity(velocity);
@@ -133,9 +181,59 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     return m_data.rows[row][column] == '#';
 }
 
+bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
+    if (m_data.rows.empty() || m_data.tileSize == 0U) {
+        return false;
+    }
+
+    const float tileSize = static_cast<float>(m_data.tileSize);
+    int firstColumn = static_cast<int>(std::floor(bounds.left / tileSize));
+    int lastColumn = static_cast<int>(std::floor(
+        (bounds.left + bounds.width - 0.001f) / tileSize
+    ));
+    int firstRow = static_cast<int>(std::floor(bounds.top / tileSize));
+    int lastRow = static_cast<int>(std::floor(
+        (bounds.top + bounds.height - 0.001f) / tileSize
+    ));
+
+    firstColumn = std::max(0, firstColumn);
+    firstRow = std::max(0, firstRow);
+    lastColumn = std::min(
+        static_cast<int>(m_data.widthInTiles()) - 1,
+        lastColumn
+    );
+    lastRow = std::min(
+        static_cast<int>(m_data.heightInTiles()) - 1,
+        lastRow
+    );
+
+    if (firstColumn > lastColumn || firstRow > lastRow) {
+        return false;
+    }
+
+    for (int row = firstRow; row <= lastRow; ++row) {
+        for (int column = firstColumn; column <= lastColumn; ++column) {
+            if (m_data.rows[row][column] != '#') {
+                continue;
+            }
+
+            const sf::FloatRect tile(
+                static_cast<float>(column) * tileSize,
+                static_cast<float>(row) * tileSize,
+                tileSize,
+                tileSize
+            );
+            if (bounds.intersects(tile)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void TileMap::rebuildGeometry() {
     m_tiles.clear();
-    m_solidBounds.clear();
 
     const float tileSize = static_cast<float>(m_data.tileSize);
 
@@ -161,7 +259,6 @@ void TileMap::rebuildGeometry() {
             tile.setOutlineThickness(-2.f);
 
             m_tiles.push_back(tile);
-            m_solidBounds.emplace_back(position.x, position.y, tileSize, tileSize);
         }
     }
 

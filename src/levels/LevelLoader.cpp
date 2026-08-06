@@ -150,10 +150,7 @@ LevelData LevelLoader::loadFromFile(const std::string& path) {
             } else if (symbol == 'X') {
                 ++exitCount;
                 level.exitPosition = position;
-            } else if (
-                symbol == 'C' || symbol == 'M' || symbol == 'F' ||
-                symbol == 'G' || symbol == 'K' || symbol == 'B'
-            ) {
+            } else if (symbol != '#' && symbol != '.') {
                 level.spawnRequests.push_back({symbol, position});
             }
         }
@@ -175,6 +172,6 @@ LevelData LevelLoader::loadFromFile(const std::string& path) {
 }
 
 bool LevelLoader::isSupportedSymbol(char symbol) {
-    const std::string supportedSymbols = "#.PCMFGKBX";
+    const std::string supportedSymbols = "#.PCMFGKEBXLSV";
     return supportedSymbols.find(symbol) != std::string::npos;
 }

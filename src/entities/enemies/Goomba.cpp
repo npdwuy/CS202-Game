@@ -1,4 +1,5 @@
 #include "entities/enemies/Goomba.hpp"
+#include "resources/ResourceManager.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -21,15 +22,9 @@ Goomba::Goomba(
         );
     }
 
-    if (!m_texture.loadFromFile(
-            "assets/sprites/enemies/goomba_walk.png"))
-    {
-        throw std::runtime_error(
-            "Failed to load Goomba sprite."
-        );
-    }
-
-    m_sprite.setTexture(m_texture);
+    m_sprite.setTexture(ResourceManager::getInstance().getTexture(
+        "assets/sprites/enemies/goomba_walk.png"
+    ));
     m_sprite.setTextureRect(sf::IntRect(0, 0, 16, 16));
     m_sprite.setScale(3.f, 3.f);
     m_sprite.setPosition(position);

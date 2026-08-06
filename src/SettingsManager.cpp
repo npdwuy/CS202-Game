@@ -1,7 +1,9 @@
 #include "SettingsManager.hpp"
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <stdexcept>
 
 SettingsManager::SettingsManager() {
     resetToDefaults();
@@ -98,15 +100,35 @@ void SettingsManager::loadFromFile(const std::string& path) {
         std::string key = line.substr(0, equalPos);
         std::string val = line.substr(equalPos + 1);
 
-        if (key == "difficulty") {
-            m_difficulty = stringToDifficulty(val);
-        } else if (key == "sfxVolume") {
-            m_sfxVolume = std::stof(val);
-        } else if (key == "bgmVolume") {
-            m_bgmVolume = std::stof(val);
-        } else if (key.rfind("key_", 0) == 0) { // starts with "key_"
-            std::string action = key.substr(4);
-            m_keyBindings[action] = stringToKey(val);
+        try {
+            if (key == "difficulty") {
+                if (val == "Easy" || val == "Normal" || val == "Hard") {
+                    m_difficulty = stringToDifficulty(val);
+                }
+            } else if (key == "sfxVolume" || key == "bgmVolume") {
+                std::size_t parsedCharacters = 0;
+                const float volume = std::stof(val, &parsedCharacters);
+                if (parsedCharacters != val.size() || !std::isfinite(volume)) {
+                    throw std::invalid_argument("invalid volume");
+                }
+
+                if (key == "sfxVolume") {
+                    setSFXVolume(volume);
+                } else {
+                    setBGMVolume(volume);
+                }
+            } else if (key.rfind("key_", 0) == 0) {
+                const std::string action = key.substr(4);
+                const sf::Keyboard::Key parsedKey = stringToKey(val);
+                if (
+                    parsedKey != sf::Keyboard::Unknown &&
+                    m_keyBindings.find(action) != m_keyBindings.end()
+                ) {
+                    m_keyBindings[action] = parsedKey;
+                }
+            }
+        } catch (const std::exception&) {
+            std::cerr << "Ignoring invalid setting: " << line << '\n';
         }
     }
 }
