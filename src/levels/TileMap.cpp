@@ -13,6 +13,8 @@ struct TilePalette {
     sf::Color outline;
     sf::Color lightFill;
     sf::Color darkFill;
+    sf::Color surface;
+    sf::Color surfaceHighlight;
 };
 
 TilePalette paletteFor(const std::string& difficulty) {
@@ -20,20 +22,26 @@ TilePalette paletteFor(const std::string& difficulty) {
         return {
             sf::Color(103, 66, 34),
             sf::Color(190, 129, 61),
-            sf::Color(158, 99, 45)
+            sf::Color(158, 99, 45),
+            sf::Color(224, 178, 75),
+            sf::Color(255, 218, 117)
         };
     }
     if (difficulty == "Hard") {
         return {
             sf::Color(52, 38, 45),
             sf::Color(112, 76, 72),
-            sf::Color(82, 54, 59)
+            sf::Color(82, 54, 59),
+            sf::Color(148, 53, 43),
+            sf::Color(235, 93, 50)
         };
     }
     return {
         sf::Color(91, 51, 31),
         sf::Color(158, 93, 52),
-        sf::Color(139, 78, 43)
+        sf::Color(139, 78, 43),
+        sf::Color(74, 174, 70),
+        sf::Color(122, 220, 90)
     };
 }
 
@@ -311,6 +319,20 @@ void TileMap::rebuildGeometry() {
                 },
                 fillColor
             );
+
+            const bool exposedTop = row == 0U || m_data.rows[row - 1U][column] != '#';
+            if (exposedTop) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x, position.y, tileSize, 10.f},
+                    palette.surface
+                );
+                appendQuad(
+                    m_tileVertices,
+                    {position.x, position.y, tileSize, 3.f},
+                    palette.surfaceHighlight
+                );
+            }
         }
     }
 
