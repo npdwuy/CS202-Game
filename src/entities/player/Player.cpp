@@ -71,7 +71,13 @@ void Player:: update(sf::Time timePerFrame){
     }
 
     if(!movedThisFrame_){
-        velocity_.x *=0.78f;
+        constexpr float ReferenceFrameSeconds = 1.f / 30.f;
+        constexpr float ReferenceDamping = 0.78f;
+        const float damping = std::pow(
+            ReferenceDamping,
+            timePerFrame.asSeconds() / ReferenceFrameSeconds
+        );
+        velocity_.x *= damping;
         if(std::abs(velocity_.x) < 7.0f){
             velocity_.x = 0.0f;
         }

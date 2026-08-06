@@ -8,7 +8,7 @@
 GameManager::GameManager() : m_window(sf::VideoMode(1920, 1080), "CS202-Group5", sf::Style::Default),
                              m_isRunning(true) 
 {
-    m_window.setFramerateLimit(30);
+    m_window.setFramerateLimit(60);
     m_gameView.setSize(1920.f, 1080.f);
     m_gameView.setCenter(960.f, 540.f);
     updateView(m_window.getSize().x, m_window.getSize().y);
@@ -90,7 +90,7 @@ void GameManager::run()
 {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
-    const sf::Time timePerFrame = sf::seconds(1.f / 30.f);
+    const sf::Time timePerFrame = sf::seconds(1.f / 60.f);
 
     while (m_isRunning && m_window.isOpen()) {
         sf::Time elapsedTime = clock.restart();
