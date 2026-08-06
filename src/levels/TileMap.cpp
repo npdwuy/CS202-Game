@@ -157,8 +157,8 @@ void TileMap::resolveCollision(
         }
 
         const float tileSize = static_cast<float>(m_data.tileSize);
-        const float right = bounds.left + bounds.width - 0.001f;
-        const float bottom = bounds.top + bounds.height - 0.001f;
+        const float right = bounds.left + bounds.width - 0.1f;
+        const float bottom = bounds.top + bounds.height - 0.1f;
 
         int firstColumn = static_cast<int>(std::floor(bounds.left / tileSize));
         int lastColumn = static_cast<int>(std::floor(right / tileSize));

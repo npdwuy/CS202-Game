@@ -64,7 +64,7 @@ public:
         position.x += velocity.x * dt.asSeconds();
 
         // sf::FloatRect nhận tham số: (left, top, width, height)
-        sf::FloatRect horizontal(position.x, position.y, width, height);
+        // sf::FloatRect horizontal(position.x, position.y, width, height);
         
         // if (collidesSolid(horizontal)) {
         //     if (velocity.x > 0.0f) { // Đang sang phải -> va vào vách bên trái Tile
@@ -77,13 +77,13 @@ public:
         //     velocity.x = 0.0f;
         // }
 
-        setPosition(position);
+        // setPosition(position);
 
         // -------------------------------------------------------------
         // XỬ LÝ DI CHUYỂN & VA CHẠM THEO TRỤC Y (DỌC)
         // -------------------------------------------------------------
         position.y += velocity.y * dt.asSeconds();
-        sf::FloatRect vertical(position.x, position.y, width, height);
+        // sf::FloatRect vertical(position.x, position.y, width, height);
 ///
         // if (collidesSolid(vertical)) {
         //     if (velocity.y > 0.0f) { // Đang rơi xuống -> Chạm đất
