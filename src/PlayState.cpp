@@ -188,6 +188,7 @@ void PlayState::Update(sf::Time timePerFrame) {
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
     }
+    updateCamera(timePerFrame);
 
     for (auto& enemy : m_enemies) {
         enemy->Update(timePerFrame);
@@ -234,6 +235,9 @@ void PlayState::Update(sf::Time timePerFrame) {
 }
 
 void PlayState::Render(sf::RenderWindow& window) {
+    const sf::View& screenView = GameManager::getInstance().getGameView();
+    window.setView(m_camera.view());
+
     m_tileMap.render(window);
 
     for (const auto& enemy : m_enemies) {
@@ -248,7 +252,8 @@ void PlayState::Render(sf::RenderWindow& window) {
         m_player->Render(window);
     }
 
-    m_hud.layout(GameManager::getInstance().getGameView());
+    window.setView(screenView);
+    m_hud.layout(screenView);
     m_hud.render(window);
 }
 
@@ -296,6 +301,16 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
         }
+    );
+
+    const sf::Vector2f playerCenter = spawnPosition + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.reset(
+        playerCenter,
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView()
     );
 
     m_saveData.hasPlayerPosition = false;
@@ -650,6 +665,24 @@ void PlayState::updateHud() {
         m_invincibilityTimeRemaining,
         m_speedBoostTimeRemaining
     });
+}
+
+void PlayState::updateCamera(sf::Time timePerFrame) {
+    if (!m_player) {
+        return;
+    }
+
+    const sf::Vector2f playerCenter = m_player->position() + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.update(
+        playerCenter,
+        m_player->velocity(),
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView(),
+        timePerFrame
+    );
 }
 
 void PlayState::showStatus(const std::string& message, float duration) {

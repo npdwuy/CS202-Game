@@ -9,6 +9,7 @@
 #include "entities/player/Player.hpp"
 #include "events/GameEventListener.hpp"
 #include "ui/GameHud.hpp"
+#include "camera/PlayerCamera.hpp"
 
 #include <memory>
 #include <string>
@@ -40,6 +41,7 @@ private:
     void updateTimedPowerUps(sf::Time timePerFrame);
     void loseLife();
     void updateHud();
+    void updateCamera(sf::Time timePerFrame);
     void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
     bool hasActiveBoss() const;
@@ -53,6 +55,7 @@ private:
 
     SaveData m_saveData;
     GameHud m_hud;
+    PlayerCamera m_camera;
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
