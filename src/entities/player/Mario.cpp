@@ -28,53 +28,53 @@ void Mario::update(sf::Time timePerFrame) {
 
     // Cú pháp: sf::IntRect(Tọa_độ_X, Tọa_độ_Y, Chiều_Rộng, Chiều_Cao)
     if(fireMario_){
-        baseImage_ = 738;
+        baseImage_ = 736;
     }    
 
     // 1. Đứng yên (Lấy khung hình "Stand" chuẩn)
     static const std::vector<sf::IntRect> framesStand = {
-         sf::IntRect(160, 15, 35, 50),
+         sf::IntRect(160  , 15, 35, 50),
     };
     
     // 2. Đi bộ (Lấy 8 khung hình ở hàng "Walk(8)")
     static const std::vector<sf::IntRect> framesWalk = {
-        sf::IntRect(13 + baseImage_, 85, 40, 50),
-         sf::IntRect(302 + baseImage_, 85, 40, 50),
-        sf::IntRect(54 + baseImage_, 85, 40, 50),
-        sf::IntRect(93 + baseImage_, 85, 40, 50),
-        sf::IntRect(137 + baseImage_, 85, 40, 50),
-        sf::IntRect(178 + baseImage_, 85, 40, 50),
-         sf::IntRect(302 + baseImage_, 85, 40, 50),
-        sf::IntRect(219 + baseImage_, 85, 40, 50),
-        sf::IntRect(259 + baseImage_, 85, 40, 50),
-        sf::IntRect(302 + baseImage_, 85, 40, 50)
+        sf::IntRect(13  , 85, 40, 50),
+        sf::IntRect(302  , 85, 40, 50),
+        sf::IntRect(54  , 85, 40, 50),
+        sf::IntRect(93  , 85, 40, 50),
+        sf::IntRect(137  , 85, 40, 50),
+        sf::IntRect(178  , 85, 40, 50),
+        sf::IntRect(302  , 85, 40, 50),
+        sf::IntRect(219  , 85, 40, 50),
+        sf::IntRect(259  , 85, 40, 50),
+        sf::IntRect(302  , 85, 40, 50)
     };
     
     // 3. Nhảy lên (Lấy khung ở hàng "Jump(2)")
     static const std::vector<sf::IntRect> framesJump = {
-        sf::IntRect(22 + baseImage_, 155, 40, 55),
-        sf::IntRect(65 + baseImage_, 155, 40, 55)
+        sf::IntRect(22  , 155, 40, 55),
+        sf::IntRect(65  , 155, 40, 55)
     };
     
     // 4. Rơi xuống (Lấy khung ở hàng "Fall(3)")
     static const std::vector<sf::IntRect> framesFall = {
-        sf::IntRect(115 + baseImage_, 155, 40, 55),
-        sf::IntRect(118 + baseImage_, 155, 40, 55),
-        sf::IntRect(200 + baseImage_, 155, 40, 55)
+        sf::IntRect(115  , 155, 40, 55),
+        sf::IntRect(118  , 155, 40, 55),
+        sf::IntRect(200  , 155, 40, 55)
     };
 
     // 5. Nhảy đụng trần
     static const std::vector<sf::IntRect> framesHitRoof = {
-        sf::IntRect(250 + baseImage_, 155, 42, 42),
-        sf::IntRect(300 + baseImage_, 155, 42, 42)
+        sf::IntRect(250  , 155, 42, 42),
+        sf::IntRect(300  , 155, 42, 42)
     };
     
     // 6. Chuyển dần sang đứng yên
 
     static const std::vector<sf::IntRect> framesTransitionStand = {
-        sf::IntRect(24 + baseImage_, 15, 35, 50),
-         sf::IntRect(67 + baseImage_, 15, 35, 50),
-        sf::IntRect(108 + baseImage_, 12, 35, 50)
+        sf::IntRect(24  , 15, 35, 50),
+        sf::IntRect(67  , 15, 35, 50),
+        sf::IntRect(108  , 12, 35, 50)
     };
 
 
@@ -100,6 +100,9 @@ void Mario::update(sf::Time timePerFrame) {
     }
 
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
+    if(fireMario_){
+        currentRect.left += baseImage_;
+    }
     sprite_.setTextureRect(currentRect);
 
     // Đặt Origin ở điểm giữa cạnh dưới của hình ảnh
@@ -108,7 +111,7 @@ void Mario::update(sf::Time timePerFrame) {
     // Lật mặt và xử lý Scale
     float scaleAbs = 1.5f; // Độ to của nhân vật
     if(mushroom_){
-        scaleAbs = 3.0f;
+        scaleAbs = 1.8f;
     }
     if (velocity_.x < 0.0f) {
         sprite_.setScale(-scaleAbs, scaleAbs);
