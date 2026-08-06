@@ -374,6 +374,7 @@ void PlayState::loadGame() {
     }
 
     m_saveData = *loadedData;
+    resetTransientEffects();
     loadLevel(m_saveData.currentLevel, true);
     showStatus("Game loaded");
     updateHud();
@@ -611,6 +612,17 @@ void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
     }
 }
 
+void PlayState::resetTransientEffects() {
+    m_invincibilityTimeRemaining = 0.f;
+    m_speedBoostTimeRemaining = 0.f;
+    m_damageCooldown = 0.f;
+    m_playerDamagePending = false;
+
+    if (m_player) {
+        m_player->setSpeedMultiplier(1.f);
+    }
+}
+
 void PlayState::handleLevelExit() {
     if (!playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
@@ -649,9 +661,7 @@ void PlayState::loseLife() {
     --m_saveData.remainingLives;
     m_saveData.powerUpState = "None";
     m_saveData.hasPlayerPosition = false;
-    m_invincibilityTimeRemaining = 0.f;
-    m_speedBoostTimeRemaining = 0.f;
-    m_damageCooldown = 0.f;
+    resetTransientEffects();
 
     if (m_saveData.remainingLives <= 0) {
         m_saveData.remainingLives = 0;

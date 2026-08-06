@@ -39,6 +39,7 @@ private:
     void handleLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
+    void resetTransientEffects();
     void loseLife();
     void updateHud();
     void updateCamera(sf::Time timePerFrame);

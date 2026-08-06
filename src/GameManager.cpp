@@ -188,6 +188,10 @@ void GameManager::update(sf::Time timePerFrame) {
 
 void GameManager::render() {
     m_window.clear(sf::Color::Black);
+    // Each state starts from the stable screen-space view. Gameplay states
+    // may temporarily install a world camera, but it must not leak into
+    // menus or overlays on the following frame.
+    m_window.setView(m_gameView);
 
     if (!m_states.empty()) {
         int startIdx = static_cast<int>(m_states.size()) - 1;
