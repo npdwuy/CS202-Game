@@ -1,4 +1,5 @@
 #include "camera/PlayerCamera.hpp"
+#include "camera/CameraMath.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -24,13 +25,6 @@ float followOutsideDeadZone(float current, float focus, float deadZone) {
     return current;
 }
 
-float clampAxis(float value, float lower, float upper) {
-    if (lower > upper) {
-        return (lower + upper) * 0.5f;
-    }
-    return std::clamp(value, lower, upper);
-}
-
 }
 
 PlayerCamera::PlayerCamera() {
@@ -44,7 +38,11 @@ void PlayerCamera::reset(
 ) {
     updateViewSize(screenView);
     focusPosition.y -= VerticalFocusOffset;
-    m_center = clampCenter(focusPosition, worldBounds);
+    m_center = camera_math::clampCenter(
+        focusPosition,
+        m_view.getSize(),
+        worldBounds
+    );
     m_view.setCenter(m_center);
     m_initialized = true;
 }
@@ -84,12 +82,20 @@ void PlayerCamera::update(
             VerticalDeadZone
         )
     };
-    target = clampCenter(target, worldBounds);
+    target = camera_math::clampCenter(
+        target,
+        m_view.getSize(),
+        worldBounds
+    );
 
     const float seconds = std::clamp(deltaTime.asSeconds(), 0.f, 0.1f);
     const float blend = 1.f - std::exp(-FollowSharpness * seconds);
     m_center += (target - m_center) * blend;
-    m_center = clampCenter(m_center, worldBounds);
+    m_center = camera_math::clampCenter(
+        m_center,
+        m_view.getSize(),
+        worldBounds
+    );
     m_view.setCenter(m_center);
 }
 
@@ -98,15 +104,11 @@ const sf::View& PlayerCamera::view() const {
 }
 
 sf::FloatRect PlayerCamera::visibleBounds(float padding) const {
-    const sf::Vector2f size = m_view.getSize();
-    const sf::Vector2f center = m_view.getCenter();
-    const float safePadding = std::max(0.f, padding);
-    return {
-        center.x - size.x * 0.5f - safePadding,
-        center.y - size.y * 0.5f - safePadding,
-        size.x + safePadding * 2.f,
-        size.y + safePadding * 2.f
-    };
+    return camera_math::visibleBounds(
+        m_view.getCenter(),
+        m_view.getSize(),
+        padding
+    );
 }
 
 void PlayerCamera::updateViewSize(const sf::View& screenView) {
@@ -114,25 +116,4 @@ void PlayerCamera::updateViewSize(const sf::View& screenView) {
     if (m_view.getSize() != desiredSize) {
         m_view.setSize(desiredSize);
     }
-}
-
-sf::Vector2f PlayerCamera::clampCenter(
-    sf::Vector2f center,
-    const sf::FloatRect& worldBounds
-) const {
-    const sf::Vector2f halfView = m_view.getSize() * 0.5f;
-    const float right = worldBounds.left + worldBounds.width;
-    const float bottom = worldBounds.top + worldBounds.height;
-
-    center.x = clampAxis(
-        center.x,
-        worldBounds.left + halfView.x,
-        right - halfView.x
-    );
-    center.y = clampAxis(
-        center.y,
-        worldBounds.top + halfView.y,
-        bottom - halfView.y
-    );
-    return center;
 }

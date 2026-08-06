@@ -79,4 +79,14 @@ if(BUILD_TESTING)
         COMMAND member4_data_tests
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
+
+    add_executable(player_camera_tests
+        tests/player_camera_tests.cpp
+    )
+    target_include_directories(player_camera_tests PRIVATE include SFML/include)
+    add_test(
+        NAME player_camera_tests
+        COMMAND player_camera_tests
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
 endif()
