@@ -47,6 +47,8 @@ public:
     }
     void getMushroom(){
         mushroom_ = true;
+        width_ = width_ * 1.2f;
+        height_ = height_ * 1.2f;
     }
 
     void update(sf::Time timePerFrame) override;
