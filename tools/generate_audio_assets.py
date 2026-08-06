@@ -96,10 +96,12 @@ def main() -> None:
     write_sequence(
         "jump.wav",
         [(330.0, 0.06, 0.26), (440.0, 0.06, 0.28), (660.0, 0.09, 0.25)],
+        waveform="triangle",
     )
     write_sequence(
         "coin.wav",
         [(988.0, 0.07, 0.22), (1319.0, 0.12, 0.22)],
+        waveform="triangle",
     )
     write_sequence(
         "power_up.wav",
@@ -109,6 +111,38 @@ def main() -> None:
             (659.0, 0.07, 0.22),
             (784.0, 0.16, 0.24),
         ],
+        waveform="triangle",
+    )
+    write_sequence(
+        "one_up.wav",
+        [
+            (523.0, 0.07, 0.20),
+            (659.0, 0.07, 0.21),
+            (784.0, 0.07, 0.22),
+            (1047.0, 0.18, 0.24),
+        ],
+        waveform="triangle",
+    )
+    write_sequence(
+        "invincibility.wav",
+        [
+            (784.0, 0.05, 0.16),
+            (988.0, 0.05, 0.17),
+            (1175.0, 0.05, 0.18),
+            (1319.0, 0.05, 0.18),
+            (1568.0, 0.14, 0.20),
+        ],
+    )
+    write_sequence(
+        "speed_boost.wav",
+        [
+            (330.0, 0.045, 0.18),
+            (440.0, 0.045, 0.18),
+            (587.0, 0.045, 0.19),
+            (784.0, 0.045, 0.20),
+            (1047.0, 0.12, 0.21),
+        ],
+        waveform="triangle",
     )
     write_sequence(
         "enemy_defeated.wav",
