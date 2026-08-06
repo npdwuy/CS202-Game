@@ -11,6 +11,10 @@ protected:
     float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
     float speed_ = 280.0f;
+    // Input buffer for rapid tap handling
+    float moveLeftTimer_ = 0.0f;
+    float moveRightTimer_ = 0.0f;
+    static constexpr float MoveInputWindow = 0.12f; // seconds
     float speedMultiplier_ = 1.0f;
     float jumpPower_ = 670.0f;
     float animationTime_ = 0.0f;

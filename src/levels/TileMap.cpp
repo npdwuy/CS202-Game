@@ -157,8 +157,10 @@ void TileMap::resolveCollision(
         }
 
         const float tileSize = static_cast<float>(m_data.tileSize);
-        const float right = bounds.left + bounds.width - 0.1f;
-        const float bottom = bounds.top + bounds.height - 0.1f;
+        // Slightly shrink bounds to avoid treating adjacent tiles as overlapping
+        // Increase shrink margin to reduce false‑positive overlaps
+        const float right = bounds.left + bounds.width - 0.2f;
+        const float bottom = bounds.top + bounds.height - 0.2f;
 
         int firstColumn = static_cast<int>(std::floor(bounds.left / tileSize));
         int lastColumn = static_cast<int>(std::floor(right / tileSize));
@@ -205,9 +207,13 @@ void TileMap::resolveCollision(
         }
 
         if (velocity.x > 0.f) {
-            position.x = tile.left - width;
+            // Move Mario just left of the tile with a small skin to avoid immediate re‑collision
+            // Apply a larger skin to ensure separation from the tile
+            position.x = tile.left - width - 0.1f;
         } else if (velocity.x < 0.f) {
-            position.x = tile.left + tile.width;
+            // Move Mario just right of the tile with a small skin
+            // Apply a larger skin to ensure separation from the tile
+            position.x = tile.left + tile.width + 0.1f;
         }
 
         velocity.x = 0.f;
