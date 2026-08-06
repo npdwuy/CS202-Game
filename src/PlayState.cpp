@@ -19,24 +19,10 @@
 #include <stdexcept>
 #include <string>
 
-PlayState::PlayState(bool loadSavedGame) {
-    m_hudFont = &ResourceManager::getInstance().getFont(
-        "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
-    );
-
-    m_hudText.setFont(*m_hudFont);
-    m_hudText.setCharacterSize(24);
-    m_hudText.setFillColor(sf::Color::White);
-    m_hudText.setOutlineColor(sf::Color::Black);
-    m_hudText.setOutlineThickness(2.f);
-    m_hudText.setPosition(18.f, 14.f);
-
-    m_statusText.setFont(*m_hudFont);
-    m_statusText.setCharacterSize(34);
-    m_statusText.setFillColor(sf::Color(255, 235, 120));
-    m_statusText.setOutlineColor(sf::Color::Black);
-    m_statusText.setOutlineThickness(3.f);
-
+PlayState::PlayState(bool loadSavedGame)
+    : m_hud(ResourceManager::getInstance().getFont(
+          "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
+      )) {
     SettingsManager& settings =
         GameManager::getInstance().getSettings();
 
@@ -197,13 +183,7 @@ void PlayState::Input(const sf::Event& event) {
 
 void PlayState::Update(sf::Time timePerFrame) {
     updateTimedPowerUps(timePerFrame);
-
-    if (m_statusTimeRemaining > 0.f) {
-        m_statusTimeRemaining = std::max(
-            0.f,
-            m_statusTimeRemaining - timePerFrame.asSeconds()
-        );
-    }
+    m_hud.update(timePerFrame);
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
@@ -268,10 +248,8 @@ void PlayState::Render(sf::RenderWindow& window) {
         m_player->Render(window);
     }
 
-    window.draw(m_hudText);
-    if (m_statusTimeRemaining > 0.f) {
-        window.draw(m_statusText);
-    }
+    m_hud.layout(GameManager::getInstance().getGameView());
+    m_hud.render(window);
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
@@ -664,37 +642,18 @@ void PlayState::loseLife() {
 }
 
 void PlayState::updateHud() {
-    std::string status =
-        "LEVEL " + std::to_string(m_saveData.currentLevel) +
-        "   SCORE " + std::to_string(m_saveData.score) +
-        "   LIVES " + std::to_string(m_saveData.remainingLives) +
-        "   CHARACTER " + m_saveData.selectedCharacter +
-        "   POWER " + m_saveData.powerUpState +
-        "   [F5 SAVE / F9 LOAD]";
-
-    if (m_invincibilityTimeRemaining > 0.f) {
-        status += "   STAR " + std::to_string(
-            static_cast<int>(std::ceil(m_invincibilityTimeRemaining))
-        ) + "s";
-    }
-    if (m_speedBoostTimeRemaining > 0.f) {
-        status += "   SPEED " + std::to_string(
-            static_cast<int>(std::ceil(m_speedBoostTimeRemaining))
-        ) + "s";
-    }
-
-    m_hudText.setString(status);
+    m_hud.setData({
+        m_saveData.currentLevel,
+        m_saveData.score,
+        m_saveData.remainingLives,
+        m_saveData.powerUpState,
+        m_invincibilityTimeRemaining,
+        m_speedBoostTimeRemaining
+    });
 }
 
 void PlayState::showStatus(const std::string& message, float duration) {
-    m_statusText.setString(message);
-    const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-    m_statusText.setOrigin(
-        textBounds.left + textBounds.width / 2.f,
-        textBounds.top + textBounds.height / 2.f
-    );
-    m_statusText.setPosition(960.f, 120.f);
-    m_statusTimeRemaining = duration;
+    m_hud.showStatus(message, duration);
 }
 
 sf::FloatRect PlayState::playerBounds() const {

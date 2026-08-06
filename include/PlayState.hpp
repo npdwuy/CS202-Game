@@ -8,6 +8,7 @@
 #include "entities/Item.hpp"
 #include "entities/player/Player.hpp"
 #include "events/GameEventListener.hpp"
+#include "ui/GameHud.hpp"
 
 #include <memory>
 #include <string>
@@ -51,10 +52,7 @@ private:
     std::unique_ptr<Player> m_player;
 
     SaveData m_saveData;
-    const sf::Font* m_hudFont = nullptr;
-    sf::Text m_hudText;
-    sf::Text m_statusText;
-    float m_statusTimeRemaining = 0.f;
+    GameHud m_hud;
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
