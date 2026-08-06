@@ -59,6 +59,15 @@ void appendQuad(
     vertices.append({{bounds.left, bounds.top + bounds.height}, color});
 }
 
+sf::Color brighten(sf::Color color, unsigned int amount) {
+    return {
+        static_cast<sf::Uint8>(std::min(255U, color.r + amount)),
+        static_cast<sf::Uint8>(std::min(255U, color.g + amount)),
+        static_cast<sf::Uint8>(std::min(255U, color.b + amount)),
+        color.a
+    };
+}
+
 }
 
 void TileMap::load(const std::string& path) {
@@ -331,6 +340,37 @@ void TileMap::rebuildGeometry() {
                     m_tileVertices,
                     {position.x, position.y, tileSize, 3.f},
                     palette.surfaceHighlight
+                );
+            }
+
+            const bool exposedLeft =
+                column == 0U || m_data.rows[row][column - 1U] != '#';
+            const bool exposedRight =
+                column + 1U >= m_data.rows[row].size() ||
+                m_data.rows[row][column + 1U] != '#';
+            const bool exposedBottom =
+                row + 1U >= m_data.rows.size() ||
+                m_data.rows[row + 1U][column] != '#';
+
+            if (exposedLeft) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x, position.y + 3.f, 3.f, tileSize - 3.f},
+                    brighten(fillColor, 24U)
+                );
+            }
+            if (exposedRight) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x + tileSize - 4.f, position.y, 4.f, tileSize},
+                    palette.outline
+                );
+            }
+            if (exposedBottom) {
+                appendQuad(
+                    m_tileVertices,
+                    {position.x, position.y + tileSize - 4.f, tileSize, 4.f},
+                    palette.outline
                 );
             }
         }
