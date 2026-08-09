@@ -187,7 +187,8 @@ void GameHud::refreshText() {
     m_scoreText.setString(formatScore(m_displayedScore));
     m_infoText.setString(
         "WORLD  " + std::to_string(m_data.level) +
-        "       LIVES  x" + std::to_string(m_data.lives)
+        "       LIVES  x" + std::to_string(m_data.lives) +
+        "       COINS  x" + std::to_string(m_data.coins)
     );
 
     std::string power = "POWER  " + m_data.powerUp;

@@ -7,11 +7,12 @@
 struct GameHudData {
     int level = 1;
     int score = 0;
-    int lives = 3;
+    int lives = 10;
     std::string powerUp = "None";
     float invincibilitySeconds = 0.f;
     float speedBoostSeconds = 0.f;
     float timeRemaining = 400.f;
+    int coins = 0;
 };
 
 class GameHud {

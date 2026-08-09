@@ -93,9 +93,21 @@ void PlayState::OnGameEvent(const GameEvent& event)
     {
         case GameEventType::CoinCollected:
             m_saveData.score += event.value;
+            m_saveData.coins += 1;
             AudioManager::getInstance().playEffect(
                 SoundEffect::Coin
             );
+
+            if (m_saveData.coins >= 100) {
+                m_saveData.coins -= 100;
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::ExtraLifeCollected,
+                        1,
+                        "100 Coins"
+                    }
+                );
+            }
             break;
 
         case GameEventType::PowerUpCollected:
@@ -766,7 +778,8 @@ void PlayState::updateHud() {
         m_saveData.powerUpState,
         m_invincibilityTimeRemaining,
         m_speedBoostTimeRemaining,
-        m_timeRemaining
+        m_timeRemaining,
+        m_saveData.coins
     });
 }
 
