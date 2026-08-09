@@ -10,7 +10,7 @@
 #include "events/GameEventListener.hpp"
 #include "ui/GameHud.hpp"
 #include "camera/PlayerCamera.hpp"
-
+#include "ui/Button.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -61,4 +61,7 @@ private:
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
     bool m_playerDamagePending = false;
+
+    std::unique_ptr<Button> m_menuButton;
+    sf::Texture m_buttonTexture;
 };

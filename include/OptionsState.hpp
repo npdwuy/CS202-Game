@@ -3,6 +3,7 @@
 #include "GameState.hpp"
 #include "ui/Button.hpp"
 #include "ui/Slider.hpp"
+#include "ui/Panel.hpp"
 #include <memory>
 #include <map>
 #include <vector>
@@ -28,7 +29,7 @@ private:
 
     // Panel visuals
     sf::RectangleShape m_dimOverlay;
-    sf::RectangleShape m_panelBackground;
+    std::unique_ptr<Panel> m_panelBackground;
     
     // Headers and Labels
     sf::Text m_titleText;
