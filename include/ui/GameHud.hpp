@@ -11,6 +11,7 @@ struct GameHudData {
     std::string powerUp = "None";
     float invincibilitySeconds = 0.f;
     float speedBoostSeconds = 0.f;
+    float timeRemaining = 400.f;
 };
 
 class GameHud {
@@ -43,4 +44,7 @@ private:
     sf::Text m_powerText;
     sf::Text m_controlsText;
     sf::Text m_statusText;
+    sf::Text m_timeLabel;
+    sf::Text m_timeText;
+    float m_timerWarningPulse = 0.f;
 };

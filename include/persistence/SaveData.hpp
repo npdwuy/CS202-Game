@@ -12,4 +12,5 @@ struct SaveData {
     float playerX = 0.f;
     float playerY = 0.f;
     std::string powerUpState = "None";
+    float remainingTime = 400.f;
 };

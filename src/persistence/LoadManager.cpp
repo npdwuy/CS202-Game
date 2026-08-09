@@ -71,6 +71,13 @@ std::optional<SaveData> LoadManager::load(const std::string& path) {
         data.playerY = std::stof(values.at("playerY"));
         data.powerUpState = values.at("powerUpState");
 
+        auto timeIt = values.find("remainingTime");
+        if (timeIt != values.end()) {
+            data.remainingTime = std::stof(timeIt->second);
+        } else {
+            data.remainingTime = 400.f;
+        }
+
         if (data.version != 1) {
             throw std::runtime_error("Unsupported save version.");
         }
@@ -88,6 +95,9 @@ std::optional<SaveData> LoadManager::load(const std::string& path) {
         }
         if (!std::isfinite(data.playerX) || !std::isfinite(data.playerY)) {
             throw std::runtime_error("Saved player position is not finite.");
+        }
+        if (!std::isfinite(data.remainingTime) || data.remainingTime < 0.f) {
+            throw std::runtime_error("Saved remaining time is invalid.");
         }
 
         return data;

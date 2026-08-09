@@ -170,6 +170,10 @@ void PlayState::OnGameEvent(const GameEvent& event)
         case GameEventType::LevelCompleted:
             m_saveData.score += event.value;
             break;
+
+        case GameEventType::TimeExpired:
+            loseLife();
+            break;
     }
 
     updateHud();
@@ -214,6 +218,7 @@ void PlayState::Input(const sf::Event& event) {
 
 void PlayState::Update(sf::Time timePerFrame) {
     updateTimedPowerUps(timePerFrame);
+    updateLevelTimer(timePerFrame);
     m_hud.update(timePerFrame);
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
@@ -369,6 +374,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     );
 
     m_saveData.hasPlayerPosition = false;
+    m_timeRemaining = 400.f;
 }
 
 void PlayState::createLevelObjects() {
@@ -401,6 +407,7 @@ void PlayState::saveGame() {
         m_saveData.playerX = position.x;
         m_saveData.playerY = position.y;
     }
+    m_saveData.remainingTime = m_timeRemaining;
 
     if (SaveManager::save(m_saveData)) {
         showStatus("Game saved");
@@ -417,6 +424,7 @@ void PlayState::loadGame() {
     }
 
     m_saveData = *loadedData;
+    m_timeRemaining = m_saveData.remainingTime;
     resetTransientEffects();
     loadLevel(m_saveData.currentLevel, true);
     showStatus("Game loaded");
@@ -666,6 +674,26 @@ void PlayState::resetTransientEffects() {
     }
 }
 
+void PlayState::updateLevelTimer(sf::Time timePerFrame) {
+    if (m_timeRemaining <= 0.f) {
+        return;
+    }
+
+    m_timeRemaining -= timePerFrame.asSeconds();
+
+    if (m_timeRemaining <= 0.f) {
+        m_timeRemaining = 0.f;
+        GameEventManager::GetInstance().Notify({
+            GameEventType::TimeExpired,
+            0,
+            "Time's up!"
+        });
+    } else if (m_timeRemaining <= 30.f && m_timeRemaining + timePerFrame.asSeconds() > 30.f) {
+        // Show warning exactly once when crossing the 30s threshold
+        showStatus("Hurry up! Time is running out!", 2.5f);
+    }
+}
+
 void PlayState::handleLevelExit() {
     if (!playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
@@ -683,6 +711,15 @@ void PlayState::handleLevelExit() {
         "Level completed"
     }
     );
+    // Time bonus: remaining seconds * 50
+    const int timeBonus = static_cast<int>(m_timeRemaining) * 50;
+    if (timeBonus > 0) {
+        m_saveData.score += timeBonus;
+        showStatus(
+            "Time bonus: +" + std::to_string(timeBonus),
+            2.f
+        );
+    }
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {
@@ -728,7 +765,8 @@ void PlayState::updateHud() {
         m_saveData.remainingLives,
         m_saveData.powerUpState,
         m_invincibilityTimeRemaining,
-        m_speedBoostTimeRemaining
+        m_speedBoostTimeRemaining,
+        m_timeRemaining
     });
 }
 

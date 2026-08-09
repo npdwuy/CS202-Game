@@ -39,6 +39,7 @@ private:
     void handleLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
+    void updateLevelTimer(sf::Time timePerFrame);
     void resetTransientEffects();
     void loseLife();
     void updateHud();
@@ -61,6 +62,7 @@ private:
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
     bool m_playerDamagePending = false;
+    float m_timeRemaining = 400.f;
 
     std::unique_ptr<Button> m_menuButton;
     sf::Texture m_buttonTexture;
