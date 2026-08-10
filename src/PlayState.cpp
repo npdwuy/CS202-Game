@@ -32,7 +32,7 @@ PlayState::PlayState(bool loadSavedGame)
     if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
         throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
     }
-    m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(40.f, 34.f), sf::Vector2f(50.f, 50.f), 28);
+    m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(24.f, 10.f), sf::Vector2f(40.f, 40.f), 24);
     m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
     m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
@@ -318,7 +318,7 @@ void PlayState::Render(sf::RenderWindow& window) {
     const float top = viewCenter.y - viewSize.y * 0.5f;
 
     if (m_menuButton) {
-        m_menuButton->setPosition(sf::Vector2f(left + 370.f, top + 76.f));
+        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 10.f));
     }
 
     m_hud.layout(screenView);
