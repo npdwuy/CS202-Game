@@ -372,6 +372,20 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
+
+            // Constrain player position to camera's left edge
+            const sf::FloatRect cameraBounds = m_camera.visibleBounds();
+            sf::Vector2f position = character.position();
+            if (position.x < cameraBounds.left) {
+                position.x = cameraBounds.left;
+                character.setPosition(position);
+
+                sf::Vector2f velocity = character.velocity();
+                if (velocity.x < 0.f) {
+                    velocity.x = 0.f;
+                    character.setVelocity(velocity);
+                }
+            }
         }
     );
 
