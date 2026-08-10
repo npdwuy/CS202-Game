@@ -164,7 +164,10 @@ void TexturedTileRenderer::buildGeometry(
 
             sf::Vector2i tileCoord = m_layout.dirtCenter;
 
-            if (!above) {
+            if (row < data.rows.size() - 2) {
+                // High/Floating block
+                tileCoord = m_layout.highBlock;
+            } else if (!above) {
                 // Grass Surface
                 if (!left && right) {
                     tileCoord = m_layout.surfaceLeft;

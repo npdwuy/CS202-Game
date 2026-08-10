@@ -12,6 +12,9 @@ struct TilesetLayout {
     sf::Vector2i dirtLeft{10, 11};
     sf::Vector2i dirtCenter{5, 12};
     sf::Vector2i dirtRight{11, 11};
+
+    // High/Floating Block
+    sf::Vector2i highBlock{1, 0};
 };
 
 class TexturedTileRenderer : public TileRenderer {
