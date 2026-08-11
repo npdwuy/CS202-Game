@@ -4,8 +4,8 @@
 
 class Player : public Character {
 public:
-    static constexpr float CollisionWidth = 32.f;
-    static constexpr float CollisionHeight = 37.6f;
+    static constexpr float CollisionWidth = 38.f;
+    static constexpr float CollisionHeight = 45.f;
 protected:
     float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
@@ -55,13 +55,7 @@ public:
         fireMario_ = true;
         if (!mushroom_) {
             mushroom_ = true;
-            float old_width = width_;
-            float old_height = height_;
-            width_ = width_ * 1.5f;
-            height_ = height_ * 1.5f;
             jumpPower_ = jumpPower_ * 1.25f;
-            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
-            position_.y = position_.y + old_height - height_;
             isGrowing_ = true;
             growAnimTime_ = 0.0f;
             isShrinking_ = false; // Cancel shrink if it was playing
@@ -70,13 +64,7 @@ public:
     void getMushroom(){
         if (!mushroom_) {
             mushroom_ = true;
-            float old_width = width_;
-            float old_height = height_;
-            width_ = width_ * 1.5f;
-            height_ = height_ * 1.5f;
             jumpPower_ = jumpPower_ * 1.25f;
-            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
-            position_.y = position_.y + old_height - height_;
             isGrowing_ = true;
             growAnimTime_ = 0.0f;
             isShrinking_ = false; // Cancel shrink if it was playing
@@ -85,13 +73,7 @@ public:
     void shrinkPlayer(){
         if (mushroom_) {
             mushroom_ = false;
-            float old_width = width_;
-            float old_height = height_;
-            width_ = width_ / 1.5f;
-            height_ = height_ / 1.5f;
             jumpPower_ = jumpPower_ / 1.25f;
-            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
-            position_.y = position_.y + old_height - height_;
             isShrinking_ = true;
             shrinkAnimTime_ = 0.0f;
             isGrowing_ = false; // Cancel grow if it was playing

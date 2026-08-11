@@ -109,7 +109,7 @@ void Mario::update(sf::Time timePerFrame) {
     sprite_.setOrigin(currentRect.width / 2.0f, static_cast<float>(currentRect.height));
 
     // Lật mặt và xử lý Scale
-    float baseScale = 0.8f;
+    float baseScale = 0.95f;
     float scaleAbs = baseScale; // Độ to của nhân vật
 
     if (isGrowing()) {
@@ -167,8 +167,18 @@ void Mario::update(sf::Time timePerFrame) {
         }
         scaleAbs = baseScale * currentMult;
     } else if (mushroom_) {
-        scaleAbs = 1.20f;
+        scaleAbs = 1.425f;
     }
+
+    // Dynamic bounding box adjustment to prevent spilling (uses constant reference sizes to prevent jitter)
+    float oldWidth = width_;
+    float oldHeight = height_;
+    width_ = 35.0f * scaleAbs;
+    float topPadding = 2.0f; // Transparent pixels at the top of the sprite frames
+    height_ = (47.0f - topPadding) * scaleAbs;
+    
+    position_.x += (oldWidth - width_) / 2.0f;
+    position_.y += oldHeight - height_;
 
     if (facing() < 0) {
         sprite_.setScale(-scaleAbs, scaleAbs);
