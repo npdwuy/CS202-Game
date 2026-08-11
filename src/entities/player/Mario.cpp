@@ -109,7 +109,8 @@ void Mario::update(sf::Time timePerFrame) {
     sprite_.setOrigin(currentRect.width / 2.0f, static_cast<float>(currentRect.height));
 
     // Lật mặt và xử lý Scale
-    float scaleAbs = 1.5f; // Độ to của nhân vật
+    float baseScale = 0.8f;
+    float scaleAbs = baseScale; // Độ to của nhân vật
 
     if (isGrowing()) {
         struct Keyframe {
@@ -118,11 +119,14 @@ void Mario::update(sf::Time timePerFrame) {
         };
         static const std::vector<Keyframe> growKeyframes = {
             {0.00f, 1.00f},
-            {0.24f, 1.60f},
-            {0.48f, 1.35f},
-            {0.72f, 1.70f},
-            {0.96f, 1.45f},
-            {1.20f, 1.50f}
+            {0.05f, 1.15f},
+            {0.25f, 1.15f},
+            {0.30f, 1.30f},
+            {0.50f, 1.30f},
+            {0.55f, 1.40f},
+            {0.75f, 1.40f},
+            {0.80f, 1.50f},
+            {1.00f, 1.50f}
         };
         
         float currentMult = 1.50f;
@@ -134,7 +138,7 @@ void Mario::update(sf::Time timePerFrame) {
                 break;
             }
         }
-        scaleAbs = 1.5f * currentMult;
+        scaleAbs = baseScale * currentMult;
     } else if (isShrinking()) {
         struct Keyframe {
             float time;
@@ -142,11 +146,14 @@ void Mario::update(sf::Time timePerFrame) {
         };
         static const std::vector<Keyframe> shrinkKeyframes = {
             {0.00f, 1.50f},
-            {0.24f, 0.90f},
-            {0.48f, 1.20f},
-            {0.72f, 0.85f},
-            {0.96f, 1.10f},
-            {1.20f, 1.00f}
+            {0.05f, 1.40f},
+            {0.25f, 1.40f},
+            {0.30f, 1.30f},
+            {0.50f, 1.30f},
+            {0.55f, 1.15f},
+            {0.75f, 1.15f},
+            {0.80f, 1.00f},
+            {1.00f, 1.00f}
         };
         
         float currentMult = 1.00f;
@@ -158,9 +165,9 @@ void Mario::update(sf::Time timePerFrame) {
                 break;
             }
         }
-        scaleAbs = 1.5f * currentMult;
+        scaleAbs = baseScale * currentMult;
     } else if (mushroom_) {
-        scaleAbs = 2.25f;
+        scaleAbs = 1.20f;
     }
 
     if (facing() < 0) {

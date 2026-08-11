@@ -5,7 +5,7 @@
 class Player : public Character {
 public:
     static constexpr float CollisionWidth = 32.f;
-    static constexpr float CollisionHeight = 70.f;
+    static constexpr float CollisionHeight = 37.6f;
 protected:
     float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
@@ -29,11 +29,11 @@ protected:
     // Grow/Shrink animation states
     bool isGrowing_ = false;
     float growAnimTime_ = 0.0f;
-    static constexpr float GrowAnimDuration = 1.2f;
+    static constexpr float GrowAnimDuration = 1.0f;
 
     bool isShrinking_ = false;
     float shrinkAnimTime_ = 0.0f;
-    static constexpr float ShrinkAnimDuration = 1.2f;
+    static constexpr float ShrinkAnimDuration = 1.0f;
 
     void performJump();
 
