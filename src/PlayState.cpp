@@ -9,6 +9,7 @@
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
 #include "entities/player/Mario.hpp"
+#include "entities/player/Entity.hpp"
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
@@ -494,6 +495,7 @@ void PlayState::handleItemCollisions()
                         "Mushroom"
                     }
                 );
+                m_player->getMushroom();
                 break;
 
             case ItemEffectType::EnableFirePower:
@@ -504,6 +506,7 @@ void PlayState::handleItemCollisions()
                         "FireFlower"
                     }
                 );
+                m_player->up2Fire();
                 break;
 
             case ItemEffectType::ExtraLife:
