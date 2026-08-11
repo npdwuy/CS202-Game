@@ -17,8 +17,8 @@ Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 830.0f){
     sprite_.setTexture(texture_);
     
     // Đặt khung hình mặc định ban đầu tránh bị lỗi tàng hình
-    sprite_.setTextureRect(sf::IntRect(144, 25, 20, 32)); 
-    sprite_.setOrigin(10.f, 32.f);
+    sprite_.setTextureRect(sf::IntRect(160, 15, 35, 47)); 
+    sprite_.setOrigin(17.5f, 47.f);
     sprite_.setScale(1.5f, 1.5f);
     sprite_.setPosition(position.x + width() / 2.0f, position.y + height());
 }
@@ -31,7 +31,7 @@ void Mario::update(sf::Time timePerFrame) {
 
     // 1. Đứng yên (Lấy khung hình "Stand" chuẩn)
     static const std::vector<sf::IntRect> framesStand = {
-         sf::IntRect(160, 15, 35, 50),
+         sf::IntRect(160, 15, 35, 47),
     };
     
     // 2. Đi bộ (Lấy 8 khung hình ở hàng "Walk(8)")
@@ -50,28 +50,28 @@ void Mario::update(sf::Time timePerFrame) {
     
     // 3. Nhảy lên (Lấy khung ở hàng "Jump(2)")
     static const std::vector<sf::IntRect> framesJump = {
-        sf::IntRect(22, 155, 40, 55),
-        sf::IntRect(65, 155, 40, 55)
+        sf::IntRect(22, 155, 40, 52),
+        sf::IntRect(65, 155, 40, 52)
     };
     
     // 4. Rơi xuống (Lấy khung ở hàng "Fall(3)")
     static const std::vector<sf::IntRect> framesFall = {
-        sf::IntRect(115, 155, 40, 55),
-        sf::IntRect(118, 155, 40, 55),
-        sf::IntRect(200, 155, 40, 55)
+        sf::IntRect(115, 155, 40, 52),
+        sf::IntRect(118, 155, 40, 52),
+        sf::IntRect(200, 155, 40, 52)
     };
 
     // 5. Nhảy đụng trần
     static const std::vector<sf::IntRect> framesHitRoof = {
-        sf::IntRect(250, 155, 42, 42),
-        sf::IntRect(300, 155, 42, 42)
+        sf::IntRect(250, 155, 42, 39),
+        sf::IntRect(300, 155, 42, 39)
     };
     
     // 6. Chuyển dần sang đứng yên
 
     static const std::vector<sf::IntRect> framesTransitionStand = {
-        sf::IntRect(24, 15, 35, 50),
-         sf::IntRect(67, 15, 35, 50),
+        sf::IntRect(24, 15, 35, 47),
+         sf::IntRect(67, 15, 35, 47),
         sf::IntRect(108, 12, 35, 50)
     };
 

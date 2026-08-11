@@ -17,40 +17,25 @@ void styleText(
     text.setCharacterSize(size);
     text.setFillColor(color);
     text.setOutlineColor(sf::Color(18, 20, 32, 220));
-    text.setOutlineThickness(2.f);
+    text.setOutlineThickness(1.5f);
 }
 
 }
 
 GameHud::GameHud(const sf::Font& font) {
-    m_scoreShadow.setSize({310.f, 104.f});
-    m_scoreShadow.setFillColor(sf::Color(12, 15, 28, 105));
-
-    m_scorePanel.setSize({310.f, 104.f});
-    m_scorePanel.setFillColor(sf::Color(24, 31, 52, 225));
-    m_scorePanel.setOutlineColor(sf::Color(255, 218, 92, 210));
-    m_scorePanel.setOutlineThickness(3.f);
-
-    m_scoreAccent.setSize({9.f, 104.f});
-    m_scoreAccent.setFillColor(sf::Color(255, 184, 48));
-
-    m_infoPanel.setSize({520.f, 104.f});
-    m_infoPanel.setFillColor(sf::Color(24, 31, 52, 205));
-    m_infoPanel.setOutlineColor(sf::Color(126, 210, 255, 180));
-    m_infoPanel.setOutlineThickness(2.f);
+    m_topBar.setFillColor(sf::Color(15, 20, 35, 170));
 
     m_statusPanel.setFillColor(sf::Color(24, 31, 52, 215));
     m_statusPanel.setOutlineColor(sf::Color(255, 218, 92, 205));
     m_statusPanel.setOutlineThickness(2.f);
 
-    styleText(m_scoreLabel, font, 19U, sf::Color(158, 220, 255));
-    styleText(m_scoreText, font, 39U, sf::Color(255, 239, 137));
-    styleText(m_infoText, font, 23U, sf::Color::White);
+    styleText(m_scoreText, font, 20U, sf::Color(255, 239, 137));
+    styleText(m_infoText, font, 20U, sf::Color::White);
     styleText(m_powerText, font, 18U, sf::Color(178, 231, 255));
     styleText(m_controlsText, font, 14U, sf::Color(210, 218, 232));
     styleText(m_statusText, font, 28U, sf::Color(255, 239, 137));
+    styleText(m_timeText, font, 20U, sf::Color::White);
 
-    m_scoreLabel.setString("SCORE");
     m_controlsText.setString("F5 SAVE    F9 LOAD    ESC PAUSE");
     refreshText();
 }
@@ -86,16 +71,31 @@ void GameHud::update(sf::Time deltaTime) {
         m_scorePulseRemaining - seconds
     );
 
-    const float pulse = m_scorePulseRemaining > 0.f
-        ? m_scorePulseRemaining / 0.32f
-        : 0.f;
-    m_scorePanel.setOutlineThickness(3.f + pulse * 2.f);
-    m_scorePanel.setOutlineColor(sf::Color(
-        255,
-        static_cast<sf::Uint8>(218 + 37.f * pulse),
-        static_cast<sf::Uint8>(92 + 60.f * pulse),
-        210
-    ));
+    // Score text highlight pulse if score increases
+    if (m_scorePulseRemaining > 0.f) {
+        const float pulse = m_scorePulseRemaining / 0.32f;
+        m_scoreText.setFillColor(sf::Color(
+            255,
+            static_cast<sf::Uint8>(180 + 59.f * (1.f - pulse)),
+            static_cast<sf::Uint8>(100 + 37.f * (1.f - pulse))
+        ));
+    } else {
+        m_scoreText.setFillColor(sf::Color(255, 239, 137));
+    }
+
+    // Timer warning pulse when <= 30 seconds
+    if (m_data.timeRemaining > 0.f && m_data.timeRemaining <= 30.f) {
+        m_timerWarningPulse += seconds * 6.f;
+        const float alpha = (std::sin(m_timerWarningPulse) + 1.f) * 0.5f;
+        const auto red = static_cast<sf::Uint8>(255);
+        const auto green = static_cast<sf::Uint8>(60.f + 80.f * alpha);
+        const auto blue = static_cast<sf::Uint8>(60.f + 80.f * alpha);
+        m_timeText.setFillColor(sf::Color(red, green, blue));
+    } else {
+        m_timerWarningPulse = 0.f;
+        m_timeText.setFillColor(sf::Color::White);
+    }
+
     refreshText();
 }
 
@@ -105,19 +105,21 @@ void GameHud::layout(const sf::View& screenView) {
     const float left = viewCenter.x - viewSize.x * 0.5f;
     const float right = viewCenter.x + viewSize.x * 0.5f;
     const float top = viewCenter.y - viewSize.y * 0.5f;
+    const float bottom = viewCenter.y + viewSize.y * 0.5f;
 
-    m_scoreShadow.setPosition(left + 31.f, top + 31.f);
-    m_scorePanel.setPosition(left + 24.f, top + 24.f);
-    m_scoreAccent.setPosition(left + 24.f, top + 24.f);
-    m_scoreLabel.setPosition(left + 50.f, top + 34.f);
-    m_scoreText.setPosition(left + 48.f, top + 57.f);
+    m_topBar.setSize({viewSize.x, 60.f});
+    m_topBar.setPosition(left, top);
 
-    m_infoPanel.setPosition(right - 544.f, top + 24.f);
-    m_infoText.setPosition(right - 518.f, top + 38.f);
-    m_powerText.setPosition(right - 518.f, top + 77.f);
+    m_scoreText.setPosition(left + 90.f, top + 14.f);
+    m_infoText.setPosition(left + 420.f, top + 14.f);
+
+    m_timeText.setPosition(right - 200.f, top + 14.f);
+    m_powerText.setPosition(right - 450.f, top + 14.f);
+
+    // Controls text moved to bottom-right corner to keep header clean
     const sf::FloatRect controlsBounds = m_controlsText.getLocalBounds();
-    m_controlsText.setOrigin(controlsBounds.width, 0.f);
-    m_controlsText.setPosition(right - 24.f, top + 137.f);
+    m_controlsText.setOrigin(controlsBounds.width, controlsBounds.height);
+    m_controlsText.setPosition(right - 24.f, bottom - 20.f);
 
     const sf::FloatRect textBounds = m_statusText.getLocalBounds();
     m_statusText.setOrigin(
@@ -138,15 +140,12 @@ void GameHud::showStatus(const std::string& message, float duration) {
 }
 
 void GameHud::render(sf::RenderTarget& target) const {
-    target.draw(m_scoreShadow);
-    target.draw(m_scorePanel);
-    target.draw(m_scoreAccent);
-    target.draw(m_infoPanel);
-    target.draw(m_scoreLabel);
+    target.draw(m_topBar);
     target.draw(m_scoreText);
     target.draw(m_infoText);
     target.draw(m_powerText);
     target.draw(m_controlsText);
+    target.draw(m_timeText);
 
     if (m_statusTimeRemaining > 0.f) {
         target.draw(m_statusPanel);
@@ -155,10 +154,11 @@ void GameHud::render(sf::RenderTarget& target) const {
 }
 
 void GameHud::refreshText() {
-    m_scoreText.setString(formatScore(m_displayedScore));
+    m_scoreText.setString("SCORE  " + formatScore(m_displayedScore));
     m_infoText.setString(
         "WORLD  " + std::to_string(m_data.level) +
-        "       LIVES  x" + std::to_string(m_data.lives)
+        "    LIVES  x" + std::to_string(m_data.lives) +
+        "    COINS  x" + std::to_string(m_data.coins)
     );
 
     std::string power = "POWER  " + m_data.powerUp;
@@ -181,6 +181,9 @@ void GameHud::refreshText() {
     } else {
         m_powerText.setFillColor(sf::Color(178, 231, 255));
     }
+
+    const int displayTime = static_cast<int>(std::ceil(m_data.timeRemaining));
+    m_timeText.setString("TIME  " + std::to_string(std::max(0, displayTime)));
 }
 
 std::string GameHud::formatScore(int score) {

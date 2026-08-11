@@ -28,4 +28,5 @@ private:
     sf::View m_view;
     sf::Vector2f m_center{};
     bool m_initialized = false;
+    float m_maxCenterX = 0.f;
 };

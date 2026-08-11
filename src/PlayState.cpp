@@ -4,6 +4,7 @@
 #include "PauseState.hpp"
 #include "GameOverState.hpp"
 #include "LevelCompleteState.hpp"
+#include "commands/MenuCommands.hpp"
 
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
@@ -23,6 +24,19 @@ PlayState::PlayState(bool loadSavedGame)
     : m_hud(ResourceManager::getInstance().getFont(
           "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
       )) {
+
+    const sf::Font& hudFont = ResourceManager::getInstance().getFont(
+        "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
+    );
+
+    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
+        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
+    }
+    m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(24.f, 10.f), sf::Vector2f(40.f, 40.f), 24);
+    m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().pushState(std::make_unique<PauseState>());
+    }));
     SettingsManager& settings =
         GameManager::getInstance().getSettings();
 
@@ -79,9 +93,21 @@ void PlayState::OnGameEvent(const GameEvent& event)
     {
         case GameEventType::CoinCollected:
             m_saveData.score += event.value;
+            m_saveData.coins += 1;
             AudioManager::getInstance().playEffect(
                 SoundEffect::Coin
             );
+
+            if (m_saveData.coins >= 100) {
+                m_saveData.coins -= 100;
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::ExtraLifeCollected,
+                        1,
+                        "100 Coins"
+                    }
+                );
+            }
             break;
 
         case GameEventType::PowerUpCollected:
@@ -156,12 +182,31 @@ void PlayState::OnGameEvent(const GameEvent& event)
         case GameEventType::LevelCompleted:
             m_saveData.score += event.value;
             break;
+
+        case GameEventType::TimeExpired:
+            loseLife();
+            break;
     }
 
     updateHud();
 }
 
 void PlayState::Input(const sf::Event& event) {
+    if (event.type == sf::Event::MouseMoved || event.type == sf::Event::MouseButtonReleased) {
+        sf::RenderWindow &window = GameManager::getInstance().getWindow();
+        sf::Vector2i pixelPos = (event.type == sf::Event::MouseMoved) 
+                                ? sf::Vector2i(event.mouseMove.x, event.mouseMove.y) 
+                                : sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+        sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos, GameManager::getInstance().getGameView());
+        
+        if (event.type == sf::Event::MouseMoved) {
+            if (m_menuButton) m_menuButton->update(mousePos);
+        }
+        if (event.type == sf::Event::MouseButtonReleased) {
+            if (m_menuButton && m_menuButton->handleClick(event, mousePos)) return;
+        }
+    }
+
     if (event.type != sf::Event::KeyPressed) {
         return;
     }
@@ -185,6 +230,7 @@ void PlayState::Input(const sf::Event& event) {
 
 void PlayState::Update(sf::Time timePerFrame) {
     updateTimedPowerUps(timePerFrame);
+    updateLevelTimer(timePerFrame);
     m_hud.update(timePerFrame);
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
@@ -264,8 +310,22 @@ void PlayState::Render(sf::RenderWindow& window) {
     }
 
     window.setView(screenView);
+
+    // Position the menu button relative to the current game view's top-left corner
+    const sf::Vector2f viewSize = screenView.getSize();
+    const sf::Vector2f viewCenter = screenView.getCenter();
+    const float left = viewCenter.x - viewSize.x * 0.5f;
+    const float top = viewCenter.y - viewSize.y * 0.5f;
+
+    if (m_menuButton) {
+        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 10.f));
+    }
+
     m_hud.layout(screenView);
     m_hud.render(window);
+    if (m_menuButton) {
+        m_menuButton->render(window);
+    }
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
@@ -312,6 +372,20 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
+
+            // Constrain player position to camera's left edge
+            const sf::FloatRect cameraBounds = m_camera.visibleBounds();
+            sf::Vector2f position = character.position();
+            if (position.x < cameraBounds.left) {
+                position.x = cameraBounds.left;
+                character.setPosition(position);
+
+                sf::Vector2f velocity = character.velocity();
+                if (velocity.x < 0.f) {
+                    velocity.x = 0.f;
+                    character.setVelocity(velocity);
+                }
+            }
         }
     );
 
@@ -326,6 +400,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     );
 
     m_saveData.hasPlayerPosition = false;
+    m_timeRemaining = 400.f;
 }
 
 void PlayState::createLevelObjects() {
@@ -358,6 +433,7 @@ void PlayState::saveGame() {
         m_saveData.playerX = position.x;
         m_saveData.playerY = position.y;
     }
+    m_saveData.remainingTime = m_timeRemaining;
 
     if (SaveManager::save(m_saveData)) {
         showStatus("Game saved");
@@ -374,6 +450,7 @@ void PlayState::loadGame() {
     }
 
     m_saveData = *loadedData;
+    m_timeRemaining = m_saveData.remainingTime;
     resetTransientEffects();
     loadLevel(m_saveData.currentLevel, true);
     showStatus("Game loaded");
@@ -623,6 +700,26 @@ void PlayState::resetTransientEffects() {
     }
 }
 
+void PlayState::updateLevelTimer(sf::Time timePerFrame) {
+    if (m_timeRemaining <= 0.f) {
+        return;
+    }
+
+    m_timeRemaining -= timePerFrame.asSeconds();
+
+    if (m_timeRemaining <= 0.f) {
+        m_timeRemaining = 0.f;
+        GameEventManager::GetInstance().Notify({
+            GameEventType::TimeExpired,
+            0,
+            "Time's up!"
+        });
+    } else if (m_timeRemaining <= 30.f && m_timeRemaining + timePerFrame.asSeconds() > 30.f) {
+        // Show warning exactly once when crossing the 30s threshold
+        showStatus("Hurry up! Time is running out!", 2.5f);
+    }
+}
+
 void PlayState::handleLevelExit() {
     if (!playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
@@ -640,6 +737,15 @@ void PlayState::handleLevelExit() {
         "Level completed"
     }
     );
+    // Time bonus: remaining seconds * 50
+    const int timeBonus = static_cast<int>(m_timeRemaining) * 50;
+    if (timeBonus > 0) {
+        m_saveData.score += timeBonus;
+        showStatus(
+            "Time bonus: +" + std::to_string(timeBonus),
+            2.f
+        );
+    }
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {
@@ -685,7 +791,9 @@ void PlayState::updateHud() {
         m_saveData.remainingLives,
         m_saveData.powerUpState,
         m_invincibilityTimeRemaining,
-        m_speedBoostTimeRemaining
+        m_speedBoostTimeRemaining,
+        m_timeRemaining,
+        m_saveData.coins
     });
 }
 

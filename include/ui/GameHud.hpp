@@ -7,10 +7,12 @@
 struct GameHudData {
     int level = 1;
     int score = 0;
-    int lives = 3;
+    int lives = 10;
     std::string powerUp = "None";
     float invincibilitySeconds = 0.f;
     float speedBoostSeconds = 0.f;
+    float timeRemaining = 400.f;
+    int coins = 0;
 };
 
 class GameHud {
@@ -32,15 +34,13 @@ private:
     float m_statusTimeRemaining = 0.f;
     float m_scorePulseRemaining = 0.f;
 
-    sf::RectangleShape m_scoreShadow;
-    sf::RectangleShape m_scorePanel;
-    sf::RectangleShape m_scoreAccent;
-    sf::RectangleShape m_infoPanel;
+    sf::RectangleShape m_topBar;
     sf::RectangleShape m_statusPanel;
-    sf::Text m_scoreLabel;
     sf::Text m_scoreText;
     sf::Text m_infoText;
     sf::Text m_powerText;
     sf::Text m_controlsText;
     sf::Text m_statusText;
+    sf::Text m_timeText;
+    float m_timerWarningPulse = 0.f;
 };

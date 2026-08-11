@@ -4,7 +4,9 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "levels/renderer/TileRenderer.hpp"
 #include <string>
+#include <memory>
 
 class Character;
 
@@ -29,4 +31,5 @@ private:
     sf::VertexArray m_tileVertices{sf::Quads};
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
+    std::unique_ptr<TileRenderer> m_renderer;
 };

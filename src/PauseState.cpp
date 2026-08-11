@@ -29,12 +29,8 @@ void PauseState::initUI() {
   m_dimOverlay.setFillColor(sf::Color(0, 0, 0, 150));
 
   // Centered panel background
-  m_panelBackground.setSize(sf::Vector2f(450.f, 550.f));
-  m_panelBackground.setOrigin(225.f, 275.f);
-  m_panelBackground.setPosition(960.f, 540.f);
-  m_panelBackground.setFillColor(sf::Color(30, 30, 30, 240));
-  m_panelBackground.setOutlineColor(sf::Color(100, 100, 100));
-  m_panelBackground.setOutlineThickness(4.f);
+  m_panelBackground = std::make_unique<Panel>(m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(450.f, 550.f), 10.f);
+  m_panelBackground->setColor(sf::Color(30, 30, 30, 240));
 
   // Title text
   m_titleText.setFont(m_font);
@@ -119,7 +115,9 @@ void PauseState::Update(sf::Time timePerFrame) {}
 
 void PauseState::Render(sf::RenderWindow &window) {
   window.draw(m_dimOverlay);
-  window.draw(m_panelBackground);
+  if (m_panelBackground) {
+      m_panelBackground->render(window);
+  }
   window.draw(m_titleText);
 
   m_resumeButton->render(window);

@@ -30,7 +30,10 @@ bool isValid(const SaveData& data) {
         isSupportedCharacter(data.selectedCharacter) &&
         isSupportedPowerUp(data.powerUpState) &&
         std::isfinite(data.playerX) &&
-        std::isfinite(data.playerY)
+        std::isfinite(data.playerY) &&
+        std::isfinite(data.remainingTime) &&
+        data.remainingTime >= 0.f &&
+        data.coins >= 0
     );
 }
 
@@ -76,6 +79,8 @@ bool SaveManager::save(const SaveData& data, const std::string& path) {
     output << "playerX=" << data.playerX << '\n';
     output << "playerY=" << data.playerY << '\n';
     output << "powerUpState=" << data.powerUpState << '\n';
+    output << "remainingTime=" << data.remainingTime << '\n';
+    output << "coins=" << data.coins << '\n';
     output.flush();
 
     if (!output.good()) {
