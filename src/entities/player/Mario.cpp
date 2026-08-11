@@ -115,7 +115,7 @@ void Mario::update(sf::Time timePerFrame) {
     }
     if (velocity_.x < 0.0f) {
         sprite_.setScale(-scaleAbs, scaleAbs);
-    } else if (velocity_.x > 0.0f) {
+    } else if (velocity_.x >= 0.0f) {
         sprite_.setScale(scaleAbs, scaleAbs);
     }
     

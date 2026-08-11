@@ -47,8 +47,13 @@ public:
     }
     void getMushroom(){
         mushroom_ = true;
+        float oldWidth = width_;
+        float oldHeight = height_;
         width_ = width_ * 1.2f;
         height_ = height_ * 1.2f;
+        
+        position_.x -= (width_ - oldWidth) / 2.0f; 
+        position_.y -= (height_ - oldHeight);
     }
 
     void update(sf::Time timePerFrame) override;
