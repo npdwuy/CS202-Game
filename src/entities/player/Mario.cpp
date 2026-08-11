@@ -118,14 +118,14 @@ void Mario::update(sf::Time timePerFrame) {
         };
         static const std::vector<Keyframe> growKeyframes = {
             {0.00f, 1.00f},
-            {0.12f, 1.25f},
-            {0.24f, 1.10f},
-            {0.36f, 1.35f},
-            {0.48f, 1.15f},
-            {0.60f, 1.20f}
+            {0.24f, 1.60f},
+            {0.48f, 1.35f},
+            {0.72f, 1.70f},
+            {0.96f, 1.45f},
+            {1.20f, 1.50f}
         };
         
-        float currentMult = 1.20f;
+        float currentMult = 1.50f;
         float animTime = growAnimTime();
         for (size_t i = 0; i < growKeyframes.size() - 1; ++i) {
             if (animTime >= growKeyframes[i].time && animTime <= growKeyframes[i+1].time) {
@@ -141,12 +141,12 @@ void Mario::update(sf::Time timePerFrame) {
             float multiplier;
         };
         static const std::vector<Keyframe> shrinkKeyframes = {
-            {0.00f, 1.20f},
-            {0.12f, 0.95f},
-            {0.24f, 1.15f},
-            {0.36f, 0.90f},
-            {0.48f, 1.05f},
-            {0.60f, 1.00f}
+            {0.00f, 1.50f},
+            {0.24f, 0.90f},
+            {0.48f, 1.20f},
+            {0.72f, 0.85f},
+            {0.96f, 1.10f},
+            {1.20f, 1.00f}
         };
         
         float currentMult = 1.00f;
@@ -160,7 +160,7 @@ void Mario::update(sf::Time timePerFrame) {
         }
         scaleAbs = 1.5f * currentMult;
     } else if (mushroom_) {
-        scaleAbs = 1.8f;
+        scaleAbs = 2.25f;
     }
 
     if (facing() < 0) {

@@ -29,11 +29,11 @@ protected:
     // Grow/Shrink animation states
     bool isGrowing_ = false;
     float growAnimTime_ = 0.0f;
-    static constexpr float GrowAnimDuration = 0.6f;
+    static constexpr float GrowAnimDuration = 1.2f;
 
     bool isShrinking_ = false;
     float shrinkAnimTime_ = 0.0f;
-    static constexpr float ShrinkAnimDuration = 0.6f;
+    static constexpr float ShrinkAnimDuration = 1.2f;
 
     void performJump();
 
@@ -57,8 +57,9 @@ public:
             mushroom_ = true;
             float old_width = width_;
             float old_height = height_;
-            width_ = width_ * 1.2f;
-            height_ = height_ * 1.2f;
+            width_ = width_ * 1.5f;
+            height_ = height_ * 1.5f;
+            jumpPower_ = jumpPower_ * 1.25f;
             position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
             position_.y = position_.y + old_height - height_;
             isGrowing_ = true;
@@ -71,8 +72,9 @@ public:
             mushroom_ = true;
             float old_width = width_;
             float old_height = height_;
-            width_ = width_ * 1.2f;
-            height_ = height_ * 1.2f;
+            width_ = width_ * 1.5f;
+            height_ = height_ * 1.5f;
+            jumpPower_ = jumpPower_ * 1.25f;
             position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
             position_.y = position_.y + old_height - height_;
             isGrowing_ = true;
@@ -85,8 +87,9 @@ public:
             mushroom_ = false;
             float old_width = width_;
             float old_height = height_;
-            width_ = width_ / 1.2f;
-            height_ = height_ / 1.2f;
+            width_ = width_ / 1.5f;
+            height_ = height_ / 1.5f;
+            jumpPower_ = jumpPower_ / 1.25f;
             position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
             position_.y = position_.y + old_height - height_;
             isShrinking_ = true;
