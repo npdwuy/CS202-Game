@@ -660,6 +660,9 @@ void PlayState::handlePlayerDamage() {
 
     if (m_saveData.powerUpState != "None") {
         m_saveData.powerUpState = "None";
+        if (m_player) {
+            m_player->shrinkPlayer();
+        }
         m_damageCooldown = 1.5f;
         showStatus("Power-up absorbed the hit", 1.5f);
         updateHud();

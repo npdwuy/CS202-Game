@@ -111,4 +111,19 @@ void Player:: update(sf::Time timePerFrame){
     }
     animationTime_+=timePerFrame.asSeconds();
     movedThisFrame_ = false;
+
+    if (isGrowing_) {
+        growAnimTime_ += timePerFrame.asSeconds();
+        if (growAnimTime_ >= GrowAnimDuration) {
+            isGrowing_ = false;
+            growAnimTime_ = 0.0f;
+        }
+    }
+    if (isShrinking_) {
+        shrinkAnimTime_ += timePerFrame.asSeconds();
+        if (shrinkAnimTime_ >= ShrinkAnimDuration) {
+            isShrinking_ = false;
+            shrinkAnimTime_ = 0.0f;
+        }
+    }
 }

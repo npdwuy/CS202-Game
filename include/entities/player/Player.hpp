@@ -26,6 +26,15 @@ protected:
     bool mushroom_ = false;
     std::string label_;
 
+    // Grow/Shrink animation states
+    bool isGrowing_ = false;
+    float growAnimTime_ = 0.0f;
+    static constexpr float GrowAnimDuration = 0.6f;
+
+    bool isShrinking_ = false;
+    float shrinkAnimTime_ = 0.0f;
+    static constexpr float ShrinkAnimDuration = 0.6f;
+
     void performJump();
 
     enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand };
@@ -44,17 +53,54 @@ public:
 
     void up2Fire(){
         fireMario_ = true;
+        if (!mushroom_) {
+            mushroom_ = true;
+            float old_width = width_;
+            float old_height = height_;
+            width_ = width_ * 1.2f;
+            height_ = height_ * 1.2f;
+            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
+            position_.y = position_.y + old_height - height_;
+            isGrowing_ = true;
+            growAnimTime_ = 0.0f;
+            isShrinking_ = false; // Cancel shrink if it was playing
+        }
     }
     void getMushroom(){
-        mushroom_ = true;
-        float oldWidth = width_;
-        float oldHeight = height_;
-        width_ = width_ * 1.2f;
-        height_ = height_ * 1.2f;
-        
-        position_.x -= (width_ - oldWidth) / 2.0f; 
-        position_.y -= (height_ - oldHeight);
+        if (!mushroom_) {
+            mushroom_ = true;
+            float old_width = width_;
+            float old_height = height_;
+            width_ = width_ * 1.2f;
+            height_ = height_ * 1.2f;
+            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
+            position_.y = position_.y + old_height - height_;
+            isGrowing_ = true;
+            growAnimTime_ = 0.0f;
+            isShrinking_ = false; // Cancel shrink if it was playing
+        }
     }
+    void shrinkPlayer(){
+        if (mushroom_) {
+            mushroom_ = false;
+            float old_width = width_;
+            float old_height = height_;
+            width_ = width_ / 1.2f;
+            height_ = height_ / 1.2f;
+            position_.x = position_.x + (old_width / 2.0f) - (width_ / 2.0f);
+            position_.y = position_.y + old_height - height_;
+            isShrinking_ = true;
+            shrinkAnimTime_ = 0.0f;
+            isGrowing_ = false; // Cancel grow if it was playing
+        }
+        fireMario_ = false; // Lose fire mario status when taking damage
+    }
+
+    bool isGrowing() const { return isGrowing_; }
+    float growAnimTime() const { return growAnimTime_; }
+
+    bool isShrinking() const { return isShrinking_; }
+    float shrinkAnimTime() const { return shrinkAnimTime_; }
 
     void update(sf::Time timePerFrame) override;
 

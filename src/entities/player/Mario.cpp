@@ -110,12 +110,62 @@ void Mario::update(sf::Time timePerFrame) {
 
     // Lật mặt và xử lý Scale
     float scaleAbs = 1.5f; // Độ to của nhân vật
-    if(mushroom_){
+
+    if (isGrowing()) {
+        struct Keyframe {
+            float time;
+            float multiplier;
+        };
+        static const std::vector<Keyframe> growKeyframes = {
+            {0.00f, 1.00f},
+            {0.12f, 1.25f},
+            {0.24f, 1.10f},
+            {0.36f, 1.35f},
+            {0.48f, 1.15f},
+            {0.60f, 1.20f}
+        };
+        
+        float currentMult = 1.20f;
+        float animTime = growAnimTime();
+        for (size_t i = 0; i < growKeyframes.size() - 1; ++i) {
+            if (animTime >= growKeyframes[i].time && animTime <= growKeyframes[i+1].time) {
+                float t = (animTime - growKeyframes[i].time) / (growKeyframes[i+1].time - growKeyframes[i].time);
+                currentMult = growKeyframes[i].multiplier + t * (growKeyframes[i+1].multiplier - growKeyframes[i].multiplier);
+                break;
+            }
+        }
+        scaleAbs = 1.5f * currentMult;
+    } else if (isShrinking()) {
+        struct Keyframe {
+            float time;
+            float multiplier;
+        };
+        static const std::vector<Keyframe> shrinkKeyframes = {
+            {0.00f, 1.20f},
+            {0.12f, 0.95f},
+            {0.24f, 1.15f},
+            {0.36f, 0.90f},
+            {0.48f, 1.05f},
+            {0.60f, 1.00f}
+        };
+        
+        float currentMult = 1.00f;
+        float animTime = shrinkAnimTime();
+        for (size_t i = 0; i < shrinkKeyframes.size() - 1; ++i) {
+            if (animTime >= shrinkKeyframes[i].time && animTime <= shrinkKeyframes[i+1].time) {
+                float t = (animTime - shrinkKeyframes[i].time) / (shrinkKeyframes[i+1].time - shrinkKeyframes[i].time);
+                currentMult = shrinkKeyframes[i].multiplier + t * (shrinkKeyframes[i+1].multiplier - shrinkKeyframes[i].multiplier);
+                break;
+            }
+        }
+        scaleAbs = 1.5f * currentMult;
+    } else if (mushroom_) {
         scaleAbs = 1.8f;
     }
-    if (velocity_.x < 0.0f) {
+
+    if (facing() < 0) {
         sprite_.setScale(-scaleAbs, scaleAbs);
-    } else if (velocity_.x >= 0.0f) {
+    } else {
         sprite_.setScale(scaleAbs, scaleAbs);
     }
     
