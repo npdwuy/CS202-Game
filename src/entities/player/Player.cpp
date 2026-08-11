@@ -45,15 +45,18 @@ float Player::speedMultiplier() const {
 void Player:: update(sf::Time timePerFrame){
     auto& settings = GameManager::getInstance().getSettings();
 
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
+        || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         moveLeft();
     }
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))
+        || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         moveRight();
     }
     const bool jumpPressed =
         sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
-        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"));
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action")) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
     if (jumpPressed && !jumpHeld_) {
         jump();
     }
