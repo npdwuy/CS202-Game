@@ -31,6 +31,7 @@ public:
 
 private:
     void loadLevel(int levelNumber, bool restoreSavedPosition);
+    void handleLevelStart();
     void createLevelObjects();
     void saveGame();
     void loadGame();
@@ -38,6 +39,7 @@ private:
     bool handleEnemyCollisions();
     bool handlePlayerFall();
     void handleLevelExit();
+    void finishLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
     void updateLevelTimer(sf::Time timePerFrame);
@@ -64,6 +66,17 @@ private:
     float m_damageCooldown = 0.f;
     bool m_playerDamagePending = false;
     float m_timeRemaining = 400.f;
+
+    enum class ExitSequence { None, Sliding, WalkingRight, IrisWipe };
+    ExitSequence m_exitSequence = ExitSequence::None;
+    float m_exitTimer = 0.f;
+    
+    bool m_levelStarting = true;
+    float m_startTimer = 0.f;
+
+    sf::Text m_flagScoreText;
+    bool m_showFlagScore = false;
+    float m_flagScoreTimer = 0.f;
 
     std::unique_ptr<Button> m_menuButton;
     sf::Texture m_buttonTexture;
