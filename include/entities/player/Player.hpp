@@ -25,6 +25,7 @@ protected:
 
     bool fireMario_ = false;
     bool mushroom_ = false;
+    bool invincible_ = false;
     std::string label_;
 
     // Grow/Shrink animation states
@@ -60,6 +61,8 @@ public:
           label_(std::move(label)) {}
           
     bool isSuper() const { return mushroom_ || fireMario_; }
+    bool isInvincible() const { return invincible_; }
+    void setInvincible(bool invincible) { invincible_ = invincible; }
 
     std:: string name() const override{
         return label_;
