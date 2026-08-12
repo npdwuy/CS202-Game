@@ -243,17 +243,23 @@ void PlayState::Update(sf::Time timePerFrame) {
     if (m_exitSequence != ExitSequence::None) {
         if (m_exitSequence == ExitSequence::Sliding) {
             // player is sliding down
+            bool playerAtBottom = false;
             if (m_player->position().y + m_player->height() >= m_tileMap.getPoleBottomY() - 1.f) {
                 m_player->setPosition({m_player->position().x, m_tileMap.getPoleBottomY() - m_player->height()});
-                m_player->forceState(Player::State::AutoWalk);
-                m_player->setFacing(1);
-                m_exitSequence = ExitSequence::WalkingRight;
+                playerAtBottom = true;
             } else {
                 sf::Vector2f pos = m_player->position();
                 pos.y += 100.f * timePerFrame.asSeconds();
                 m_player->setPosition(pos);
             }
-            m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
+            
+            bool flagAtBottom = m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
+            
+            if (playerAtBottom && flagAtBottom) {
+                m_player->forceState(Player::State::AutoWalk);
+                m_player->setFacing(1);
+                m_exitSequence = ExitSequence::WalkingRight;
+            }
         } else if (m_exitSequence == ExitSequence::WalkingRight) {
             m_player->setVelocity({180.f, 0.f}); 
             m_exitTimer += timePerFrame.asSeconds();
@@ -822,13 +828,7 @@ bool PlayState::handleEnemyCollisions()
                 continue;
             }
 
-            sf::Vector2f knockback = m_player->velocity();
-            const float playerCenter = bounds.left + bounds.width * 0.5f;
-            const float enemyCenter = enemyBounds.left + enemyBounds.width * 0.5f;
-            knockback.x = playerCenter < enemyCenter ? -240.f : 240.f;
-            knockback.y = -320.f;
-            m_player->setVelocity(knockback);
-
+            // Knockback logic is removed, damage is handled entirely by freeze/shrink mechanics.
             GameEventManager::GetInstance().Notify(
                 {
                     GameEventType::PlayerDamaged,
@@ -879,6 +879,7 @@ void PlayState::handlePlayerDamage() {
         }
         
         m_damageCooldown = 1.5f;
+        m_player->setInvincible(true);
         showStatus("Power-up absorbed the hit", 1.5f);
         updateHud();
         return;

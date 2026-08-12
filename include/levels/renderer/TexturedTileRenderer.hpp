@@ -25,8 +25,19 @@ public:
         sf::VertexArray& tileVertices,
         sf::VertexArray& sceneryVertices,
         sf::VertexArray& backgroundVertices,
-        const LevelData& data
+        const LevelData& data,
+        const std::set<std::pair<int, int>>& hiddenTiles
     ) override;
+
+    void buildSingleTile(
+        sf::VertexArray& vertices,
+        const LevelData& data,
+        int row,
+        int col,
+        sf::Vector2f offset
+    ) const override;
+
+    bool isTransparent(const LevelData& data, int row, int col, int localX, int localY) const override;
 
     void render(
         sf::RenderTarget& target,
@@ -34,6 +45,8 @@ public:
         const sf::VertexArray& sceneryVertices,
         const sf::VertexArray& backgroundVertices
     ) const override;
+
+    bool getTileSprite(sf::Sprite& outSprite, int quadrant) const override;
 
 private:
     void appendTexturedQuad(
@@ -44,5 +57,6 @@ private:
     ) const;
 
     sf::Texture m_texture;
+    sf::Image m_image;
     TilesetLayout m_layout;
 };

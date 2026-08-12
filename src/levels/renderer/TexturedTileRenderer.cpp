@@ -78,7 +78,7 @@ void appendHill(
 } // namespace
 
 TexturedTileRenderer::TexturedTileRenderer(sf::Texture texture, TilesetLayout layout)
-    : m_texture(std::move(texture)), m_layout(layout) {}
+    : m_texture(std::move(texture)), m_image(m_texture.copyToImage()), m_layout(layout) {}
 
 void TexturedTileRenderer::appendTexturedQuad(
     sf::VertexArray& vertices,
@@ -100,7 +100,8 @@ void TexturedTileRenderer::buildGeometry(
     sf::VertexArray& tileVertices,
     sf::VertexArray& sceneryVertices,
     sf::VertexArray& backgroundVertices,
-    const LevelData& data
+    const LevelData& data,
+    const std::set<std::pair<int, int>>& hiddenTiles
 ) {
     tileVertices.clear();
     sceneryVertices.clear();
@@ -150,6 +151,10 @@ void TexturedTileRenderer::buildGeometry(
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
             if (data.rows[row][column] != '#') {
+                continue;
+            }
+
+            if (hiddenTiles.count({static_cast<int>(row), static_cast<int>(column)})) {
                 continue;
             }
 
@@ -227,4 +232,131 @@ void TexturedTileRenderer::render(
     sf::RenderStates states;
     states.texture = &m_texture;
     target.draw(tileVertices, states);
+}
+
+bool TexturedTileRenderer::getTileSprite(sf::Sprite& outSprite, int quadrant) const {
+    const float sourceTileSize = 64.f;
+    sf::Vector2i tileCoord = m_layout.highBlock;
+    
+    float halfTs = sourceTileSize * 0.5f;
+    float texX = tileCoord.x * sourceTileSize;
+    float texY = tileCoord.y * sourceTileSize;
+    
+    if (quadrant == 1 || quadrant == 3) texX += halfTs;
+    if (quadrant == 2 || quadrant == 3) texY += halfTs;
+    
+    outSprite.setTexture(m_texture);
+    outSprite.setTextureRect(sf::IntRect(static_cast<int>(texX), static_cast<int>(texY), static_cast<int>(halfTs), static_cast<int>(halfTs)));
+    return true;
+}
+
+void TexturedTileRenderer::buildSingleTile(
+    sf::VertexArray& vertices,
+    const LevelData& data,
+    int row,
+    int col,
+    sf::Vector2f offset
+) const {
+    const float tileSize = static_cast<float>(data.tileSize);
+    const float sourceTileSize = 64.f;
+
+    const sf::Vector2f position{
+        static_cast<float>(col) * tileSize + offset.x,
+        static_cast<float>(row) * tileSize + offset.y
+    };
+
+    const bool above = (row > 0 && data.rows[row - 1][col] == '#');
+    const bool below = (row + 1 < static_cast<int>(data.rows.size()) && data.rows[row + 1][col] == '#');
+    const bool left = (col == 0) || (data.rows[row][col - 1] == '#');
+    const bool right = (col + 1 >= static_cast<int>(data.rows[row].size())) || (data.rows[row][col + 1] == '#');
+
+    sf::Vector2i tileCoord = m_layout.dirtCenter;
+
+    if (row < static_cast<int>(data.rows.size()) - 2) {
+        tileCoord = m_layout.highBlock;
+    } else if (!above) {
+        if (!left && right) {
+            tileCoord = m_layout.surfaceLeft;
+        } else if (left && !right) {
+            tileCoord = m_layout.surfaceRight;
+        } else if (!left && !right) {
+            tileCoord = m_layout.surfaceIsolated;
+        } else {
+            tileCoord = m_layout.surfaceCenter;
+        }
+    } else {
+        if (!left && right) {
+            tileCoord = m_layout.dirtLeft;
+        } else if (left && !right) {
+            tileCoord = m_layout.dirtRight;
+        } else {
+            tileCoord = m_layout.dirtCenter;
+        }
+    }
+
+    sf::FloatRect texCoords(
+        static_cast<float>(tileCoord.x) * sourceTileSize,
+        static_cast<float>(tileCoord.y) * sourceTileSize,
+        sourceTileSize,
+        sourceTileSize
+    );
+
+    appendTexturedQuad(
+        vertices,
+        {position.x, position.y, tileSize, tileSize},
+        texCoords
+    );
+}
+
+bool TexturedTileRenderer::isTransparent(const LevelData& data, int row, int col, int localX, int localY) const {
+    const float sourceTileSize = 64.f;
+    const float destTileSize = static_cast<float>(data.tileSize);
+
+    const bool above = (row > 0 && data.rows[row - 1][col] == '#');
+    const bool below = (row + 1 < static_cast<int>(data.rows.size()) && data.rows[row + 1][col] == '#');
+    const bool left = (col == 0) || (data.rows[row][col - 1] == '#');
+    const bool right = (col + 1 >= static_cast<int>(data.rows.size())) || (data.rows[row][col + 1] == '#');
+
+    sf::Vector2i tileCoord = m_layout.dirtCenter;
+
+    if (row < static_cast<int>(data.rows.size()) - 2) {
+        tileCoord = m_layout.highBlock;
+    } else if (!above) {
+        if (!left && right) {
+            tileCoord = m_layout.surfaceLeft;
+        } else if (left && !right) {
+            tileCoord = m_layout.surfaceRight;
+        } else if (!left && !right) {
+            tileCoord = m_layout.surfaceIsolated;
+        } else {
+            tileCoord = m_layout.surfaceCenter;
+        }
+    } else {
+        if (!left && right) {
+            tileCoord = m_layout.dirtLeft;
+        } else if (left && !right) {
+            tileCoord = m_layout.dirtRight;
+        } else {
+            tileCoord = m_layout.dirtCenter;
+        }
+    }
+
+    float ratio = sourceTileSize / destTileSize;
+    int srcX = static_cast<int>(localX * ratio);
+    int srcY = static_cast<int>(localY * ratio);
+    
+    if (srcX < 0 || srcX >= static_cast<int>(sourceTileSize) || 
+        srcY < 0 || srcY >= static_cast<int>(sourceTileSize)) {
+        return true;
+    }
+
+    int pixelX = static_cast<int>(tileCoord.x * sourceTileSize) + srcX;
+    int pixelY = static_cast<int>(tileCoord.y * sourceTileSize) + srcY;
+    
+    if (pixelX < 0 || pixelX >= static_cast<int>(m_image.getSize().x) ||
+        pixelY < 0 || pixelY >= static_cast<int>(m_image.getSize().y)) {
+        return true;
+    }
+
+    return m_image.getPixel(pixelX, pixelY).a == 0;
 }

@@ -98,7 +98,8 @@ void ProceduralTileRenderer::buildGeometry(
     sf::VertexArray& tileVertices,
     sf::VertexArray& sceneryVertices,
     sf::VertexArray& backgroundVertices,
-    const LevelData& data
+    const LevelData& data,
+    const std::set<std::pair<int, int>>& hiddenTiles
 ) {
     tileVertices.clear();
     sceneryVertices.clear();
@@ -144,6 +145,10 @@ void ProceduralTileRenderer::buildGeometry(
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
             if (data.rows[row][column] != '#') {
+                continue;
+            }
+
+            if (hiddenTiles.count({static_cast<int>(row), static_cast<int>(column)})) {
                 continue;
             }
 
@@ -225,4 +230,89 @@ void ProceduralTileRenderer::render(
 ) const
 {
     target.draw(tileVertices);
+}
+
+sf::Color ProceduralTileRenderer::getTileColor(const LevelData& data) const {
+    const TilePalette palette = paletteFor(data.difficulty);
+    return palette.lightFill;
+}
+
+void ProceduralTileRenderer::buildSingleTile(
+    sf::VertexArray& vertices,
+    const LevelData& data,
+    int row,
+    int col,
+    sf::Vector2f offset
+) const {
+    const TilePalette palette = paletteFor(data.difficulty);
+    const float tileSize = static_cast<float>(data.tileSize);
+
+    const sf::Vector2f position{
+        static_cast<float>(col) * tileSize + offset.x,
+        static_cast<float>(row) * tileSize + offset.y
+    };
+
+    const sf::Color fillColor = row % 2 == 0
+        ? palette.lightFill
+        : palette.darkFill;
+        
+    appendQuad(
+        vertices,
+        {position.x, position.y, tileSize, tileSize},
+        palette.outline
+    );
+    appendQuad(
+        vertices,
+        {
+            position.x + 2.f,
+            position.y + 2.f,
+            tileSize - 4.f,
+            tileSize - 4.f
+        },
+        fillColor
+    );
+
+    const bool exposedTop = row == 0 || data.rows[row - 1][col] != '#';
+    if (exposedTop) {
+        appendQuad(
+            vertices,
+            {position.x, position.y, tileSize, 10.f},
+            palette.surface
+        );
+        appendQuad(
+            vertices,
+            {position.x, position.y, tileSize, 3.f},
+            palette.surfaceHighlight
+        );
+    }
+
+    const bool exposedLeft = col == 0 || data.rows[row][col - 1] != '#';
+    const bool exposedRight = col + 1 >= static_cast<int>(data.rows[row].size()) || data.rows[row][col + 1] != '#';
+    const bool exposedBottom = row + 1 >= static_cast<int>(data.rows.size()) || data.rows[row + 1][col] != '#';
+
+    if (exposedLeft) {
+        appendQuad(
+            vertices,
+            {position.x, position.y + 3.f, 3.f, tileSize - 3.f},
+            brighten(fillColor, 24U)
+        );
+    }
+    if (exposedRight) {
+        appendQuad(
+            vertices,
+            {position.x + tileSize - 4.f, position.y, 4.f, tileSize},
+            palette.outline
+        );
+    }
+    if (exposedBottom) {
+        appendQuad(
+            vertices,
+            {position.x, position.y + tileSize - 4.f, tileSize, 4.f},
+            palette.outline
+        );
+    }
+}
+
+bool ProceduralTileRenderer::isTransparent(const LevelData& data, int row, int col, int localX, int localY) const {
+    return false;
 }

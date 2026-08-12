@@ -23,6 +23,9 @@ protected:
     bool jumpedThisFrame_ = false;
     bool jumpHeld_ = false;
 
+    bool isDamageTransforming_ = false;
+    float damageTransformAnimTime_ = 0.0f;
+
     bool invincible_ = false;
     std::string label_;
 
@@ -45,6 +48,9 @@ protected:
     bool isColorChanging_ = false;
     float colorChangeAnimTime_ = 0.0f;
     static constexpr float ColorChangeAnimDuration = 0.6f;
+
+    bool isPendingTransformation_ = false;
+    PowerUpState pendingPowerUpState_ = PowerUpState::Small;
 
     // Death state variables
     bool isDead_ = false;
@@ -93,37 +99,54 @@ public:
 
     void up2Fire() {
         if (powerUp_ == PowerUpState::Small) {
-            powerUp_ = PowerUpState::Fire;
-            recalcJumpPower();
-            isGrowing_ = true;
-            growAnimTime_ = 0.0f;
-            isShrinking_ = false;
+            pendingPowerUpState_ = PowerUpState::Fire;
         } else if (powerUp_ == PowerUpState::Big) {
-            powerUp_ = PowerUpState::Fire;
-            isColorChanging_ = true;
-            colorChangeAnimTime_ = 0.0f;
+            pendingPowerUpState_ = PowerUpState::Fire;
         }
+        isPendingTransformation_ = true;
     }
 
     void getMushroom() {
         if (powerUp_ == PowerUpState::Small) {
+            pendingPowerUpState_ = PowerUpState::Big;
+            isPendingTransformation_ = true;
+        }
+    }
+
+    void applyPendingPowerUp() {
+        if (pendingPowerUpState_ == PowerUpState::Big && powerUp_ == PowerUpState::Small) {
             powerUp_ = PowerUpState::Big;
             recalcJumpPower();
             isGrowing_ = true;
-            growAnimTime_ = 0.0f;
+            growAnimTime_ = 0.f;
             isShrinking_ = false;
+        } else if (pendingPowerUpState_ == PowerUpState::Fire) {
+            if (powerUp_ == PowerUpState::Small) {
+                powerUp_ = PowerUpState::Fire;
+                recalcJumpPower();
+                isGrowing_ = true;
+                growAnimTime_ = 0.f;
+                isShrinking_ = false;
+            } else {
+                powerUp_ = PowerUpState::Fire;
+                isColorChanging_ = true;
+                colorChangeAnimTime_ = 0.f;
+            }
         }
     }
 
     void shrinkPlayer() {
+        isDamageTransforming_ = true;
+        damageTransformAnimTime_ = 0.0f;
+        
         if (powerUp_ == PowerUpState::Fire) {
             powerUp_ = PowerUpState::Big;
-            isColorChanging_ = true;
+            isColorChanging_ = true; // Use this to flash colors
             colorChangeAnimTime_ = 0.0f;
         } else if (powerUp_ == PowerUpState::Big) {
             powerUp_ = PowerUpState::Small;
             recalcJumpPower();
-            isShrinking_ = true;
+            isShrinking_ = true; // Use this to shrink scale
             shrinkAnimTime_ = 0.0f;
             isGrowing_ = false;
         }
@@ -145,8 +168,11 @@ public:
     bool isDead() const { return isDead_; }
     
     bool isTransforming() const {
-        return isGrowing_ || isShrinking_ || isColorChanging_;
+        return isGrowing_ || isColorChanging_ || isDamageTransforming_;
     }
+    
+    bool isPendingTransformation() const { return isPendingTransformation_; }
+    bool isDamageShrinking() const { return isShrinking_; }
 
     bool isGrowing() const { return isGrowing_; }
     float growAnimTime() const { return growAnimTime_; }

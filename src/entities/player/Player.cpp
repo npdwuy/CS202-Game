@@ -53,19 +53,28 @@ void Player:: update(sf::Time timePerFrame){
         return; // skip input, normal physics, and bounding box logic
     }
 
+    if (isPendingTransformation_) {
+        if (onGround_) {
+            isPendingTransformation_ = false;
+            velocity_.x = 0.f;
+            applyPendingPowerUp();
+        }
+    }
+
+    if (isShrinking_) {
+        shrinkAnimTime_ += timePerFrame.asSeconds();
+        if (shrinkAnimTime_ >= ShrinkAnimDuration) {
+            isShrinking_ = false;
+            shrinkAnimTime_ = 0.0f;
+        }
+    }
+
     if (isTransforming()) {
         if (isGrowing_) {
             growAnimTime_ += timePerFrame.asSeconds();
             if (growAnimTime_ >= GrowAnimDuration) {
                 isGrowing_ = false;
                 growAnimTime_ = 0.0f;
-            }
-        }
-        if (isShrinking_) {
-            shrinkAnimTime_ += timePerFrame.asSeconds();
-            if (shrinkAnimTime_ >= ShrinkAnimDuration) {
-                isShrinking_ = false;
-                shrinkAnimTime_ = 0.0f;
             }
         }
         if (isColorChanging_) {
@@ -75,13 +84,31 @@ void Player:: update(sf::Time timePerFrame){
                 colorChangeAnimTime_ = 0.0f;
             }
         }
+        if (isDamageTransforming_) {
+            damageTransformAnimTime_ += timePerFrame.asSeconds();
+            if (damageTransformAnimTime_ >= 1.0f) { // Same duration as Shrink/Color change
+                isDamageTransforming_ = false;
+                damageTransformAnimTime_ = 0.0f;
+            }
+        }
+        
+        if (isDamageTransforming_) {
+            currentState = State::Dead;
+            animationTime_ += timePerFrame.asSeconds(); // Allow dead animation to play
+        } else {
+            currentState = State::Jump;
+            animationTime_ = 0.f; // Freeze animation for powerup
+        }
+        
         return; // Skip input and physics while transforming
     }
+
 
     auto& settings = GameManager::getInstance().getSettings();
 
     bool jumpPressed = false;
-    if (inputEnabled_) {
+    bool canInput = inputEnabled_ && !isShrinking_ && !isPendingTransformation_ && !isTransforming();
+    if (canInput) {
         if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
             || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
             moveLeft();
@@ -115,7 +142,7 @@ void Player:: update(sf::Time timePerFrame){
         performJump();
     }
 
-    if (inputEnabled_) {
+    if (canInput) {
         if(!movedThisFrame_){
             constexpr float ReferenceFrameSeconds = 1.f / 30.f;
             constexpr float ReferenceDamping = 0.78f;
@@ -142,7 +169,7 @@ void Player:: update(sf::Time timePerFrame){
 
     moveCharacter(timePerFrame);
 
-    if (inputEnabled_) {
+    if (canInput) {
         State newState = State::Stand;
         if(hitRoof_ == true)newState = State::HitRoof;
         else if (velocity_.y < 0.0f && !onGround_) {

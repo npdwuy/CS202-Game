@@ -57,37 +57,29 @@ void TileMap::render(sf::RenderWindow& window) const {
         window.draw(m_tileVertices);
     }
 
+    if (m_renderer) {
+        sf::VertexArray bouncingTiles(sf::Quads);
+        for (const auto& cracked : m_crackedBlocks) {
+            if (cracked.isBouncing) {
+                m_renderer->buildSingleTile(bouncingTiles, m_data, cracked.row, cracked.col, sf::Vector2f(0.f, cracked.bounceOffset));
+            }
+        }
+        if (bouncingTiles.getVertexCount() > 0) {
+            sf::VertexArray emptyScenery(sf::Triangles);
+            sf::VertexArray emptyBackground(sf::Quads);
+            m_renderer->render(window, bouncingTiles, emptyScenery, emptyBackground);
+        }
+    }
+
     // Draw crack overlay on cracked blocks
     const float ts = static_cast<float>(m_data.tileSize);
     for (const auto& cracked : m_crackedBlocks) {
         float bx = static_cast<float>(cracked.col) * ts;
         float by = static_cast<float>(cracked.row) * ts + cracked.bounceOffset;
-
-        // Diagonal length for X crack pattern
-        float diag = std::sqrt(ts * ts + ts * ts);
-
-        // Crack line 1: top-left to bottom-right
-        sf::RectangleShape line1(sf::Vector2f(diag, 2.5f));
-        line1.setOrigin(0.f, 1.25f);
-        line1.setPosition(bx, by);
-        line1.setRotation(45.f);
-        line1.setFillColor(sf::Color(60, 30, 10, 200));
-        window.draw(line1);
-
-        // Crack line 2: top-right to bottom-left
-        sf::RectangleShape line2(sf::Vector2f(diag, 2.5f));
-        line2.setOrigin(0.f, 1.25f);
-        line2.setPosition(bx + ts, by);
-        line2.setRotation(135.f);
-        line2.setFillColor(sf::Color(60, 30, 10, 200));
-        window.draw(line2);
-
-        // Additional small crack for visual richness
-        sf::RectangleShape crack3(sf::Vector2f(ts * 0.4f, 1.5f));
-        crack3.setPosition(bx + ts * 0.3f, by + ts * 0.5f);
-        crack3.setRotation(-30.f);
-        crack3.setFillColor(sf::Color(40, 20, 5, 180));
-        window.draw(crack3);
+        
+        sf::RenderStates states;
+        states.transform.translate(bx, by);
+        window.draw(cracked.crackSprite, states);
     }
     
     for (const auto& qb : m_questionBlocks) {
@@ -98,7 +90,11 @@ void TileMap::render(sf::RenderWindow& window) const {
     window.draw(m_exitFlag);
 
     for (const auto& debris : m_debris) {
-        window.draw(debris.shape);
+        if (debris.useSprite) {
+            window.draw(debris.sprite);
+        } else {
+            window.draw(debris.shape);
+        }
     }
 }
 
@@ -236,8 +232,13 @@ void TileMap::update(sf::Time dt) {
         it->rotation += it->rotationSpeed * seconds;
         it->lifeTime -= seconds;
         
-        it->shape.setPosition(it->position);
-        it->shape.setRotation(it->rotation);
+        if (it->useSprite) {
+            it->sprite.setPosition(it->position);
+            it->sprite.setRotation(it->rotation);
+        } else {
+            it->shape.setPosition(it->position);
+            it->shape.setRotation(it->rotation);
+        }
 
         if (it->lifeTime <= 0.f || it->position.y > m_data.worldSize().y + 100.f) {
             it = m_debris.erase(it);
@@ -247,6 +248,7 @@ void TileMap::update(sf::Time dt) {
     }
 
     // Update cracked block bounce animations
+    bool needsRebuild = false;
     for (auto& cracked : m_crackedBlocks) {
         if (cracked.isBouncing) {
             cracked.bounceTimer += seconds;
@@ -254,6 +256,7 @@ void TileMap::update(sf::Time dt) {
                 cracked.bounceTimer = CrackedBlock::BounceDuration;
                 cracked.bounceOffset = 0.f;
                 cracked.isBouncing = false;
+                needsRebuild = true;
             } else {
                 // Sin wave bounce: go up then back down
                 float progress = cracked.bounceTimer / CrackedBlock::BounceDuration;
@@ -264,6 +267,10 @@ void TileMap::update(sf::Time dt) {
     
     for (auto& qb : m_questionBlocks) {
         qb.Update(dt);
+    }
+    
+    if (needsRebuild) {
+        rebuildGeometry();
     }
 }
 
@@ -292,12 +299,24 @@ void TileMap::breakBlock(int row, int col) {
         sf::Vector2f center(col * ts + halfTs, row * ts + halfTs);
         
         sf::Color blockColor(180, 100, 40); // Approximate dirt/brick color
+        if (m_renderer) {
+            blockColor = m_renderer->getTileColor(m_data);
+        }
         
         for (int i = 0; i < 4; ++i) {
             BlockDebris debris;
-            debris.shape.setSize({halfTs, halfTs});
-            debris.shape.setOrigin(halfTs * 0.5f, halfTs * 0.5f);
-            debris.shape.setFillColor(blockColor);
+            
+            sf::Sprite sprite;
+            if (m_renderer && m_renderer->getTileSprite(sprite, i)) {
+                debris.useSprite = true;
+                debris.sprite = sprite;
+                debris.sprite.setOrigin(halfTs * 0.5f, halfTs * 0.5f);
+            } else {
+                debris.useSprite = false;
+                debris.shape.setSize({halfTs, halfTs});
+                debris.shape.setOrigin(halfTs * 0.5f, halfTs * 0.5f);
+                debris.shape.setFillColor(blockColor);
+            }
             
             float dx = (i % 2 == 0) ? -1.f : 1.f;
             float dy = (i < 2) ? -1.f : 0.f;
@@ -353,13 +372,9 @@ bool TileMap::hitBlock(int row, int col) {
 
     // 1st hit -> crack it with bounce animation
     m_crackedSet.insert(key);
-    CrackedBlock cb;
-    cb.row = row;
-    cb.col = col;
-    cb.bounceTimer = 0.f;
-    cb.bounceOffset = 0.f;
-    cb.isBouncing = true;
+    CrackedBlock cb = makeCrackedBlock(row, col, static_cast<float>(m_data.tileSize));
     m_crackedBlocks.push_back(cb);
+    rebuildGeometry();
     return false;
 }
 
@@ -459,8 +474,15 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 }
 
 void TileMap::rebuildGeometry() {
+    std::set<std::pair<int, int>> hiddenTiles;
+    for (const auto& cb : m_crackedBlocks) {
+        if (cb.isBouncing) {
+            hiddenTiles.insert({cb.row, cb.col});
+        }
+    }
+
     if (m_renderer) {
-        m_renderer->buildGeometry(m_tileVertices, m_sceneryVertices, m_backgroundVertices, m_data);
+        m_renderer->buildGeometry(m_tileVertices, m_sceneryVertices, m_backgroundVertices, m_data, hiddenTiles);
     }
 
     const float tileSize = static_cast<float>(m_data.tileSize);
@@ -509,4 +531,82 @@ float TileMap::getPoleBottomY() const {
 float TileMap::getPoleX() const {
     const float tileSize = static_cast<float>(m_data.tileSize);
     return m_data.exitPosition.x + tileSize * 0.5f;
+}
+
+CrackedBlock TileMap::makeCrackedBlock(int row, int col, float tileSize) {
+    CrackedBlock cb;
+    cb.row = row;
+    cb.col = col;
+    cb.bounceTimer = 0.f;
+    cb.bounceOffset = 0.f;
+    cb.isBouncing = true;
+    cb.crackTexture = std::make_shared<sf::Texture>();
+
+    int ts = static_cast<int>(tileSize);
+    sf::Image crackImg;
+    crackImg.create(ts, ts, sf::Color::Transparent);
+
+    sf::Color crackColor(30, 20, 10, 230); // dark brown
+
+    auto drawCrackPixel = [&](int x, int y) {
+        if (x < 0 || x >= ts || y < 0 || y >= ts) return;
+        if (m_renderer && !m_renderer->isTransparent(m_data, row, col, x, y)) {
+            crackImg.setPixel(x, y, crackColor);
+        }
+    };
+
+    auto drawThickPixel = [&](int x, int y) {
+        drawCrackPixel(x, y);
+        drawCrackPixel(x + 1, y);
+        drawCrackPixel(x, y + 1);
+        drawCrackPixel(x - 1, y);
+        drawCrackPixel(x, y - 1);
+    };
+
+    auto drawLine = [&](int x0, int y0, int x1, int y1) {
+        int dx = std::abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+        int dy = -std::abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+        int err = dx + dy, e2; 
+        
+        while (true) {
+            drawThickPixel(x0, y0);
+            if (x0 == x1 && y0 == y1) break;
+            e2 = 2 * err;
+            if (e2 >= dy) { err += dy; x0 += sx; }
+            if (e2 <= dx) { err += dx; y0 += sy; }
+        }
+    };
+
+    // Generate random cracks
+    float startX = tileSize * 0.5f + (std::rand() % 10 - 5);
+    std::vector<sf::Vector2f> points;
+    points.push_back({startX, 0.f});
+    
+    float currentY = 0.f;
+    float currentX = startX;
+    int segments = 4 + std::rand() % 3;
+    
+    for (int i = 1; i <= segments; ++i) {
+        currentY = tileSize * (static_cast<float>(i) / segments);
+        currentX += (std::rand() % (static_cast<int>(tileSize * 0.4f) + 1) - tileSize * 0.2f);
+        points.push_back({currentX, currentY});
+    }
+
+    for (size_t i = 0; i < points.size() - 1; ++i) {
+        drawLine(static_cast<int>(points[i].x), static_cast<int>(points[i].y), 
+                 static_cast<int>(points[i+1].x), static_cast<int>(points[i+1].y));
+    }
+
+    if (std::rand() % 2 == 0 && points.size() >= 3) {
+        size_t midIdx = points.size() / 2;
+        float bx = points[midIdx].x + (std::rand() % 2 == 0 ? 1 : -1) * tileSize * 0.3f;
+        float by = points[midIdx].y + tileSize * 0.2f;
+        drawLine(static_cast<int>(points[midIdx].x), static_cast<int>(points[midIdx].y),
+                 static_cast<int>(bx), static_cast<int>(by));
+    }
+
+    cb.crackTexture->loadFromImage(crackImg);
+    cb.crackSprite.setTexture(*cb.crackTexture);
+    
+    return cb;
 }

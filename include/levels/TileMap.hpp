@@ -14,7 +14,9 @@
 class Character;
 
 struct BlockDebris {
+    sf::Sprite sprite;
     sf::RectangleShape shape;
+    bool useSprite = false;
     sf::Vector2f position;
     sf::Vector2f velocity;
     float rotation = 0.f;
@@ -28,6 +30,8 @@ struct CrackedBlock {
     float bounceTimer = 0.f;        // Thời gian bounce animation còn lại
     float bounceOffset = 0.f;       // Offset Y hiện tại (âm = lên)
     bool isBouncing = true;         // Đang trong giai đoạn bounce?
+    std::shared_ptr<sf::Texture> crackTexture;
+    sf::Sprite crackSprite;
     static constexpr float BounceDuration = 0.3f;
     static constexpr float BounceHeight = 6.f;
 };
@@ -63,6 +67,7 @@ public:
 
 private:
     void rebuildGeometry();
+    CrackedBlock makeCrackedBlock(int row, int col, float tileSize);
 
     LevelData m_data;
     sf::VertexArray m_backgroundVertices{sf::Quads};
