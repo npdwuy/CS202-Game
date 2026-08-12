@@ -74,6 +74,10 @@ void Mario::update(sf::Time timePerFrame) {
         sf::IntRect(108  , 12, 35, 50)
     };
 
+    static const std::vector<sf::IntRect> framesPoleSlide = {
+        sf::IntRect(22, 155, 40, 52) // Jump frame looks like holding pole
+    };
+
 
     // 7. Chết (Flashing and spinning)
     static const std::vector<sf::IntRect> framesDead = {
@@ -85,11 +89,12 @@ void Mario::update(sf::Time timePerFrame) {
 
     const std::vector<sf::IntRect>* currentAnim = &framesStand;
     if (currentState == State::Dead) currentAnim = &framesDead;
-    else if (currentState == State::Walk) currentAnim = &framesWalk;
+    else if (currentState == State::Walk || currentState == State::AutoWalk) currentAnim = &framesWalk;
     else if (currentState == State::Jump) currentAnim = &framesJump;
     else if (currentState == State::Fall) currentAnim = &framesFall;
     else if(currentState == State::HitRoof) currentAnim = &framesHitRoof;
-    else if(currentState == State::TransitionStand)currentAnim = &framesTransitionStand;
+    else if(currentState == State::TransitionStand) currentAnim = &framesTransitionStand;
+    else if(currentState == State::PoleSlide) currentAnim = &framesPoleSlide;
 
     const float frameDuration = (currentState == State::Dead) ? 0.07f : 0.10f;
     // animationTime_ += timePerFrame.asSeconds();
@@ -106,9 +111,8 @@ void Mario::update(sf::Time timePerFrame) {
     }
 
     if (currentFrame_ >= currentAnim->size()) {
-        currentFrame_ = currentAnim->size() - 1;
+        currentFrame_ = 0;
     }
-
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
     
     static constexpr int FireMarioSpriteOffsetX = 736;

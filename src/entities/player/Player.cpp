@@ -80,21 +80,25 @@ void Player:: update(sf::Time timePerFrame){
 
     auto& settings = GameManager::getInstance().getSettings();
 
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
-        || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-        moveLeft();
-    }
+    bool jumpPressed = false;
+    if (inputEnabled_) {
+        if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
+            || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+            moveLeft();
+        }
 
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))
-        || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-        moveRight();
-    }
+        if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))
+            || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+            moveRight();
+        }
 
-    const bool jumpPressed =
-        sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
-        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action")) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
-        
+        jumpPressed =
+            sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
+            sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action")) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Space) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
+    }
+    
     if (jumpPressed && !jumpHeld_) {
         jump();
     }
@@ -111,42 +115,53 @@ void Player:: update(sf::Time timePerFrame){
         performJump();
     }
 
-    if(!movedThisFrame_){
-        constexpr float ReferenceFrameSeconds = 1.f / 30.f;
-        constexpr float ReferenceDamping = 0.78f;
-        const float damping = std::pow(
-            ReferenceDamping,
-            timePerFrame.asSeconds() / ReferenceFrameSeconds
-        );
-        velocity_.x *= damping;
-        if(std::abs(velocity_.x) < 7.0f){
-            velocity_.x = 0.0f;
+    if (inputEnabled_) {
+        if(!movedThisFrame_){
+            constexpr float ReferenceFrameSeconds = 1.f / 30.f;
+            constexpr float ReferenceDamping = 0.78f;
+            const float damping = std::pow(
+                ReferenceDamping,
+                timePerFrame.asSeconds() / ReferenceFrameSeconds
+            );
+            velocity_.x *= damping;
+            if(std::abs(velocity_.x) < 7.0f){
+                velocity_.x = 0.0f;
+            }
+        }
+        
+        jumpBufferTimer_ = std::max(0.0f, jumpBufferTimer_ - timePerFrame.asSeconds());
+        const float gravityScale = velocity_.y > 0.0f ? 1.0f : 0.88f ;
+        velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
+    } else {
+        if (currentState != State::PoleSlide && currentState != State::AutoWalk) {
+            // Apply gravity but no friction (PlayState controls velocity.x)
+            const float gravityScale = velocity_.y > 0.0f ? 1.0f : 0.88f ;
+            velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
+        }
+    }
+
+    moveCharacter(timePerFrame);
+
+    if (inputEnabled_) {
+        State newState = State::Stand;
+        if(hitRoof_ == true)newState = State::HitRoof;
+        else if (velocity_.y < 0.0f && !onGround_) {
+            newState = State::Jump;
+        } else if (velocity_.y > 0.0f && !onGround_) {
+            newState = State::Fall;
+        } else if (std::abs(velocity_.x) > 0.1f) { 
+            if(movedThisFrame_)
+                newState = State::Walk;
+            else newState = State::TransitionStand;
+        }
+
+        if (newState != currentState) {
+            currentState = newState;
+            currentFrame_ = 0;
+            animationTime_ = 0.f;
         }
     }
     
-    jumpBufferTimer_ = std::max(0.0f, jumpBufferTimer_ - timePerFrame.asSeconds());
-    const float gravityScale = velocity_.y > 0.0f ? 1.0f : 0.88f ;
-    velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
-    moveCharacter(timePerFrame);
-
-
-    State newState = State::Stand;
-    if(hitRoof_ == true)newState = State::HitRoof;
-    else if (velocity_.y < 0.0f) {
-        newState = State::Jump;
-    } else if (velocity_.y > 0.0f) {
-        newState = State::Fall;
-    } else if (std::abs(velocity_.x) > 0.1f) { 
-        if(movedThisFrame_)
-            newState = State::Walk;
-        else newState = State::TransitionStand;
-    }
-
-    if (newState != currentState) {
-        currentState = newState;
-        currentFrame_ = 0;
-        animationTime_ = 0.f;
-    }
     animationTime_+=timePerFrame.asSeconds();
     movedThisFrame_ = false;
 }

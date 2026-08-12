@@ -22,6 +22,12 @@ public:
     bool isSolidAt(sf::Vector2f worldPosition) const;
     bool intersectsSolid(const sf::FloatRect& bounds) const;
 
+    bool updateFlagAnimation(sf::Time dt, float speed);
+    float getPoleTopY() const;
+    float getPoleBottomY() const;
+    float getPoleX() const;
+
+
 private:
     void rebuildGeometry();
 
@@ -31,5 +37,6 @@ private:
     sf::VertexArray m_tileVertices{sf::Quads};
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
+    float m_flagY = 0.f;
     std::unique_ptr<TileRenderer> m_renderer;
 };

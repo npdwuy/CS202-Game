@@ -35,6 +35,13 @@ PlayState::PlayState(bool loadSavedGame)
     if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
         throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
     }
+    
+    m_flagScoreText.setFont(hudFont);
+    m_flagScoreText.setCharacterSize(16);
+    m_flagScoreText.setFillColor(sf::Color::White);
+    m_flagScoreText.setOutlineColor(sf::Color::Black);
+    m_flagScoreText.setOutlineThickness(1.f);
+    
     m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(24.f, 10.f), sf::Vector2f(40.f, 40.f), 24);
     m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
     m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
@@ -232,6 +239,58 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
+    if (m_exitSequence != ExitSequence::None) {
+        if (m_exitSequence == ExitSequence::Sliding) {
+            // player is sliding down
+            if (m_player->position().y + m_player->height() >= m_tileMap.getPoleBottomY() - 1.f) {
+                m_player->setPosition({m_player->position().x, m_tileMap.getPoleBottomY() - m_player->height()});
+                m_player->forceState(Player::State::AutoWalk);
+                m_player->setFacing(1);
+                m_exitSequence = ExitSequence::WalkingRight;
+            } else {
+                m_player->setVelocity({0.f, 200.f}); // SLIDING DOWN!
+            }
+            m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
+        } else if (m_exitSequence == ExitSequence::WalkingRight) {
+            m_player->setVelocity({180.f, 0.f}); 
+            m_exitTimer += timePerFrame.asSeconds();
+            if (m_exitTimer >= 1.0f) {
+                m_exitSequence = ExitSequence::IrisWipe; 
+                m_exitTimer = 0.f;
+            }
+        } else if (m_exitSequence == ExitSequence::IrisWipe) {
+            m_player->setVelocity({180.f, 0.f}); // keep walking out
+            m_exitTimer += timePerFrame.asSeconds();
+            if (m_exitTimer >= 1.0f) {
+                finishLevelExit();
+                m_exitSequence = ExitSequence::None;
+            }
+        }
+        
+        m_player->update(timePerFrame);
+        updateCamera(timePerFrame);
+        updateBackgroundLayers(timePerFrame, m_camera.view());
+        m_hud.update(timePerFrame);
+        if (m_showFlagScore) {
+            m_flagScoreTimer += timePerFrame.asSeconds();
+            m_flagScoreText.move(0.f, -50.f * timePerFrame.asSeconds());
+            if (m_flagScoreTimer > 2.0f) {
+                m_showFlagScore = false;
+            }
+        }
+        return;
+    }
+
+    if (m_levelStarting) {
+        m_startTimer += timePerFrame.asSeconds();
+        if (m_startTimer >= 1.0f) { // 1.0s opening to match closing duration
+            m_levelStarting = false;
+            if (m_player) {
+                m_player->setInputEnabled(true);
+            }
+        }
+    }
+
     updateBackgroundLayers(
         timePerFrame,
         m_camera.view()
@@ -335,6 +394,47 @@ void PlayState::Render(sf::RenderWindow& window) {
         m_player->Render(window);
     }
 
+    if (m_showFlagScore) {
+        window.draw(m_flagScoreText);
+    }
+
+    if (m_levelStarting || m_exitSequence == ExitSequence::IrisWipe) {
+        float rawProgress = 0.f;
+        if (m_levelStarting) {
+            rawProgress = std::clamp(m_startTimer / 1.0f, 0.0f, 1.0f); 
+            // Cubic Ease-In for opening (mirroring closing wipe)
+            rawProgress = std::pow(rawProgress, 3.0f);
+        } else {
+            rawProgress = std::clamp(1.0f - (m_exitTimer / 1.0f), 0.0f, 1.0f); 
+            // Cubic Ease-In for closing
+            rawProgress = std::pow(rawProgress, 3.0f);
+        }
+        
+        float radius = 1200.f * rawProgress;
+        
+        if (radius <= 0.5f) {
+            // Draw a completely black screen when radius is effectively 0
+            sf::RectangleShape blackScreen(sf::Vector2f(10000.f, 10000.f));
+            blackScreen.setFillColor(sf::Color::Black);
+            if (m_player) {
+                blackScreen.setPosition(m_player->position().x - 5000.f, m_player->position().y - 5000.f);
+            }
+            window.draw(blackScreen);
+        } else {
+            // Draw smooth high-resolution circle (150 points)
+            sf::CircleShape iris(radius, 150);
+            iris.setOrigin(radius, radius);
+            if (m_player) {
+                iris.setPosition(m_player->position().x + m_player->width()/2.f, m_player->position().y + m_player->height()/2.f);
+            }
+            iris.setFillColor(sf::Color::Transparent);
+            iris.setOutlineColor(sf::Color::Black);
+            iris.setOutlineThickness(3000.f); // Massive outline to cover the screen
+            
+            window.draw(iris);
+        }
+    }
+
     window.setView(screenView);
 
     // Position the menu button relative to the current game view's top-left corner
@@ -354,10 +454,20 @@ void PlayState::Render(sf::RenderWindow& window) {
     }
 }
 
+void PlayState::handleLevelStart() {
+    m_levelStarting = true;
+    m_startTimer = 0.f;
+    if (m_player) {
+        m_player->setInputEnabled(false);
+    }
+}
+
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     if (levelNumber < 1 || levelNumber > 3) {
         throw std::out_of_range("Level number must be between 1 and 3.");
     }
+
+    handleLevelStart();
 
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
@@ -397,6 +507,14 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     }
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
+            if (m_exitSequence != ExitSequence::None) {
+                // Bypass all collisions during cutscenes so Mario can slide/walk off-screen freely
+                sf::Vector2f pos = character.position();
+                pos += character.velocity() * deltaTime.asSeconds();
+                character.setPosition(pos);
+                return;
+            }
+
             m_tileMap.resolveCollision(character, deltaTime);
 
             // Constrain player position to camera's left edge
@@ -776,6 +894,8 @@ void PlayState::updateLevelTimer(sf::Time timePerFrame) {
 }
 
 void PlayState::handleLevelExit() {
+    if (m_exitSequence != ExitSequence::None) return;
+
     if (!playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
     }
@@ -785,6 +905,34 @@ void PlayState::handleLevelExit() {
         return;
     }
 
+    m_exitSequence = ExitSequence::Sliding;
+    m_player->setInputEnabled(false);
+    
+    // Snap to pole
+    m_player->setPosition({m_tileMap.getPoleX() - m_player->width() / 2.0f, m_player->position().y});
+    m_player->setVelocity({0.f, 0.f});
+    m_player->forceState(Player::State::PoleSlide);
+    m_player->setFacing(1); 
+    
+    // Score signifier
+    float poleTop = m_tileMap.getPoleTopY();
+    float poleBottom = m_tileMap.getPoleBottomY();
+    float playerY = m_player->position().y + m_player->height();
+    float heightPerc = 1.0f - std::clamp((playerY - poleTop) / (poleBottom - poleTop), 0.0f, 1.0f);
+    
+    int scorePoints = 100;
+    if (heightPerc > 0.85f) scorePoints = 5000;
+    else if (heightPerc > 0.6f) scorePoints = 2000;
+    else if (heightPerc > 0.3f) scorePoints = 500;
+
+    m_saveData.score += scorePoints;
+    m_flagScoreText.setString(std::to_string(scorePoints));
+    m_flagScoreText.setPosition(m_tileMap.getPoleX() + 16.f, m_player->position().y);
+    m_showFlagScore = true;
+    m_flagScoreTimer = 0.f;
+}
+
+void PlayState::finishLevelExit() {
     GameEventManager::GetInstance().Notify(
     {
         GameEventType::LevelCompleted,
