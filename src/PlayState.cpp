@@ -251,7 +251,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                 m_exitSequence = ExitSequence::WalkingRight;
             } else {
                 sf::Vector2f pos = m_player->position();
-                pos.y += 100.f * timePerFrame.asSeconds();
+                pos.y += 250.f * timePerFrame.asSeconds();
                 m_player->setPosition(pos);
             }
             m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
@@ -319,7 +319,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                 });
                 m_fireballs.push_back(std::move(fb));
                 m_player->triggerThrow();
-                m_fireballCooldown = 0.6f; // Cooldown 0.6s theo yêu cầu
+                m_fireballCooldown = 0.35f; // Cooldown 0.35s
             }
         }
     }
