@@ -38,12 +38,13 @@ void TileMap::render(sf::RenderWindow& window) const {
 
     window.draw(m_exitPole);
     window.draw(m_exitFlag);
+
+    for (const auto& debris : m_debris) {
+        window.draw(debris.shape);
+    }
 }
 
-void TileMap::resolveCollision(
-    Character& character,
-    sf::Time timePerFrame
-) const {
+void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof) const {
     const float deltaTime = timePerFrame.asSeconds();
     if (deltaTime <= 0.f) {
         return;
@@ -152,6 +153,11 @@ void TileMap::resolveCollision(
         } else if (velocity.y < 0.f) {
             position.y = tile.top + tile.height;
             character.setHitRoof(true);
+            if (onHitRoof) {
+                int col = static_cast<int>(tile.left / m_data.tileSize);
+                int row = static_cast<int>(tile.top / m_data.tileSize);
+                onHitRoof(row, col);
+            }
         }
 
         velocity.y = 0.f;
@@ -160,6 +166,61 @@ void TileMap::resolveCollision(
 
     character.setPosition(position);
     character.setVelocity(velocity);
+}
+
+void TileMap::update(sf::Time dt) {
+    const float seconds = dt.asSeconds();
+    const float gravity = 2000.f;
+
+    for (auto it = m_debris.begin(); it != m_debris.end(); ) {
+        it->velocity.y += gravity * seconds;
+        it->position += it->velocity * seconds;
+        it->rotation += it->rotationSpeed * seconds;
+        it->lifeTime -= seconds;
+        
+        it->shape.setPosition(it->position);
+        it->shape.setRotation(it->rotation);
+
+        if (it->lifeTime <= 0.f || it->position.y > m_data.worldSize().y + 100.f) {
+            it = m_debris.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void TileMap::breakBlock(int row, int col) {
+    if (row < 0 || row >= m_data.rows.size() || col < 0 || col >= m_data.rows[row].size()) {
+        return;
+    }
+    
+    if (m_data.rows[row][col] == '#') {
+        m_data.rows[row][col] = '.';
+        rebuildGeometry();
+        
+        float ts = static_cast<float>(m_data.tileSize);
+        float halfTs = ts * 0.5f;
+        sf::Vector2f center(col * ts + halfTs, row * ts + halfTs);
+        
+        sf::Color blockColor(180, 100, 40); // Approximate dirt/brick color
+        
+        for (int i = 0; i < 4; ++i) {
+            BlockDebris debris;
+            debris.shape.setSize({halfTs, halfTs});
+            debris.shape.setOrigin(halfTs * 0.5f, halfTs * 0.5f);
+            debris.shape.setFillColor(blockColor);
+            
+            float dx = (i % 2 == 0) ? -1.f : 1.f;
+            float dy = (i < 2) ? -1.f : 0.f;
+            
+            debris.position = center + sf::Vector2f(dx * halfTs * 0.5f, dy * halfTs * 0.5f);
+            debris.velocity = sf::Vector2f(dx * 150.f, -400.f + dy * 150.f);
+            debris.rotationSpeed = dx * 360.f; // 1 rotation per second
+            debris.lifeTime = 2.0f;
+            
+            m_debris.push_back(debris);
+        }
+    }
 }
 
 const LevelData& TileMap::data() const {

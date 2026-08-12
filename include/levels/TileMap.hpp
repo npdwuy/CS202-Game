@@ -8,13 +8,26 @@
 #include <string>
 #include <memory>
 
+#include <functional>
+
 class Character;
+
+struct BlockDebris {
+    sf::RectangleShape shape;
+    sf::Vector2f position;
+    sf::Vector2f velocity;
+    float rotation = 0.f;
+    float rotationSpeed = 0.f;
+    float lifeTime = 0.f;
+};
 
 class TileMap {
 public:
     void load(const std::string& path);
     void render(sf::RenderWindow& window) const;
-    void resolveCollision(Character& character, sf::Time timePerFrame) const;
+    void update(sf::Time dt);
+    void resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof = nullptr) const;
+    void breakBlock(int row, int col);
 
     const LevelData& data() const;
     sf::FloatRect exitBounds() const;
@@ -38,5 +51,6 @@ private:
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
     float m_flagY = 0.f;
+    std::vector<BlockDebris> m_debris;
     std::unique_ptr<TileRenderer> m_renderer;
 };
