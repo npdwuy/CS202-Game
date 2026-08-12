@@ -29,6 +29,16 @@ void BossEnemy::Update(sf::Time timePerFrame) {
         return;
     }
 
+    if (m_flung) {
+        m_velocity.y += 2000.f * timePerFrame.asSeconds();
+        m_body.move(m_velocity * timePerFrame.asSeconds());
+        m_shell.move(m_velocity * timePerFrame.asSeconds());
+        if (m_body.getPosition().y > 2000.f) {
+            m_active = false;
+        }
+        return;
+    }
+
     const float movement =
         static_cast<float>(m_direction) * m_speed * timePerFrame.asSeconds();
     m_body.move(movement, 0.f);
@@ -65,4 +75,15 @@ bool BossEnemy::IsActive() const {
 
 void BossEnemy::Deactivate() {
     m_active = false;
+}
+
+void BossEnemy::Fling() {
+    m_flung = true;
+    m_velocity = {0.f, -500.f};
+    m_body.setScale(1.f, -1.f);
+    m_shell.setScale(1.f, -1.f);
+}
+
+bool BossEnemy::IsFlung() const {
+    return m_flung;
 }

@@ -16,6 +16,9 @@ public:
     sf::FloatRect GetBounds() const override;
     bool IsActive() const override;
     void Deactivate() override;
+    
+    void Fling() override;
+    bool IsFlung() const override;
 
 private:
     sf::RectangleShape m_body;
@@ -25,4 +28,6 @@ private:
     float m_speed;
     int m_direction = -1;
     bool m_active = true;
+    bool m_flung = false;
+    sf::Vector2f m_velocity;
 };

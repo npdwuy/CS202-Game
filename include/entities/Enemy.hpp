@@ -13,4 +13,7 @@ public:
 
     virtual bool IsActive() const = 0;
     virtual void Deactivate() = 0;
+
+    virtual void Fling() {}
+    virtual bool IsFlung() const { return false; }
 };

@@ -37,6 +37,15 @@ void Goomba::Update(sf::Time timePerFrame)
         return;
     }
 
+    if (m_flung) {
+        m_velocity.y += 2000.f * timePerFrame.asSeconds();
+        m_sprite.move(m_velocity * timePerFrame.asSeconds());
+        if (m_sprite.getPosition().y > 2000.f) { // offscreen
+            m_active = false;
+        }
+        return;
+    }
+
     m_animationTime += timePerFrame.asSeconds();
 
     const float frameDuration = 0.18f;
@@ -79,4 +88,14 @@ bool Goomba::IsActive() const
 void Goomba::Deactivate()
 {
     m_active = false;
+}
+
+void Goomba::Fling() {
+    m_flung = true;
+    m_velocity = {0.f, -500.f};
+    m_sprite.setScale(m_sprite.getScale().x, -m_sprite.getScale().y);
+}
+
+bool Goomba::IsFlung() const {
+    return m_flung;
 }

@@ -22,6 +22,9 @@ public:
 
     bool IsActive() const override;
     void Deactivate() override;
+    
+    void Fling() override;
+    bool IsFlung() const override;
 
 private:
     sf::Sprite m_sprite;
@@ -33,4 +36,6 @@ private:
 
     int m_currentFrame;
     bool m_active;
+    bool m_flung = false;
+    sf::Vector2f m_velocity;
 };

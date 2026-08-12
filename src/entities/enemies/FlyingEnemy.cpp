@@ -38,6 +38,15 @@ void FlyingEnemy::Update(sf::Time timePerFrame)
         return;
     }
 
+    if (m_flung) {
+        m_velocity.y += 2000.f * timePerFrame.asSeconds();
+        m_sprite.move(m_velocity * timePerFrame.asSeconds());
+        if (m_sprite.getPosition().y > 2000.f) {
+            m_active = false;
+        }
+        return;
+    }
+
     m_animationTime += timePerFrame.asSeconds();
 
     const float frameDuration = 0.2f;
@@ -85,4 +94,14 @@ bool FlyingEnemy::IsActive() const
 void FlyingEnemy::Deactivate()
 {
     m_active = false;
+}
+
+void FlyingEnemy::Fling() {
+    m_flung = true;
+    m_velocity = {0.f, -500.f};
+    m_sprite.setScale(m_sprite.getScale().x, -m_sprite.getScale().y);
+}
+
+bool FlyingEnemy::IsFlung() const {
+    return m_flung;
 }
