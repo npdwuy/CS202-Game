@@ -142,6 +142,13 @@ void Mario::update(sf::Time timePerFrame) {
     }
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
     
+    // Xử lý đè frame ném lửa nếu đang ném
+    if (throwTimer_ > 0.f) {
+        throwTimer_ -= timePerFrame.asSeconds();
+        // Dùng frame có tọa độ như một frame đi bộ dang tay (hoặc frame được chỉ định)
+        currentRect = sf::IntRect(137, 85, 40, 50);
+    }
+    
     static constexpr int FireMarioSpriteOffsetX = 736;
     
     if (isFireMario()) {

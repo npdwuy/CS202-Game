@@ -232,6 +232,20 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
+    if (event.key.code == sf::Keyboard::Z && m_player && m_player->isFireMario()) {
+        if (m_fireballs.size() < 2) { // Max 2 fireballs
+            auto fb = std::make_unique<Fireball>(
+                m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                m_player->facing()
+            );
+            fb->setCollisionResolver([this](Character& c, sf::Time dt) {
+                m_tileMap.resolveCollision(c, dt);
+            });
+            m_fireballs.push_back(std::move(fb));
+            m_player->triggerThrow();
+        }
+    }
+
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
     if (event.key.code == pauseKey) {
@@ -334,6 +348,30 @@ void PlayState::Update(sf::Time timePerFrame) {
         item->Update(timePerFrame);
     }
 
+    for (auto& fb : m_fireballs) {
+        fb->update(timePerFrame);
+    }
+
+    // Check Fireball Enemy collision
+    for (auto& fb : m_fireballs) {
+        if (fb->IsDestroyed()) continue;
+        for (auto& enemy : m_enemies) {
+            if (enemy->IsActive() && fb->GetBounds().intersects(enemy->GetBounds())) {
+                enemy->Deactivate();
+                fb->Destroy();
+                // Optionally add score or effect
+                break;
+            }
+        }
+    }
+
+    m_fireballs.erase(
+        std::remove_if(m_fireballs.begin(), m_fireballs.end(), [](const std::unique_ptr<Fireball>& fb) {
+            return fb->IsDestroyed();
+        }),
+        m_fireballs.end()
+    );
+
     handleItemCollisions();
     if (handleEnemyCollisions()) {
         if (m_playerDamagePending) {
@@ -394,6 +432,12 @@ void PlayState::Render(sf::RenderWindow& window) {
     for (const auto& item : m_items) {
         if (visibleWorld.intersects(item->GetBounds())) {
             item->Render(window);
+        }
+    }
+
+    for (const auto& fb : m_fireballs) {
+        if (visibleWorld.intersects(fb->GetBounds())) {
+            fb->Render(window);
         }
     }
 

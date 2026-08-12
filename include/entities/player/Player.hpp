@@ -56,7 +56,14 @@ protected:
     float baseJumpPower_ = 670.0f;
     static constexpr float BigJumpBonus = 207.5f;
 
+    float throwTimer_ = 0.0f;
+
     void performJump();
+
+public:
+    void triggerThrow() {
+        throwTimer_ = 0.15f;
+    }
 
 public:
     enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand, Dead, PoleSlide, AutoWalk };
