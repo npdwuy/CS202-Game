@@ -232,19 +232,6 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
-    if (event.key.code == sf::Keyboard::Z && m_player && m_player->isFireMario()) {
-        if (m_fireballs.size() < 2) { // Max 2 fireballs
-            auto fb = std::make_unique<Fireball>(
-                m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
-                m_player->facing()
-            );
-            fb->setCollisionResolver([this](Character& c, sf::Time dt) {
-                m_tileMap.resolveCollision(c, dt);
-            });
-            m_fireballs.push_back(std::move(fb));
-            m_player->triggerThrow();
-        }
-    }
 
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
@@ -316,6 +303,25 @@ void PlayState::Update(sf::Time timePerFrame) {
     
     if (m_player) {
         m_player->update(timePerFrame);
+
+        if (m_fireballCooldown > 0.f) {
+            m_fireballCooldown -= timePerFrame.asSeconds();
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
+            if (m_fireballs.size() < 20) { // Tăng giới hạn lên 20 để không bị khựng khi đạn chưa biến mất
+                auto fb = std::make_unique<Fireball>(
+                    m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                    m_player->facing()
+                );
+                fb->setCollisionResolver([this](Character& c, sf::Time dt) {
+                    m_tileMap.resolveCollision(c, dt);
+                });
+                m_fireballs.push_back(std::move(fb));
+                m_player->triggerThrow();
+                m_fireballCooldown = 0.36f; // Cooldown 0.36s theo yêu cầu
+            }
+        }
     }
     
     m_tileMap.update(timePerFrame);
