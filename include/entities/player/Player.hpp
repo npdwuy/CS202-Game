@@ -7,6 +7,7 @@ public:
     static constexpr float CollisionWidth = 38.f;
     static constexpr float CollisionHeight = 45.f;
 protected:
+    bool inputEnabled_ = true;
     float coyoteTimer_ = 0.0f;
     int currentFrame_ = 0;
     float speed_ = 280.0f;
@@ -37,11 +38,22 @@ protected:
 
     void performJump();
 
-    enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand };
+public:
+    enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand, PoleSlide, AutoWalk };
 
+protected:
     State currentState = State::Stand;
 
 public:
+    void setInputEnabled(bool enabled) { inputEnabled_ = enabled; }
+    void forceState(State state) { 
+        if (currentState != state) {
+            currentState = state; 
+            currentFrame_ = 0;
+            animationTime_ = 0.f;
+        }
+    }
+
     Player(sf:: Vector2f position, std::string label, float speed, float jumpPower)
         : Character(position, CollisionWidth, CollisionHeight),
           speed_(speed), jumpPower_(jumpPower),
