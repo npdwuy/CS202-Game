@@ -45,6 +45,7 @@ float Player::speedMultiplier() const {
 void Player:: update(sf::Time timePerFrame){
     auto& settings = GameManager::getInstance().getSettings();
 
+<<<<<<< HEAD
     if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
         || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         moveLeft();
@@ -57,6 +58,38 @@ void Player:: update(sf::Time timePerFrame){
         sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
         sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action")) ||
         sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
+=======
+    const bool moveLeftPressed =
+        sf::Keyboard::isKeyPressed(
+            settings.getKeyBinding("MoveLeft")
+        ) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Left);
+
+    const bool moveRightPressed =
+        sf::Keyboard::isKeyPressed(
+            settings.getKeyBinding("MoveRight")
+        ) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Right);
+
+    const bool jumpPressed =
+        sf::Keyboard::isKeyPressed(
+            settings.getKeyBinding("MoveUp")
+        ) ||
+        sf::Keyboard::isKeyPressed(
+            settings.getKeyBinding("Action")
+        ) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
+
+    if (moveLeftPressed)
+    {
+        moveLeft();
+    }
+
+    if (moveRightPressed)
+    {
+        moveRight();
+    }
+>>>>>>> 9d9b00d (feat(player): support arrow key movement controls)
     if (jumpPressed && !jumpHeld_) {
         jump();
     }
