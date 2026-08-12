@@ -77,13 +77,18 @@ void Mario::update(sf::Time timePerFrame) {
         sf::IntRect(108  , 12, 35, 50)
     };
 
+    static const std::vector<sf::IntRect> framesPoleSlide = {
+        sf::IntRect(22, 155, 40, 52) // Jump frame looks like holding pole
+    };
+
 
     const std::vector<sf::IntRect>* currentAnim = &framesStand;
-    if (currentState == State::Walk) currentAnim = &framesWalk;
+    if (currentState == State::Walk || currentState == State::AutoWalk) currentAnim = &framesWalk;
     else if (currentState == State::Jump) currentAnim = &framesJump;
     else if (currentState == State::Fall) currentAnim = &framesFall;
     else if(currentState == State::HitRoof) currentAnim = &framesHitRoof;
-    else if(currentState == State::TransitionStand)currentAnim = &framesTransitionStand;
+    else if(currentState == State::TransitionStand) currentAnim = &framesTransitionStand;
+    else if(currentState == State::PoleSlide) currentAnim = &framesPoleSlide;
 
     const float frameDuration = 0.10f; 
     // animationTime_ += timePerFrame.asSeconds();
@@ -99,6 +104,10 @@ void Mario::update(sf::Time timePerFrame) {
         if(currentState == State::HitRoof && currentFrame_ == 1)hitRoof_ = false;
     }
 
+    if (currentFrame_ >= currentAnim->size()) {
+        currentFrame_ = 0;
+    }
+    
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
     if(fireMario_){
         currentRect.left += baseImage_;
