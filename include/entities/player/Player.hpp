@@ -78,7 +78,7 @@ public:
           speed_(speed), jumpPower_(jumpPower), baseJumpPower_(jumpPower),
           label_(std::move(label)) {}
           
-    bool isSuper() const { return mushroom_ || fireMario_; }
+    bool isSuper() const { return powerUp_ != PowerUpState::Small; }
 
     std:: string name() const override{
         return label_;

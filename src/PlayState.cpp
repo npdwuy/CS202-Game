@@ -531,20 +531,6 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
                     }
                 }
             });
-
-            // Constrain player position to camera's left edge
-            const sf::FloatRect cameraBounds = m_camera.visibleBounds();
-            sf::Vector2f position = character.position();
-            if (position.x < cameraBounds.left) {
-                position.x = cameraBounds.left;
-                character.setPosition(position);
-
-                sf::Vector2f velocity = character.velocity();
-                if (velocity.x < 0.f) {
-                    velocity.x = 0.f;
-                    character.setVelocity(velocity);
-                }
-            }
         }
     );
 
@@ -1114,6 +1100,7 @@ void PlayState::addBackgroundLayer(
 
     layer.texture = texture;
     layer.sprite.setTexture(*texture);
+    layer.sprite.setColor(sf::Color(255, 255, 255, 255)); // Restore natural brightness
 
     layer.parallaxFactor = parallaxFactor;
     layer.driftAmplitude = driftAmplitude;
@@ -1302,6 +1289,7 @@ void PlayState::renderBackgroundLayers(
     if (m_cloudTexture && !m_clouds.empty())
     {
         sf::Sprite cloudSprite(*m_cloudTexture);
+        cloudSprite.setColor(sf::Color(255, 255, 255, 255)); // Restore natural brightness
         const sf::View& view = window.getView();
         const float cameraLeft = view.getCenter().x - view.getSize().x * 0.5f;
 
@@ -1318,4 +1306,10 @@ void PlayState::renderBackgroundLayers(
             window.draw(cloudSprite);
         }
     }
+    
+    // Draw atmospheric fog overlay
+    sf::RectangleShape fogRect(window.getView().getSize());
+    fogRect.setPosition(window.getView().getCenter() - window.getView().getSize() * 0.5f);
+    fogRect.setFillColor(sf::Color(255, 255, 255, 70)); // White overlay (paler opacity)
+    window.draw(fogRect);
 }

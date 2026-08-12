@@ -97,14 +97,6 @@ void PlayerCamera::update(
         m_view.getSize(),
         worldBounds
     );
-    
-    // Prevent camera from scrolling backward (leftward)
-    if (m_center.x < m_maxCenterX) {
-        m_center.x = m_maxCenterX;
-    } else {
-        m_maxCenterX = m_center.x;
-    }
-
     m_view.setCenter(m_center);
 }
 
