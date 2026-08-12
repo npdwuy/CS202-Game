@@ -365,6 +365,14 @@ void PlayState::Update(sf::Time timePerFrame) {
         }
     }
 
+    const sf::FloatRect visibleWorld = m_camera.visibleBounds(200.f); // slightly larger bounds
+
+    for (auto& fb : m_fireballs) {
+        if (!visibleWorld.intersects(fb->GetBounds())) {
+            fb->Destroy();
+        }
+    }
+
     m_fireballs.erase(
         std::remove_if(m_fireballs.begin(), m_fireballs.end(), [](const std::unique_ptr<Fireball>& fb) {
             return fb->IsDestroyed();
