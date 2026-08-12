@@ -138,7 +138,7 @@ void Mario::update(sf::Time timePerFrame) {
     sprite_.setOrigin(currentRect.width / 2.0f, static_cast<float>(currentRect.height));
 
     // Lật mặt và xử lý Scale
-    float baseScale = 0.95f;
+    float baseScale = 1.425f;
     float scaleAbs = baseScale; // Độ to của nhân vật
 
     if (isGrowing()) {
@@ -148,17 +148,17 @@ void Mario::update(sf::Time timePerFrame) {
         };
         static const std::vector<Keyframe> growKeyframes = {
             {0.00f, 1.00f},
-            {0.05f, 1.15f},
-            {0.25f, 1.15f},
-            {0.30f, 1.30f},
-            {0.50f, 1.30f},
-            {0.55f, 1.40f},
-            {0.75f, 1.40f},
-            {0.80f, 1.50f},
-            {1.00f, 1.50f}
+            {0.05f, 1.05f},
+            {0.25f, 1.05f},
+            {0.30f, 1.15f},
+            {0.50f, 1.15f},
+            {0.55f, 1.22f},
+            {0.75f, 1.22f},
+            {0.80f, 1.275f},
+            {1.00f, 1.275f}
         };
         
-        float currentMult = 1.50f;
+        float currentMult = 1.275f;
         float animTime = growAnimTime();
         for (size_t i = 0; i < growKeyframes.size() - 1; ++i) {
             if (animTime >= growKeyframes[i].time && animTime <= growKeyframes[i+1].time) {
@@ -174,13 +174,13 @@ void Mario::update(sf::Time timePerFrame) {
             float multiplier;
         };
         static const std::vector<Keyframe> shrinkKeyframes = {
-            {0.00f, 1.50f},
-            {0.05f, 1.40f},
-            {0.25f, 1.40f},
-            {0.30f, 1.30f},
-            {0.50f, 1.30f},
-            {0.55f, 1.15f},
-            {0.75f, 1.15f},
+            {0.00f, 1.275f},
+            {0.05f, 1.22f},
+            {0.25f, 1.22f},
+            {0.30f, 1.15f},
+            {0.50f, 1.15f},
+            {0.55f, 1.05f},
+            {0.75f, 1.05f},
             {0.80f, 1.00f},
             {1.00f, 1.00f}
         };
@@ -196,13 +196,16 @@ void Mario::update(sf::Time timePerFrame) {
         }
         scaleAbs = baseScale * currentMult;
     } else if (isBig()) {
-        scaleAbs = 1.425f;
+        scaleAbs = baseScale * 1.275f;
     }
 
     // Dynamic bounding box adjustment to prevent spilling (uses constant reference sizes to prevent jitter)
     float oldWidth = width_;
     float oldHeight = height_;
-    width_ = 35.0f * scaleAbs;
+    
+    // Crop width by 5% on each side (total 10% reduction)
+    width_ = 35.0f * scaleAbs * 0.90f; 
+    
     float topPadding = 2.0f; // Transparent pixels at the top of the sprite frames
     height_ = (47.0f - topPadding) * scaleAbs;
     

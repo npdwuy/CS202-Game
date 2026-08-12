@@ -967,31 +967,43 @@ void PlayState::loadBackgroundLayers()
 
     // Base background - bắt buộc phải có.
     addBackgroundLayer(
-        "assets/backgrounds/level_bg.png",
+        "assets/sprites/long_background.png",
         0.20f,
         0.f,
         0.f,
         true
     );
 
-    // Optional cloud layer.
-    // Nếu chưa có file thì hệ thống tự bỏ qua.
-    addBackgroundLayer(
-        "assets/backgrounds/clouds.png",
-        0.35f,
-        35.f,
-        0.35f,
-        false
-    );
-
-    // Optional foreground layer.
-    addBackgroundLayer(
-        "assets/backgrounds/foreground.png",
-        0.75f,
-        8.f,
-        0.20f,
-        false
-    );
+    // Initialize Dynamic Clouds System
+    m_cloudTexture = std::make_shared<sf::Texture>();
+    if (m_cloudTexture->loadFromFile("assets/sprites/cloud.png"))
+    {
+        // Define bounding boxes for some good clouds from the new spritesheet
+        std::vector<sf::IntRect> cloudRects = {
+            sf::IntRect(43, 111, 373, 200),
+            sf::IntRect(791, 126, 407, 232),
+            sf::IntRect(17, 322, 497, 339),
+            sf::IntRect(527, 340, 483, 431),
+            sf::IntRect(1092, 653, 376, 308),
+            sf::IntRect(379, 775, 299, 191),
+            sf::IntRect(65, 805, 224, 143)
+        };
+        
+        m_clouds.clear();
+        for (int i = 0; i < 30; ++i)
+        {
+            CloudEntity c;
+            c.textureRect = cloudRects[rand() % cloudRects.size()];
+            c.worldPosition = sf::Vector2f(
+                static_cast<float>(rand() % 15000) - 2000.f, // Spread from X=-2000 to X=13000
+                static_cast<float>(20 + (rand() % 400)) // Y between 20 and 420
+            );
+            c.scale = 0.3f + static_cast<float>(rand() % 50) / 100.f; // Scale 0.3 to 0.8
+            c.driftSpeed = 5.f + static_cast<float>(rand() % 15); // Drift speed 5 to 20
+            c.parallaxFactor = 0.5f + static_cast<float>(rand() % 30) / 100.f; // Parallax 0.5 to 0.8
+            m_clouds.push_back(c);
+        }
+    }
 }
 
 void PlayState::updateBackgroundLayers(
@@ -1055,9 +1067,8 @@ void PlayState::updateBackgroundLayers(
             viewSize.y /
             static_cast<float>(textureSize.y);
 
-        // Cover toàn màn hình nhưng không làm méo ảnh.
-        const float scale =
-            std::max(scaleX, scaleY);
+        // Khớp chiều cao của background với chiều cao cửa sổ.
+        const float scale = scaleY;
 
         layer.sprite.setScale(
             scale,
@@ -1121,6 +1132,27 @@ void PlayState::renderBackgroundLayers(
         if (layer.texture)
         {
             window.draw(layer.sprite);
+        }
+    }
+    
+    // Draw dynamic clouds
+    if (m_cloudTexture && !m_clouds.empty())
+    {
+        sf::Sprite cloudSprite(*m_cloudTexture);
+        const sf::View& view = window.getView();
+        const float cameraLeft = view.getCenter().x - view.getSize().x * 0.5f;
+
+        for (const CloudEntity& c : m_clouds)
+        {
+            cloudSprite.setTextureRect(c.textureRect);
+            cloudSprite.setScale(c.scale, c.scale);
+            
+            // Calculate position in world space with parallax applied
+            float parallaxWorldX = c.worldPosition.x + (cameraLeft * (1.f - c.parallaxFactor)) - (m_backgroundAnimationTime * c.driftSpeed);
+            cloudSprite.setPosition(parallaxWorldX, c.worldPosition.y);
+            
+            // Draw all clouds (SFML culls efficiently anyway, or we could add manual culling if needed)
+            window.draw(cloudSprite);
         }
     }
 }

@@ -79,7 +79,18 @@ struct BackgroundLayer
     float driftSpeed = 0.f;
 };
 
+struct CloudEntity
+{
+    sf::IntRect textureRect;
+    sf::Vector2f worldPosition;
+    float scale;
+    float driftSpeed;
+    float parallaxFactor;
+};
+
 std::vector<BackgroundLayer> m_backgroundLayers;
+std::shared_ptr<sf::Texture> m_cloudTexture;
+std::vector<CloudEntity> m_clouds;
 
 float m_backgroundAnimationTime = 0.f;
 
