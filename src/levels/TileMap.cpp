@@ -172,10 +172,10 @@ const LevelData& TileMap::data() const {
 sf::FloatRect TileMap::exitBounds() const {
     const float tileSize = static_cast<float>(m_data.tileSize);
     return {
-        m_data.exitPosition.x,
-        m_data.exitPosition.y,
-        tileSize,
-        tileSize
+        m_data.exitPosition.x + tileSize * 0.5f - 4.f,
+        m_data.exitPosition.y - tileSize * 7.f,
+        8.f,
+        tileSize * 8.f
     };
 }
 
@@ -263,17 +263,49 @@ void TileMap::rebuildGeometry() {
     }
 
     const float tileSize = static_cast<float>(m_data.tileSize);
-    m_exitPole.setSize({4.f, tileSize});
+    float poleHeight = tileSize * 8.f;
+    m_exitPole.setSize({4.f, poleHeight});
     m_exitPole.setPosition(
-        m_data.exitPosition.x + tileSize * 0.5f,
-        m_data.exitPosition.y
+        m_data.exitPosition.x + tileSize * 0.5f - 2.f,
+        m_data.exitPosition.y - tileSize * 7.f
     );
     m_exitPole.setFillColor(sf::Color(235, 235, 235));
 
     m_exitFlag.setSize({tileSize * 0.55f, tileSize * 0.35f});
+    m_flagY = m_data.exitPosition.y - tileSize * 7.f;
     m_exitFlag.setPosition(
         m_data.exitPosition.x + tileSize * 0.5f,
-        m_data.exitPosition.y
+        m_flagY
     );
     m_exitFlag.setFillColor(sf::Color(45, 205, 80));
+}
+
+bool TileMap::updateFlagAnimation(sf::Time dt, float speed) {
+    const float tileSize = static_cast<float>(m_data.tileSize);
+    float targetY = m_data.exitPosition.y + tileSize - m_exitFlag.getSize().y;
+    
+    m_flagY += speed * dt.asSeconds();
+    if (m_flagY >= targetY) {
+        m_flagY = targetY;
+        m_exitFlag.setPosition(m_exitFlag.getPosition().x, m_flagY);
+        return true; // hit bottom
+    }
+    
+    m_exitFlag.setPosition(m_exitFlag.getPosition().x, m_flagY);
+    return false;
+}
+
+float TileMap::getPoleTopY() const {
+    const float tileSize = static_cast<float>(m_data.tileSize);
+    return m_data.exitPosition.y - tileSize * 7.f;
+}
+
+float TileMap::getPoleBottomY() const {
+    const float tileSize = static_cast<float>(m_data.tileSize);
+    return m_data.exitPosition.y + tileSize;
+}
+
+float TileMap::getPoleX() const {
+    const float tileSize = static_cast<float>(m_data.tileSize);
+    return m_data.exitPosition.x + tileSize * 0.5f;
 }
