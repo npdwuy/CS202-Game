@@ -30,7 +30,7 @@ private:
     static std::string formatScore(int score);
 
     GameHudData m_data;
-    int m_displayedScore = 0;
+    float m_displayedScore = 0.f;
     float m_statusTimeRemaining = 0.f;
     float m_scorePulseRemaining = 0.f;
 
