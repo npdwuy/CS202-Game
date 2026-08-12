@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Graphics.hpp>
 #include "GameState.hpp"
 #include "factories/LevelObjectFactory.hpp"
 #include "levels/TileMap.hpp"
@@ -8,7 +9,9 @@
 #include "entities/Item.hpp"
 #include "entities/player/Player.hpp"
 #include "events/GameEventListener.hpp"
-
+#include "ui/GameHud.hpp"
+#include "camera/PlayerCamera.hpp"
+#include "ui/Button.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -37,8 +40,11 @@ private:
     void handleLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
+    void updateLevelTimer(sf::Time timePerFrame);
+    void resetTransientEffects();
     void loseLife();
     void updateHud();
+    void updateCamera(sf::Time timePerFrame);
     void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
     bool hasActiveBoss() const;
@@ -51,11 +57,47 @@ private:
     std::unique_ptr<Player> m_player;
 
     SaveData m_saveData;
-    const sf::Font* m_hudFont = nullptr;
-    sf::Text m_hudText;
-    sf::Text m_statusText;
-    float m_statusTimeRemaining = 0.f;
+    GameHud m_hud;
+    PlayerCamera m_camera;
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
+    bool m_playerDamagePending = false;
+    float m_timeRemaining = 400.f;
+
+    std::unique_ptr<Button> m_menuButton;
+    sf::Texture m_buttonTexture;
+
+struct BackgroundLayer
+{
+    std::shared_ptr<sf::Texture> texture;
+    sf::Sprite sprite;
+
+    float parallaxFactor = 0.f;
+    float driftAmplitude = 0.f;
+    float driftSpeed = 0.f;
+};
+
+std::vector<BackgroundLayer> m_backgroundLayers;
+
+float m_backgroundAnimationTime = 0.f;
+
+void loadBackgroundLayers();
+
+void addBackgroundLayer(
+    const std::string& path,
+    float parallaxFactor,
+    float driftAmplitude,
+    float driftSpeed,
+    bool required
+);
+
+void updateBackgroundLayers(
+    sf::Time timePerFrame,
+    const sf::View& view
+);
+
+void renderBackgroundLayers(
+    sf::RenderWindow& window
+);
 };

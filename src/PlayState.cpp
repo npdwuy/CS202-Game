@@ -4,39 +4,42 @@
 #include "PauseState.hpp"
 #include "GameOverState.hpp"
 #include "LevelCompleteState.hpp"
+#include "commands/MenuCommands.hpp"
 
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
 #include "entities/player/Mario.hpp"
+#include "entities/player/Entity.hpp"
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
 
+#include <filesystem>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
-PlayState::PlayState(bool loadSavedGame) {
-    m_hudFont = &ResourceManager::getInstance().getFont(
+PlayState::PlayState(bool loadSavedGame)
+    : m_hud(ResourceManager::getInstance().getFont(
+          "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
+      )) {
+    loadBackgroundLayers();
+
+    const sf::Font& hudFont = ResourceManager::getInstance().getFont(
         "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
     );
 
-    m_hudText.setFont(*m_hudFont);
-    m_hudText.setCharacterSize(24);
-    m_hudText.setFillColor(sf::Color::White);
-    m_hudText.setOutlineColor(sf::Color::Black);
-    m_hudText.setOutlineThickness(2.f);
-    m_hudText.setPosition(18.f, 14.f);
-
-    m_statusText.setFont(*m_hudFont);
-    m_statusText.setCharacterSize(34);
-    m_statusText.setFillColor(sf::Color(255, 235, 120));
-    m_statusText.setOutlineColor(sf::Color::Black);
-    m_statusText.setOutlineThickness(3.f);
-
+    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
+        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
+    }
+    m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(24.f, 10.f), sf::Vector2f(40.f, 40.f), 24);
+    m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().pushState(std::make_unique<PauseState>());
+    }));
     SettingsManager& settings =
         GameManager::getInstance().getSettings();
 
@@ -93,9 +96,21 @@ void PlayState::OnGameEvent(const GameEvent& event)
     {
         case GameEventType::CoinCollected:
             m_saveData.score += event.value;
+            m_saveData.coins += 1;
             AudioManager::getInstance().playEffect(
                 SoundEffect::Coin
             );
+
+            if (m_saveData.coins >= 100) {
+                m_saveData.coins -= 100;
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::ExtraLifeCollected,
+                        1,
+                        "100 Coins"
+                    }
+                );
+            }
             break;
 
         case GameEventType::PowerUpCollected:
@@ -117,7 +132,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
                 99,
                 m_saveData.remainingLives + std::max(1, event.value)
             );
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::OneUp);
             showStatus("1-Up! Extra life gained", 2.f);
             break;
 
@@ -126,7 +141,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
                 m_invincibilityTimeRemaining,
                 static_cast<float>(std::max(1, event.value))
             );
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::Invincibility);
             showStatus("Star power - invincible!", 2.f);
             break;
 
@@ -138,7 +153,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
             if (m_player) {
                 m_player->setSpeedMultiplier(1.45f);
             }
-            AudioManager::getInstance().playEffect(SoundEffect::PowerUp);
+            AudioManager::getInstance().playEffect(SoundEffect::SpeedBoost);
             showStatus("Speed boost active!", 2.f);
             break;
 
@@ -158,7 +173,9 @@ void PlayState::OnGameEvent(const GameEvent& event)
             break;
 
         case GameEventType::PlayerDamaged:
-            handlePlayerDamage();
+            // Applying damage can reload the level and replace the enemy
+            // collection. Defer it until the active collision pass has ended.
+            m_playerDamagePending = true;
             break;
 
         case GameEventType::PlayerFell:
@@ -168,12 +185,31 @@ void PlayState::OnGameEvent(const GameEvent& event)
         case GameEventType::LevelCompleted:
             m_saveData.score += event.value;
             break;
+
+        case GameEventType::TimeExpired:
+            loseLife();
+            break;
     }
 
     updateHud();
 }
 
 void PlayState::Input(const sf::Event& event) {
+    if (event.type == sf::Event::MouseMoved || event.type == sf::Event::MouseButtonReleased) {
+        sf::RenderWindow &window = GameManager::getInstance().getWindow();
+        sf::Vector2i pixelPos = (event.type == sf::Event::MouseMoved) 
+                                ? sf::Vector2i(event.mouseMove.x, event.mouseMove.y) 
+                                : sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+        sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos, GameManager::getInstance().getGameView());
+        
+        if (event.type == sf::Event::MouseMoved) {
+            if (m_menuButton) m_menuButton->update(mousePos);
+        }
+        if (event.type == sf::Event::MouseButtonReleased) {
+            if (m_menuButton && m_menuButton->handleClick(event, mousePos)) return;
+        }
+    }
+
     if (event.type != sf::Event::KeyPressed) {
         return;
     }
@@ -196,18 +232,18 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
+        updateBackgroundLayers(
+        timePerFrame,
+        m_camera.view()
+    );
     updateTimedPowerUps(timePerFrame);
-
-    if (m_statusTimeRemaining > 0.f) {
-        m_statusTimeRemaining = std::max(
-            0.f,
-            m_statusTimeRemaining - timePerFrame.asSeconds()
-        );
-    }
+    updateLevelTimer(timePerFrame);
+    m_hud.update(timePerFrame);
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
     }
+    updateCamera(timePerFrame);
 
     for (auto& enemy : m_enemies) {
         enemy->Update(timePerFrame);
@@ -219,6 +255,10 @@ void PlayState::Update(sf::Time timePerFrame) {
 
     handleItemCollisions();
     if (handleEnemyCollisions()) {
+        if (m_playerDamagePending) {
+            m_playerDamagePending = false;
+            handlePlayerDamage();
+        }
         updateHud();
         return;
     }
@@ -254,23 +294,48 @@ void PlayState::Update(sf::Time timePerFrame) {
 }
 
 void PlayState::Render(sf::RenderWindow& window) {
+    const sf::View& screenView = GameManager::getInstance().getGameView();
+
+    window.setView(m_camera.view());
+
+    renderBackgroundLayers(window);
+
+    const sf::FloatRect visibleWorld = m_camera.visibleBounds(96.f);
+
     m_tileMap.render(window);
 
     for (const auto& enemy : m_enemies) {
-        enemy->Render(window);
+        if (visibleWorld.intersects(enemy->GetBounds())) {
+            enemy->Render(window);
+        }
     }
 
     for (const auto& item : m_items) {
-        item->Render(window);
+        if (visibleWorld.intersects(item->GetBounds())) {
+            item->Render(window);
+        }
     }
 
     if (m_player) {
         m_player->Render(window);
     }
 
-    window.draw(m_hudText);
-    if (m_statusTimeRemaining > 0.f) {
-        window.draw(m_statusText);
+    window.setView(screenView);
+
+    // Position the menu button relative to the current game view's top-left corner
+    const sf::Vector2f viewSize = screenView.getSize();
+    const sf::Vector2f viewCenter = screenView.getCenter();
+    const float left = viewCenter.x - viewSize.x * 0.5f;
+    const float top = viewCenter.y - viewSize.y * 0.5f;
+
+    if (m_menuButton) {
+        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 10.f));
+    }
+
+    m_hud.layout(screenView);
+    m_hud.render(window);
+    if (m_menuButton) {
+        m_menuButton->render(window);
     }
 }
 
@@ -280,6 +345,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     }
 
     m_saveData.currentLevel = levelNumber;
+    m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
     m_enemies.clear();
     m_items.clear();
@@ -317,10 +383,35 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             m_tileMap.resolveCollision(character, deltaTime);
+
+            // Constrain player position to camera's left edge
+            const sf::FloatRect cameraBounds = m_camera.visibleBounds();
+            sf::Vector2f position = character.position();
+            if (position.x < cameraBounds.left) {
+                position.x = cameraBounds.left;
+                character.setPosition(position);
+
+                sf::Vector2f velocity = character.velocity();
+                if (velocity.x < 0.f) {
+                    velocity.x = 0.f;
+                    character.setVelocity(velocity);
+                }
+            }
         }
     );
 
+    const sf::Vector2f playerCenter = spawnPosition + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.reset(
+        playerCenter,
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView()
+    );
+
     m_saveData.hasPlayerPosition = false;
+    m_timeRemaining = 400.f;
 }
 
 void PlayState::createLevelObjects() {
@@ -353,6 +444,7 @@ void PlayState::saveGame() {
         m_saveData.playerX = position.x;
         m_saveData.playerY = position.y;
     }
+    m_saveData.remainingTime = m_timeRemaining;
 
     if (SaveManager::save(m_saveData)) {
         showStatus("Game saved");
@@ -369,6 +461,8 @@ void PlayState::loadGame() {
     }
 
     m_saveData = *loadedData;
+    m_timeRemaining = m_saveData.remainingTime;
+    resetTransientEffects();
     loadLevel(m_saveData.currentLevel, true);
     showStatus("Game loaded");
     updateHud();
@@ -411,6 +505,7 @@ void PlayState::handleItemCollisions()
                         "Mushroom"
                     }
                 );
+                m_player->getMushroom();
                 break;
 
             case ItemEffectType::EnableFirePower:
@@ -421,6 +516,7 @@ void PlayState::handleItemCollisions()
                         "FireFlower"
                     }
                 );
+                m_player->up2Fire();
                 break;
 
             case ItemEffectType::ExtraLife:
@@ -574,6 +670,9 @@ void PlayState::handlePlayerDamage() {
 
     if (m_saveData.powerUpState != "None") {
         m_saveData.powerUpState = "None";
+        if (m_player) {
+            m_player->shrinkPlayer();
+        }
         m_damageCooldown = 1.5f;
         showStatus("Power-up absorbed the hit", 1.5f);
         updateHud();
@@ -606,6 +705,37 @@ void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
     }
 }
 
+void PlayState::resetTransientEffects() {
+    m_invincibilityTimeRemaining = 0.f;
+    m_speedBoostTimeRemaining = 0.f;
+    m_damageCooldown = 0.f;
+    m_playerDamagePending = false;
+
+    if (m_player) {
+        m_player->setSpeedMultiplier(1.f);
+    }
+}
+
+void PlayState::updateLevelTimer(sf::Time timePerFrame) {
+    if (m_timeRemaining <= 0.f) {
+        return;
+    }
+
+    m_timeRemaining -= timePerFrame.asSeconds();
+
+    if (m_timeRemaining <= 0.f) {
+        m_timeRemaining = 0.f;
+        GameEventManager::GetInstance().Notify({
+            GameEventType::TimeExpired,
+            0,
+            "Time's up!"
+        });
+    } else if (m_timeRemaining <= 30.f && m_timeRemaining + timePerFrame.asSeconds() > 30.f) {
+        // Show warning exactly once when crossing the 30s threshold
+        showStatus("Hurry up! Time is running out!", 2.5f);
+    }
+}
+
 void PlayState::handleLevelExit() {
     if (!playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
@@ -623,6 +753,15 @@ void PlayState::handleLevelExit() {
         "Level completed"
     }
     );
+    // Time bonus: remaining seconds * 50
+    const int timeBonus = static_cast<int>(m_timeRemaining) * 50;
+    if (timeBonus > 0) {
+        m_saveData.score += timeBonus;
+        showStatus(
+            "Time bonus: +" + std::to_string(timeBonus),
+            2.f
+        );
+    }
     m_saveData.hasPlayerPosition = false;
 
     if (m_saveData.currentLevel < 3) {
@@ -644,9 +783,7 @@ void PlayState::loseLife() {
     --m_saveData.remainingLives;
     m_saveData.powerUpState = "None";
     m_saveData.hasPlayerPosition = false;
-    m_invincibilityTimeRemaining = 0.f;
-    m_speedBoostTimeRemaining = 0.f;
-    m_damageCooldown = 0.f;
+    resetTransientEffects();
 
     if (m_saveData.remainingLives <= 0) {
         m_saveData.remainingLives = 0;
@@ -664,37 +801,38 @@ void PlayState::loseLife() {
 }
 
 void PlayState::updateHud() {
-    std::string status =
-        "LEVEL " + std::to_string(m_saveData.currentLevel) +
-        "   SCORE " + std::to_string(m_saveData.score) +
-        "   LIVES " + std::to_string(m_saveData.remainingLives) +
-        "   CHARACTER " + m_saveData.selectedCharacter +
-        "   POWER " + m_saveData.powerUpState +
-        "   [F5 SAVE / F9 LOAD]";
+    m_hud.setData({
+        m_saveData.currentLevel,
+        m_saveData.score,
+        m_saveData.remainingLives,
+        m_saveData.powerUpState,
+        m_invincibilityTimeRemaining,
+        m_speedBoostTimeRemaining,
+        m_timeRemaining,
+        m_saveData.coins
+    });
+}
 
-    if (m_invincibilityTimeRemaining > 0.f) {
-        status += "   STAR " + std::to_string(
-            static_cast<int>(std::ceil(m_invincibilityTimeRemaining))
-        ) + "s";
-    }
-    if (m_speedBoostTimeRemaining > 0.f) {
-        status += "   SPEED " + std::to_string(
-            static_cast<int>(std::ceil(m_speedBoostTimeRemaining))
-        ) + "s";
+void PlayState::updateCamera(sf::Time timePerFrame) {
+    if (!m_player) {
+        return;
     }
 
-    m_hudText.setString(status);
+    const sf::Vector2f playerCenter = m_player->position() + sf::Vector2f(
+        m_player->width() * 0.5f,
+        m_player->height() * 0.5f
+    );
+    m_camera.update(
+        playerCenter,
+        m_player->velocity(),
+        m_tileMap.worldBounds(),
+        GameManager::getInstance().getGameView(),
+        timePerFrame
+    );
 }
 
 void PlayState::showStatus(const std::string& message, float duration) {
-    m_statusText.setString(message);
-    const sf::FloatRect textBounds = m_statusText.getLocalBounds();
-    m_statusText.setOrigin(
-        textBounds.left + textBounds.width / 2.f,
-        textBounds.top + textBounds.height / 2.f
-    );
-    m_statusText.setPosition(960.f, 120.f);
-    m_statusTimeRemaining = duration;
+    m_hud.showStatus(message, duration);
 }
 
 sf::FloatRect PlayState::playerBounds() const {
@@ -726,4 +864,216 @@ bool PlayState::hasActiveBoss() const {
 
 std::string PlayState::levelPath(int levelNumber) {
     return "levels/level" + std::to_string(levelNumber) + ".txt";
+}
+
+void PlayState::addBackgroundLayer(
+    const std::string& path,
+    float parallaxFactor,
+    float driftAmplitude,
+    float driftSpeed,
+    bool required
+)
+{
+    if (!std::filesystem::exists(path))
+    {
+        if (required)
+        {
+            throw std::runtime_error(
+                "Missing required background layer: " + path
+            );
+        }
+
+        return;
+    }
+
+    auto texture = std::make_shared<sf::Texture>();
+
+    if (!texture->loadFromFile(path))
+    {
+        if (required)
+        {
+            throw std::runtime_error(
+                "Failed to load background layer: " + path
+            );
+        }
+
+        return;
+    }
+
+    BackgroundLayer layer;
+
+    layer.texture = texture;
+    layer.sprite.setTexture(*texture);
+
+    layer.parallaxFactor = parallaxFactor;
+    layer.driftAmplitude = driftAmplitude;
+    layer.driftSpeed = driftSpeed;
+
+    m_backgroundLayers.push_back(
+        std::move(layer)
+    );
+}
+
+void PlayState::loadBackgroundLayers()
+{
+    m_backgroundLayers.clear();
+
+    // Base background - bắt buộc phải có.
+    addBackgroundLayer(
+        "assets/backgrounds/level_bg.png",
+        0.20f,
+        0.f,
+        0.f,
+        true
+    );
+
+    // Optional cloud layer.
+    // Nếu chưa có file thì hệ thống tự bỏ qua.
+    addBackgroundLayer(
+        "assets/backgrounds/clouds.png",
+        0.35f,
+        35.f,
+        0.35f,
+        false
+    );
+
+    // Optional foreground layer.
+    addBackgroundLayer(
+        "assets/backgrounds/foreground.png",
+        0.75f,
+        8.f,
+        0.20f,
+        false
+    );
+}
+
+void PlayState::updateBackgroundLayers(
+    sf::Time timePerFrame,
+    const sf::View& view
+)
+{
+    m_backgroundAnimationTime +=
+        timePerFrame.asSeconds();
+
+    const sf::Vector2f viewSize =
+        view.getSize();
+
+    const sf::Vector2f viewCenter =
+        view.getCenter();
+
+    const sf::FloatRect worldBounds =
+        m_tileMap.worldBounds();
+
+    const float cameraLeft =
+        viewCenter.x - viewSize.x * 0.5f;
+
+    const float availableTravel =
+        std::max(
+            1.f,
+            worldBounds.width - viewSize.x
+        );
+
+    const float cameraProgress =
+        std::clamp(
+            (cameraLeft - worldBounds.left) /
+                availableTravel,
+            0.f,
+            1.f
+        );
+
+    for (BackgroundLayer& layer :
+         m_backgroundLayers)
+    {
+        if (!layer.texture)
+        {
+            continue;
+        }
+
+        const sf::Vector2u textureSize =
+            layer.texture->getSize();
+
+        if (
+            textureSize.x == 0 ||
+            textureSize.y == 0
+        )
+        {
+            continue;
+        }
+
+        const float scaleX =
+            viewSize.x /
+            static_cast<float>(textureSize.x);
+
+        const float scaleY =
+            viewSize.y /
+            static_cast<float>(textureSize.y);
+
+        // Cover toàn màn hình nhưng không làm méo ảnh.
+        const float scale =
+            std::max(scaleX, scaleY);
+
+        layer.sprite.setScale(
+            scale,
+            scale
+        );
+
+        const float scaledWidth =
+            static_cast<float>(textureSize.x)
+            * scale;
+
+        const float scaledHeight =
+            static_cast<float>(textureSize.y)
+            * scale;
+
+        const float overflowX =
+            std::max(
+                0.f,
+                scaledWidth - viewSize.x
+            );
+
+        // Camera trái:
+        // ảnh hơi dịch sang phải.
+        //
+        // Camera phải:
+        // ảnh hơi dịch sang trái.
+        const float parallaxOffset =
+            (0.5f - cameraProgress)
+            * overflowX
+            * layer.parallaxFactor;
+
+        // Chuyển động nhẹ độc lập với camera.
+        const float driftOffset =
+            std::sin(
+                m_backgroundAnimationTime
+                * layer.driftSpeed
+            )
+            * std::min(
+                layer.driftAmplitude,
+                overflowX * 0.25f
+            );
+
+        layer.sprite.setPosition(
+            viewCenter.x
+                - scaledWidth * 0.5f
+                + parallaxOffset
+                + driftOffset,
+
+            viewCenter.y
+                - scaledHeight * 0.5f
+        );
+    }
+}
+
+void PlayState::renderBackgroundLayers(
+    sf::RenderWindow& window
+)
+{
+    for (const BackgroundLayer& layer :
+         m_backgroundLayers)
+    {
+        if (layer.texture)
+        {
+            window.draw(layer.sprite);
+        }
+    }
 }

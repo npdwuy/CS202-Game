@@ -5,7 +5,7 @@
 #include <functional>
 #include <memory>
 #include "commands/ICommand.hpp"
-
+#include "ui/NineSlice.hpp"
 class Button {
 public:
     Button(const std::string &textStr,
@@ -42,15 +42,12 @@ public:
 
 private: // Private methods
     void centerText();
-    void updateNineSliceGeometry();
 
 private: // Private Attributes
     sf::RectangleShape m_shape;
     sf::Text m_text;
 
-    const sf::Texture *m_texture = nullptr;
-    sf::VertexArray m_vertices;
-    float m_cornerSize = 10.f;
+    std::unique_ptr<NineSlice> m_nineSlice;
 
     sf::Color m_normalColor;
     sf::Color m_hoverColor;

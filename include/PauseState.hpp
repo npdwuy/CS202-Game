@@ -2,6 +2,7 @@
 
 #include "GameState.hpp"
 #include "ui/Button.hpp"
+#include "ui/Panel.hpp"
 #include <memory>
 #include <vector>
 
@@ -24,7 +25,7 @@ private:
     sf::Texture m_buttonTexture;
 
     sf::RectangleShape m_dimOverlay;
-    sf::RectangleShape m_panelBackground;
+    std::unique_ptr<Panel> m_panelBackground;
     
     sf::Text m_titleText;
     

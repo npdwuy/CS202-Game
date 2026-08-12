@@ -8,7 +8,7 @@
 GameManager::GameManager() : m_window(sf::VideoMode(1920, 1080), "CS202-Group5", sf::Style::Default),
                              m_isRunning(true) 
 {
-    m_window.setFramerateLimit(30);
+    m_window.setFramerateLimit(60);
     m_gameView.setSize(1920.f, 1080.f);
     m_gameView.setCenter(960.f, 540.f);
     updateView(m_window.getSize().x, m_window.getSize().y);
@@ -90,7 +90,7 @@ void GameManager::run()
 {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
-    const sf::Time timePerFrame = sf::seconds(1.f / 30.f);
+    const sf::Time timePerFrame = sf::seconds(1.f / 60.f);
 
     while (m_isRunning && m_window.isOpen()) {
         sf::Time elapsedTime = clock.restart();
@@ -176,6 +176,8 @@ void GameManager::processInput() {
 }
 
 void GameManager::update(sf::Time timePerFrame) {
+    AudioManager::getInstance().update(timePerFrame);
+
     if (!m_states.empty()) {
         m_isDispatchingState = true;
         m_states.back()->Update(timePerFrame);
@@ -186,6 +188,10 @@ void GameManager::update(sf::Time timePerFrame) {
 
 void GameManager::render() {
     m_window.clear(sf::Color::Black);
+    // Each state starts from the stable screen-space view. Gameplay states
+    // may temporarily install a world camera, but it must not leak into
+    // menus or overlays on the following frame.
+    m_window.setView(m_gameView);
 
     if (!m_states.empty()) {
         int startIdx = static_cast<int>(m_states.size()) - 1;

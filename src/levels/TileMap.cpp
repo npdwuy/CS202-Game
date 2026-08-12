@@ -1,20 +1,39 @@
 #include "levels/TileMap.hpp"
-
 #include "entities/player/Character.hpp"
 #include "levels/LevelLoader.hpp"
-
+#include "levels/renderer/ProceduralTileRenderer.hpp"
+#include "levels/renderer/TexturedTileRenderer.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
 void TileMap::load(const std::string& path) {
     m_data = LevelLoader::loadFromFile(path);
+
+    std::string tilesetPath = "assets/sprites/tilesets/WU_Field_plain.png";
+    if (m_data.difficulty == "Medium") {
+        tilesetPath = "assets/sprites/tilesets/WU_Field_underground.png";
+    } else if (m_data.difficulty == "Hard") {
+        tilesetPath = "assets/sprites/tilesets/WU_Field_castle.png";
+    }
+
+    sf::Texture texture;
+    if (texture.loadFromFile(tilesetPath)) {
+        m_renderer = std::make_unique<TexturedTileRenderer>(std::move(texture));
+    } else {
+        m_renderer = std::make_unique<ProceduralTileRenderer>();
+    }
+
     rebuildGeometry();
 }
 
 void TileMap::render(sf::RenderWindow& window) const {
-    for (const sf::RectangleShape& tile : m_tiles) {
-        window.draw(tile);
+    if (m_renderer) {
+        m_renderer->render(window, m_tileVertices, m_sceneryVertices, m_backgroundVertices);
+    } else {
+        window.draw(m_backgroundVertices);
+        window.draw(m_sceneryVertices);
+        window.draw(m_tileVertices);
     }
 
     window.draw(m_exitPole);
@@ -47,8 +66,10 @@ void TileMap::resolveCollision(
         }
 
         const float tileSize = static_cast<float>(m_data.tileSize);
-        const float right = bounds.left + bounds.width - 0.001f;
-        const float bottom = bounds.top + bounds.height - 0.001f;
+        // Slightly shrink bounds to avoid treating adjacent tiles as overlapping
+        // Increase shrink margin to reduce false‑positive overlaps
+        const float right = bounds.left + bounds.width - 0.2f;
+        const float bottom = bounds.top + bounds.height - 0.2f;
 
         int firstColumn = static_cast<int>(std::floor(bounds.left / tileSize));
         int lastColumn = static_cast<int>(std::floor(right / tileSize));
@@ -95,9 +116,13 @@ void TileMap::resolveCollision(
         }
 
         if (velocity.x > 0.f) {
-            position.x = tile.left - width;
+            // Move Mario just left of the tile with a small skin to avoid immediate re‑collision
+            // Apply a larger skin to ensure separation from the tile
+            position.x = tile.left - width - 0.1f;
         } else if (velocity.x < 0.f) {
-            position.x = tile.left + tile.width;
+            // Move Mario just right of the tile with a small skin
+            // Apply a larger skin to ensure separation from the tile
+            position.x = tile.left + tile.width + 0.1f;
         }
 
         velocity.x = 0.f;
@@ -233,35 +258,11 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 }
 
 void TileMap::rebuildGeometry() {
-    m_tiles.clear();
-
-    const float tileSize = static_cast<float>(m_data.tileSize);
-
-    for (std::size_t row = 0; row < m_data.rows.size(); ++row) {
-        for (std::size_t column = 0; column < m_data.rows[row].size(); ++column) {
-            if (m_data.rows[row][column] != '#') {
-                continue;
-            }
-
-            const sf::Vector2f position{
-                static_cast<float>(column) * tileSize,
-                static_cast<float>(row) * tileSize
-            };
-
-            sf::RectangleShape tile({tileSize, tileSize});
-            tile.setPosition(position);
-            tile.setFillColor(
-                row % 2U == 0U
-                    ? sf::Color(158, 93, 52)
-                    : sf::Color(139, 78, 43)
-            );
-            tile.setOutlineColor(sf::Color(91, 51, 31));
-            tile.setOutlineThickness(-2.f);
-
-            m_tiles.push_back(tile);
-        }
+    if (m_renderer) {
+        m_renderer->buildGeometry(m_tileVertices, m_sceneryVertices, m_backgroundVertices, m_data);
     }
 
+    const float tileSize = static_cast<float>(m_data.tileSize);
     m_exitPole.setSize({4.f, tileSize});
     m_exitPole.setPosition(
         m_data.exitPosition.x + tileSize * 0.5f,

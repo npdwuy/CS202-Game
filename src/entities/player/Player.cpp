@@ -1,5 +1,5 @@
 #include "entities/player/Player.hpp"
-
+#include "GameManager.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -40,20 +40,26 @@ float Player::speedMultiplier() const {
     return speedMultiplier_;
 }
 
-#include "GameManager.hpp"
+
 
 void Player:: update(sf::Time timePerFrame){
     auto& settings = GameManager::getInstance().getSettings();
 
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))) {
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
+        || sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         moveLeft();
     }
-    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))) {
+
+    if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveRight"))
+        || sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         moveRight();
     }
+
     const bool jumpPressed =
         sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveUp")) ||
-        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action"));
+        sf::Keyboard::isKeyPressed(settings.getKeyBinding("Action")) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
+        
     if (jumpPressed && !jumpHeld_) {
         jump();
     }
@@ -71,7 +77,13 @@ void Player:: update(sf::Time timePerFrame){
     }
 
     if(!movedThisFrame_){
-        velocity_.x *=0.78f;
+        constexpr float ReferenceFrameSeconds = 1.f / 30.f;
+        constexpr float ReferenceDamping = 0.78f;
+        const float damping = std::pow(
+            ReferenceDamping,
+            timePerFrame.asSeconds() / ReferenceFrameSeconds
+        );
+        velocity_.x *= damping;
         if(std::abs(velocity_.x) < 7.0f){
             velocity_.x = 0.0f;
         }
@@ -102,4 +114,19 @@ void Player:: update(sf::Time timePerFrame){
     }
     animationTime_+=timePerFrame.asSeconds();
     movedThisFrame_ = false;
+
+    if (isGrowing_) {
+        growAnimTime_ += timePerFrame.asSeconds();
+        if (growAnimTime_ >= GrowAnimDuration) {
+            isGrowing_ = false;
+            growAnimTime_ = 0.0f;
+        }
+    }
+    if (isShrinking_) {
+        shrinkAnimTime_ += timePerFrame.asSeconds();
+        if (shrinkAnimTime_ >= ShrinkAnimDuration) {
+            isShrinking_ = false;
+            shrinkAnimTime_ = 0.0f;
+        }
+    }
 }

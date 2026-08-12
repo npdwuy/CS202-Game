@@ -53,6 +53,14 @@ existing coyote-time and jump-buffer logic. `Character` accepts an injected
 collision resolver, so it remains usable in isolated tests with its former
 fallback ground.
 
+## Tile rendering
+
+`TileMap` batches terrain, sky gradients, and distant scenery into vertex
+arrays. Solid cells receive a palette selected from level difficulty, a bright
+surface cap, exposed-edge shading, and deterministic texture accents. This
+keeps the collision data unchanged while reducing terrain rendering to a few
+draw calls and giving each level a distinct visual atmosphere.
+
 ## Factory coordination with Member 3
 
 `LevelLoader` has no includes for `Goomba`, `Koopa`, `Coin`, Mushroom, or
@@ -79,16 +87,20 @@ and sound buffers for the lifetime of the application and returns stable
 references. Repeated requests therefore avoid duplicate disk reads and keep
 SFML resources alive as long as sprites, text, or sounds reference them.
 
-`AudioManager` owns the streaming background `sf::Music` and reusable
-`sf::Sound` objects. It reads BGM/SFX volume from `SettingsManager` when
-`PlayState` begins. An audio-load failure disables audio with a console message
-instead of terminating gameplay.
+`AudioManager` owns the streaming background `sf::Music` and pooled `sf::Sound`
+voices. It reads BGM/SFX volume from `SettingsManager`, fades music changes over
+time, and lets repeated effects overlap without restarting a single voice. An
+audio-load failure disables audio with a console message instead of terminating
+gameplay.
 
 | Event | Audio file |
 |---|---|
 | Jump starts | `jump.wav` |
 | Coin collected | `coin.wav` |
 | Power-up collected | `power_up.wav` |
+| Extra life collected | `one_up.wav` |
+| Star collected | `invincibility.wav` |
+| Speed boost collected | `speed_boost.wav` |
 | Enemy/boss stomped | `enemy_defeated.wav` |
 | Lives reach zero | `game_over.wav` |
 | Gameplay active | `background.wav` |

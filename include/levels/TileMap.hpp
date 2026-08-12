@@ -4,8 +4,9 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "levels/renderer/TileRenderer.hpp"
 #include <string>
-#include <vector>
+#include <memory>
 
 class Character;
 
@@ -25,7 +26,10 @@ private:
     void rebuildGeometry();
 
     LevelData m_data;
-    std::vector<sf::RectangleShape> m_tiles;
+    sf::VertexArray m_backgroundVertices{sf::Quads};
+    sf::VertexArray m_sceneryVertices{sf::Triangles};
+    sf::VertexArray m_tileVertices{sf::Quads};
     sf::RectangleShape m_exitPole;
     sf::RectangleShape m_exitFlag;
+    std::unique_ptr<TileRenderer> m_renderer;
 };
