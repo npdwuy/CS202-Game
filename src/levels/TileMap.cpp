@@ -13,6 +13,7 @@ void TileMap::load(const std::string& path) {
     // Clear cracked block tracking on level load
     m_crackedBlocks.clear();
     m_crackedSet.clear();
+    m_questionBlocks.clear();
 
     std::string tilesetPath = "assets/sprites/tilesets/WU_Field_plain.png";
     if (m_data.difficulty == "Medium") {
@@ -26,6 +27,22 @@ void TileMap::load(const std::string& path) {
         m_renderer = std::make_unique<TexturedTileRenderer>(std::move(texture));
     } else {
         m_renderer = std::make_unique<ProceduralTileRenderer>();
+    }
+    
+    float tileSize = static_cast<float>(m_data.tileSize);
+    for (int r = 0; r < static_cast<int>(m_data.rows.size()); ++r) {
+        for (int c = 0; c < static_cast<int>(m_data.rows[r].size()); ++c) {
+            if (m_data.rows[r][c] == '?' || m_data.rows[r][c] == '!') {
+                sf::Vector2f pos(c * tileSize, r * tileSize);
+                QuestionBlock qb(r, c, pos, tileSize);
+                if (m_data.rows[r][c] == '!') {
+                    qb.Hit();
+                    // forcefully update to empty state
+                    qb.Update(sf::seconds(1.0f));
+                }
+                m_questionBlocks.push_back(qb);
+            }
+        }
     }
 
     rebuildGeometry();
@@ -71,6 +88,10 @@ void TileMap::render(sf::RenderWindow& window) const {
         crack3.setRotation(-30.f);
         crack3.setFillColor(sf::Color(40, 20, 5, 180));
         window.draw(crack3);
+    }
+    
+    for (const auto& qb : m_questionBlocks) {
+        qb.Render(window);
     }
 
     window.draw(m_exitPole);
@@ -131,7 +152,7 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
 
         for (int row = firstRow; row <= lastRow; ++row) {
             for (int column = firstColumn; column <= lastColumn; ++column) {
-                if (m_data.rows[row][column] != '#') {
+                if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
                     continue;
                 }
 
@@ -240,6 +261,10 @@ void TileMap::update(sf::Time dt) {
             }
         }
     }
+    
+    for (auto& qb : m_questionBlocks) {
+        qb.Update(dt);
+    }
 }
 
 void TileMap::breakBlock(int row, int col) {
@@ -285,6 +310,30 @@ void TileMap::breakBlock(int row, int col) {
             m_debris.push_back(debris);
         }
     }
+}
+
+bool TileMap::hitQuestionBlock(int row, int col) {
+    if (row < 0 || row >= static_cast<int>(m_data.rows.size()) || col < 0 || col >= static_cast<int>(m_data.rows[row].size())) {
+        return false;
+    }
+    if (m_data.rows[row][col] != '?') {
+        return false;
+    }
+
+    // Change to empty block
+    m_data.rows[row][col] = '!';
+    
+    // We do not rebuild geometry because QuestionBlocks are rendered separately
+    // rebuildGeometry();
+
+    for (auto& qb : m_questionBlocks) {
+        if (qb.GetRow() == row && qb.GetCol() == col) {
+            qb.Hit();
+            break;
+        }
+    }
+
+    return true;
 }
 
 bool TileMap::hitBlock(int row, int col) {
@@ -355,7 +404,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
         return false;
     }
 
-    return m_data.rows[row][column] == '#';
+    return m_data.rows[row][column] == '#' || m_data.rows[row][column] == '?' || m_data.rows[row][column] == '!';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
@@ -390,7 +439,7 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 
     for (int row = firstRow; row <= lastRow; ++row) {
         for (int column = firstColumn; column <= lastColumn; ++column) {
-            if (m_data.rows[row][column] != '#') {
+            if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
                 continue;
             }
 

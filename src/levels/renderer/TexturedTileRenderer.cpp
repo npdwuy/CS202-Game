@@ -83,16 +83,17 @@ TexturedTileRenderer::TexturedTileRenderer(sf::Texture texture, TilesetLayout la
 void TexturedTileRenderer::appendTexturedQuad(
     sf::VertexArray& vertices,
     const sf::FloatRect& bounds,
-    const sf::FloatRect& texCoords
+    const sf::FloatRect& texCoords,
+    sf::Color color
 ) const {
-    vertices.append({{bounds.left, bounds.top}, sf::Color::White, {texCoords.left, texCoords.top}});
-    vertices.append({{bounds.left + bounds.width, bounds.top}, sf::Color::White, {texCoords.left + texCoords.width, texCoords.top}});
+    vertices.append({{bounds.left, bounds.top}, color, {texCoords.left, texCoords.top}});
+    vertices.append({{bounds.left + bounds.width, bounds.top}, color, {texCoords.left + texCoords.width, texCoords.top}});
     vertices.append({
         {bounds.left + bounds.width, bounds.top + bounds.height},
-        sf::Color::White,
+        color,
         {texCoords.left + texCoords.width, texCoords.top + texCoords.height}
     });
-    vertices.append({{bounds.left, bounds.top + bounds.height}, sf::Color::White, {texCoords.left, texCoords.top + texCoords.height}});
+    vertices.append({{bounds.left, bounds.top + bounds.height}, color, {texCoords.left, texCoords.top + texCoords.height}});
 }
 
 void TexturedTileRenderer::buildGeometry(
@@ -157,10 +158,10 @@ void TexturedTileRenderer::buildGeometry(
                 static_cast<float>(row) * tileSize
             };
 
-            const bool above = (row > 0 && data.rows[row - 1][column] == '#');
-            const bool below = (row + 1 < data.rows.size() && data.rows[row + 1][column] == '#');
-            const bool left = (column == 0) || (data.rows[row][column - 1] == '#');
-            const bool right = (column + 1 >= data.rows[row].size()) || (data.rows[row][column + 1] == '#');
+            const bool above = (row > 0 && (data.rows[row - 1][column] == '#' || data.rows[row - 1][column] == '?' || data.rows[row - 1][column] == '!'));
+            const bool below = (row + 1 < data.rows.size() && (data.rows[row + 1][column] == '#' || data.rows[row + 1][column] == '?' || data.rows[row + 1][column] == '!'));
+            const bool left = (column == 0) || (data.rows[row][column - 1] == '#' || data.rows[row][column - 1] == '?' || data.rows[row][column - 1] == '!');
+            const bool right = (column + 1 >= data.rows[row].size()) || (data.rows[row][column + 1] == '#' || data.rows[row][column + 1] == '?' || data.rows[row][column + 1] == '!');
 
             sf::Vector2i tileCoord = m_layout.dirtCenter;
 
@@ -199,10 +200,18 @@ void TexturedTileRenderer::buildGeometry(
                 sourceTileSize
             );
 
+            sf::Color vertexColor = sf::Color::White;
+            if (data.rows[row][column] == '?') {
+                vertexColor = sf::Color(255, 230, 100);
+            } else if (data.rows[row][column] == '!') {
+                vertexColor = sf::Color(120, 100, 80);
+            }
+
             appendTexturedQuad(
                 tileVertices,
                 {position.x, position.y, tileSize, tileSize},
-                texCoords
+                texCoords,
+                vertexColor
             );
         }
     }

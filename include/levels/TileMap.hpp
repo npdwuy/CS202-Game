@@ -32,6 +32,10 @@ struct CrackedBlock {
     static constexpr float BounceHeight = 6.f;
 };
 
+#include "entities/blocks/QuestionBlock.hpp"
+
+// ... existing forward declarations
+
 class TileMap {
 public:
     void load(const std::string& path);
@@ -39,6 +43,9 @@ public:
     void update(sf::Time dt);
     void resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof = nullptr) const;
     void breakBlock(int row, int col);
+    // Hit a question block. Returns true if it was a '?' block and has been changed to '!'.
+    bool hitQuestionBlock(int row, int col);
+    
     // Hit a block once. Returns true if block is destroyed (2nd hit), false if just cracked (1st hit).
     bool hitBlock(int row, int col);
 
@@ -66,6 +73,9 @@ private:
     float m_flagY = 0.f;
     std::vector<BlockDebris> m_debris;
     std::unique_ptr<TileRenderer> m_renderer;
+
+    // Question Blocks
+    std::vector<QuestionBlock> m_questionBlocks;
 
     // Cracked block tracking (hit once by mushroom Mario)
     std::vector<CrackedBlock> m_crackedBlocks;

@@ -152,9 +152,7 @@ void ProceduralTileRenderer::buildGeometry(
                 static_cast<float>(row) * tileSize
             };
 
-            const sf::Color fillColor = row % 2U == 0U
-                ? palette.lightFill
-                : palette.darkFill;
+            sf::Color fillColor = row % 2U == 0U ? palette.lightFill : palette.darkFill;
             appendQuad(
                 tileVertices,
                 {position.x, position.y, tileSize, tileSize},
@@ -171,7 +169,7 @@ void ProceduralTileRenderer::buildGeometry(
                 fillColor
             );
 
-            const bool exposedTop = row == 0U || data.rows[row - 1U][column] != '#';
+            const bool exposedTop = row == 0U || (data.rows[row - 1U][column] != '#' && data.rows[row - 1U][column] != '?' && data.rows[row - 1U][column] != '!');
             if (exposedTop) {
                 appendQuad(
                     tileVertices,
@@ -186,13 +184,13 @@ void ProceduralTileRenderer::buildGeometry(
             }
 
             const bool exposedLeft =
-                column == 0U || data.rows[row][column - 1U] != '#';
+                column == 0U || (data.rows[row][column - 1U] != '#' && data.rows[row][column - 1U] != '?' && data.rows[row][column - 1U] != '!');
             const bool exposedRight =
                 column + 1U >= data.rows[row].size() ||
-                data.rows[row][column + 1U] != '#';
+                (data.rows[row][column + 1U] != '#' && data.rows[row][column + 1U] != '?' && data.rows[row][column + 1U] != '!');
             const bool exposedBottom =
                 row + 1U >= data.rows.size() ||
-                data.rows[row + 1U][column] != '#';
+                (data.rows[row + 1U][column] != '#' && data.rows[row + 1U][column] != '?' && data.rows[row + 1U][column] != '!');
 
             if (exposedLeft) {
                 appendQuad(

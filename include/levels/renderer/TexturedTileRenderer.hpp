@@ -39,7 +39,8 @@ private:
     void appendTexturedQuad(
         sf::VertexArray& vertices,
         const sf::FloatRect& bounds,
-        const sf::FloatRect& texCoords
+        const sf::FloatRect& texCoords,
+        sf::Color color = sf::Color::White
     ) const;
 
     sf::Texture m_texture;
