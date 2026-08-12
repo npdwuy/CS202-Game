@@ -42,6 +42,7 @@ private:
     void updateTimedPowerUps(sf::Time timePerFrame);
     void updateLevelTimer(sf::Time timePerFrame);
     void resetTransientEffects();
+    void triggerDeath();
     void loseLife();
     void updateHud();
     void updateCamera(sf::Time timePerFrame);

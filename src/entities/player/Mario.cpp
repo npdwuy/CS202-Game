@@ -27,9 +27,6 @@ void Mario::update(sf::Time timePerFrame) {
     Player::update(timePerFrame);
 
     // Cú pháp: sf::IntRect(Tọa_độ_X, Tọa_độ_Y, Chiều_Rộng, Chiều_Cao)
-    if(fireMario_){
-        baseImage_ = 736;
-    }    
 
     // 1. Đứng yên (Lấy khung hình "Stand" chuẩn)
     static const std::vector<sf::IntRect> framesStand = {
@@ -78,14 +75,23 @@ void Mario::update(sf::Time timePerFrame) {
     };
 
 
+    // 7. Chết (Flashing and spinning)
+    static const std::vector<sf::IntRect> framesDead = {
+        sf::IntRect(561, 85, 40, 50),
+        sf::IntRect(603, 85, 40, 50),
+        sf::IntRect(645, 85, 40, 50),
+        sf::IntRect(686, 85, 40, 50)
+    };
+
     const std::vector<sf::IntRect>* currentAnim = &framesStand;
-    if (currentState == State::Walk) currentAnim = &framesWalk;
+    if (currentState == State::Dead) currentAnim = &framesDead;
+    else if (currentState == State::Walk) currentAnim = &framesWalk;
     else if (currentState == State::Jump) currentAnim = &framesJump;
     else if (currentState == State::Fall) currentAnim = &framesFall;
     else if(currentState == State::HitRoof) currentAnim = &framesHitRoof;
     else if(currentState == State::TransitionStand)currentAnim = &framesTransitionStand;
 
-    const float frameDuration = 0.10f; 
+    const float frameDuration = (currentState == State::Dead) ? 0.07f : 0.10f;
     // animationTime_ += timePerFrame.asSeconds();
 
     if (animationTime_ >= frameDuration) {
@@ -99,8 +105,31 @@ void Mario::update(sf::Time timePerFrame) {
         if(currentState == State::HitRoof && currentFrame_ == 1)hitRoof_ = false;
     }
 
+    if (currentFrame_ >= currentAnim->size()) {
+        currentFrame_ = currentAnim->size() - 1;
+    }
+
     sf::IntRect currentRect = (*currentAnim)[currentFrame_];
-    if(fireMario_){
+    
+    static constexpr int FireMarioSpriteOffsetX = 736;
+    
+    if (isFireMario()) {
+        baseImage_ = FireMarioSpriteOffsetX;
+    } else {
+        baseImage_ = 0;
+    }
+    
+    if (isColorChanging()) {
+        // Flash between normal and fire sprite at ~10Hz
+        int flashFrame = static_cast<int>(colorChangeAnimTime() / 0.05f);
+        if (flashFrame % 2 == 0) {
+            baseImage_ = FireMarioSpriteOffsetX;
+        } else {
+            baseImage_ = 0;
+        }
+    }
+
+    if (currentState != State::Dead) {
         currentRect.left += baseImage_;
     }
     sprite_.setTextureRect(currentRect);
@@ -166,7 +195,7 @@ void Mario::update(sf::Time timePerFrame) {
             }
         }
         scaleAbs = baseScale * currentMult;
-    } else if (mushroom_) {
+    } else if (isBig()) {
         scaleAbs = 1.425f;
     }
 

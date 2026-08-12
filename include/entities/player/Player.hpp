@@ -22,9 +22,13 @@ protected:
     bool jumpedThisFrame_ = false;
     bool jumpHeld_ = false;
 
-    bool fireMario_ = false;
-    bool mushroom_ = false;
     std::string label_;
+
+public:
+    enum class PowerUpState { Small, Big, Fire };
+
+protected:
+    PowerUpState powerUp_ = PowerUpState::Small;
 
     // Grow/Shrink animation states
     bool isGrowing_ = false;
@@ -35,50 +39,96 @@ protected:
     float shrinkAnimTime_ = 0.0f;
     static constexpr float ShrinkAnimDuration = 1.0f;
 
+    // Color-change animation state (Big <-> Fire transitions)
+    bool isColorChanging_ = false;
+    float colorChangeAnimTime_ = 0.0f;
+    static constexpr float ColorChangeAnimDuration = 0.6f;
+
+    // Death state variables
+    bool isDead_ = false;
+    float deathAnimTime_ = 0.0f;
+    float deathVelocityY_ = -500.f;
+    static constexpr float DeathHopDelay = 0.5f;
+
+    // Jump power anchoring (prevents compounding)
+    float baseJumpPower_ = 670.0f;
+    static constexpr float BigJumpBonus = 207.5f;
+
     void performJump();
 
-    enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand };
+    enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand, Dead };
 
     State currentState = State::Stand;
 
 public:
     Player(sf:: Vector2f position, std::string label, float speed, float jumpPower)
         : Character(position, CollisionWidth, CollisionHeight),
-          speed_(speed), jumpPower_(jumpPower),
+          speed_(speed), jumpPower_(jumpPower), baseJumpPower_(jumpPower),
           label_(std::move(label)) {}
 
     std:: string name() const override{
         return label_;
     }
 
-    void up2Fire(){
-        fireMario_ = true;
-        if (!mushroom_) {
-            mushroom_ = true;
-            jumpPower_ = jumpPower_ * 1.25f;
+    void recalcJumpPower() {
+        jumpPower_ = baseJumpPower_ + (powerUp_ != PowerUpState::Small ? BigJumpBonus : 0.f);
+    }
+
+    void up2Fire() {
+        if (powerUp_ == PowerUpState::Small) {
+            powerUp_ = PowerUpState::Fire;
+            recalcJumpPower();
             isGrowing_ = true;
             growAnimTime_ = 0.0f;
-            isShrinking_ = false; // Cancel shrink if it was playing
+            isShrinking_ = false;
+        } else if (powerUp_ == PowerUpState::Big) {
+            powerUp_ = PowerUpState::Fire;
+            isColorChanging_ = true;
+            colorChangeAnimTime_ = 0.0f;
         }
     }
-    void getMushroom(){
-        if (!mushroom_) {
-            mushroom_ = true;
-            jumpPower_ = jumpPower_ * 1.25f;
+
+    void getMushroom() {
+        if (powerUp_ == PowerUpState::Small) {
+            powerUp_ = PowerUpState::Big;
+            recalcJumpPower();
             isGrowing_ = true;
             growAnimTime_ = 0.0f;
-            isShrinking_ = false; // Cancel shrink if it was playing
+            isShrinking_ = false;
         }
     }
-    void shrinkPlayer(){
-        if (mushroom_) {
-            mushroom_ = false;
-            jumpPower_ = jumpPower_ / 1.25f;
+
+    void shrinkPlayer() {
+        if (powerUp_ == PowerUpState::Fire) {
+            powerUp_ = PowerUpState::Big;
+            isColorChanging_ = true;
+            colorChangeAnimTime_ = 0.0f;
+        } else if (powerUp_ == PowerUpState::Big) {
+            powerUp_ = PowerUpState::Small;
+            recalcJumpPower();
             isShrinking_ = true;
             shrinkAnimTime_ = 0.0f;
-            isGrowing_ = false; // Cancel grow if it was playing
+            isGrowing_ = false;
         }
-        fireMario_ = false; // Lose fire mario status when taking damage
+    }
+
+    bool isBig() const { return powerUp_ != PowerUpState::Small; }
+    bool isFireMario() const { return powerUp_ == PowerUpState::Fire; }
+    PowerUpState powerUpState() const { return powerUp_; }
+    
+    void die() {
+        isDead_ = true;
+        currentState = State::Dead;
+        currentFrame_ = 0;
+        animationTime_ = 0.f;
+        powerUp_ = PowerUpState::Small;
+        velocity_ = {0.f, 0.f};
+    }
+    
+    bool isDead() const { return isDead_; }
+    
+    bool isTransforming() const {
+        return isGrowing_ || isShrinking_ || isColorChanging_;
     }
 
     bool isGrowing() const { return isGrowing_; }
@@ -86,6 +136,9 @@ public:
 
     bool isShrinking() const { return isShrinking_; }
     float shrinkAnimTime() const { return shrinkAnimTime_; }
+    
+    bool isColorChanging() const { return isColorChanging_; }
+    float colorChangeAnimTime() const { return colorChangeAnimTime_; }
 
     void update(sf::Time timePerFrame) override;
 

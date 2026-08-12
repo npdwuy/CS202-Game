@@ -187,7 +187,7 @@ void PlayState::OnGameEvent(const GameEvent& event)
             break;
 
         case GameEventType::TimeExpired:
-            loseLife();
+            triggerDeath();
             break;
     }
 
@@ -232,18 +232,33 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
-        updateBackgroundLayers(
+    updateBackgroundLayers(
         timePerFrame,
         m_camera.view()
     );
-    updateTimedPowerUps(timePerFrame);
-    updateLevelTimer(timePerFrame);
     m_hud.update(timePerFrame);
+    
     m_player->update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
     }
     updateCamera(timePerFrame);
+
+    if (m_player->isDead()) {
+        updateHud();
+        if (m_player->position().y > m_tileMap.worldBounds().height + 200.f) {
+            loseLife();
+        }
+        return;
+    }
+
+    if (m_player->isTransforming()) {
+        updateHud();
+        return;
+    }
+
+    updateTimedPowerUps(timePerFrame);
+    updateLevelTimer(timePerFrame);
 
     for (auto& enemy : m_enemies) {
         enemy->Update(timePerFrame);
@@ -498,25 +513,45 @@ void PlayState::handleItemCollisions()
                 break;
 
             case ItemEffectType::GrowPlayer:
-                GameEventManager::GetInstance().Notify(
-                    {
-                        GameEventType::PowerUpCollected,
-                        500,
-                        "Mushroom"
-                    }
-                );
-                m_player->getMushroom();
+                if (m_player->powerUpState() == Player::PowerUpState::Small) {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::PowerUpCollected,
+                            500,
+                            "Mushroom"
+                        }
+                    );
+                    m_player->getMushroom();
+                } else {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::PowerUpCollected,
+                            1000,
+                            ""
+                        }
+                    );
+                }
                 break;
 
             case ItemEffectType::EnableFirePower:
-                GameEventManager::GetInstance().Notify(
-                    {
-                        GameEventType::PowerUpCollected,
-                        500,
-                        "FireFlower"
-                    }
-                );
-                m_player->up2Fire();
+                if (m_player->isFireMario()) {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::PowerUpCollected,
+                            1000,
+                            ""
+                        }
+                    );
+                } else {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::PowerUpCollected,
+                            500,
+                            "FireFlower"
+                        }
+                    );
+                    m_player->up2Fire();
+                }
                 break;
 
             case ItemEffectType::ExtraLife:
@@ -668,18 +703,22 @@ void PlayState::handlePlayerDamage() {
         return;
     }
 
-    if (m_saveData.powerUpState != "None") {
-        m_saveData.powerUpState = "None";
-        if (m_player) {
-            m_player->shrinkPlayer();
+    if (m_player && m_player->powerUpState() != Player::PowerUpState::Small) {
+        m_player->shrinkPlayer();
+        
+        if (m_player->powerUpState() == Player::PowerUpState::Big) {
+            m_saveData.powerUpState = "Mushroom";
+        } else {
+            m_saveData.powerUpState = "None";
         }
+        
         m_damageCooldown = 1.5f;
         showStatus("Power-up absorbed the hit", 1.5f);
         updateHud();
         return;
     }
 
-    loseLife();
+    triggerDeath();
 }
 
 void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
@@ -776,6 +815,14 @@ void PlayState::handleLevelExit() {
     } else {
         SaveManager::save(m_saveData);
         GameManager::getInstance().pushState(std::make_unique<LevelCompleteState>());
+    }
+}
+
+void PlayState::triggerDeath() {
+    AudioManager::getInstance().stopMusic();
+    AudioManager::getInstance().playEffect(SoundEffect::GameOver);
+    if (m_player) {
+        m_player->die();
     }
 }
 

@@ -43,6 +43,41 @@ float Player::speedMultiplier() const {
 
 
 void Player:: update(sf::Time timePerFrame){
+    if (isDead_) {
+        deathAnimTime_ += timePerFrame.asSeconds();
+        if (deathAnimTime_ > DeathHopDelay) {
+            deathVelocityY_ += 1500.f * timePerFrame.asSeconds();
+            position_.y += deathVelocityY_ * timePerFrame.asSeconds();
+        }
+        animationTime_ += timePerFrame.asSeconds();
+        return; // skip input, normal physics, and bounding box logic
+    }
+
+    if (isTransforming()) {
+        if (isGrowing_) {
+            growAnimTime_ += timePerFrame.asSeconds();
+            if (growAnimTime_ >= GrowAnimDuration) {
+                isGrowing_ = false;
+                growAnimTime_ = 0.0f;
+            }
+        }
+        if (isShrinking_) {
+            shrinkAnimTime_ += timePerFrame.asSeconds();
+            if (shrinkAnimTime_ >= ShrinkAnimDuration) {
+                isShrinking_ = false;
+                shrinkAnimTime_ = 0.0f;
+            }
+        }
+        if (isColorChanging_) {
+            colorChangeAnimTime_ += timePerFrame.asSeconds();
+            if (colorChangeAnimTime_ >= ColorChangeAnimDuration) {
+                isColorChanging_ = false;
+                colorChangeAnimTime_ = 0.0f;
+            }
+        }
+        return; // Skip input and physics while transforming
+    }
+
     auto& settings = GameManager::getInstance().getSettings();
 
     if (sf::Keyboard::isKeyPressed(settings.getKeyBinding("MoveLeft"))
@@ -114,19 +149,4 @@ void Player:: update(sf::Time timePerFrame){
     }
     animationTime_+=timePerFrame.asSeconds();
     movedThisFrame_ = false;
-
-    if (isGrowing_) {
-        growAnimTime_ += timePerFrame.asSeconds();
-        if (growAnimTime_ >= GrowAnimDuration) {
-            isGrowing_ = false;
-            growAnimTime_ = 0.0f;
-        }
-    }
-    if (isShrinking_) {
-        shrinkAnimTime_ += timePerFrame.asSeconds();
-        if (shrinkAnimTime_ >= ShrinkAnimDuration) {
-            isShrinking_ = false;
-            shrinkAnimTime_ = 0.0f;
-        }
-    }
 }
