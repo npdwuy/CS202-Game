@@ -17,6 +17,17 @@ void FloatingItem::Update(sf::Time timePerFrame) {
         return;
     }
 
+    if (m_isSpawning) {
+        m_spawnTime += timePerFrame.asSeconds();
+        float t = std::min(m_spawnTime / m_spawnDuration, 1.0f);
+        m_basePosition.y = m_spawnStartPosition.y + (m_spawnTargetY - m_spawnStartPosition.y) * t;
+        SetVisualPosition(m_basePosition);
+        if (t >= 1.0f) {
+            m_isSpawning = false;
+        }
+        return;
+    }
+
     m_animationTime += timePerFrame.asSeconds();
     const float offset = std::sin(m_animationTime * m_floatingSpeed)
                        * m_floatingDistance;
@@ -33,4 +44,12 @@ void FloatingItem::Collect() {
 }
 
 void FloatingItem::Animate(sf::Time) {
+}
+
+void FloatingItem::StartSpawning(float targetY, float duration) {
+    m_isSpawning = true;
+    m_spawnTargetY = targetY;
+    m_spawnDuration = duration;
+    m_spawnTime = 0.f;
+    m_spawnStartPosition = m_basePosition;
 }

@@ -7,6 +7,8 @@ public:
     void Update(sf::Time timePerFrame) final;
     bool IsCollected() const final;
     void Collect() final;
+    
+    void StartSpawning(float targetY, float duration);
 
 protected:
     FloatingItem(
@@ -24,4 +26,11 @@ private:
     float m_floatingSpeed;
     float m_animationTime = 0.f;
     bool m_collected = false;
+
+    // Spawning animation
+    bool m_isSpawning = false;
+    float m_spawnTargetY = 0.f;
+    float m_spawnDuration = 0.f;
+    float m_spawnTime = 0.f;
+    sf::Vector2f m_spawnStartPosition;
 };

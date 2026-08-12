@@ -1,4 +1,5 @@
 #include "PlayState.hpp"
+#include "entities/items/FloatingItem.hpp"
 #include "MenuState.hpp"
 #include "GameManager.hpp"
 #include "PauseState.hpp"
@@ -524,17 +525,53 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
             m_tileMap.resolveCollision(character, deltaTime, [&](int row, int col) {
                 if (&character == m_player.get()) {
                     if (row < m_tileMap.data().rows.size() - 2) {
-                        if (m_invincibilityTimeRemaining > 0.f) {
-                            // Star power: phá ngay 1 hit
-                            m_tileMap.breakBlock(row, col);
-                            AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
-                        } else if (m_player->isSuper()) {
-                            // Mushroom/Fire: cần 2 hit
-                            bool destroyed = m_tileMap.hitBlock(row, col);
-                            if (destroyed) {
+                        bool bumped = false;
+
+                        if (m_tileMap.data().rows[row][col] == '?') {
+                            if (m_tileMap.hitQuestionBlock(row, col)) {
+                                bumped = true;
+                                AudioManager::getInstance().playEffect(SoundEffect::Jump); // Or another sound
+                                
+                                int randVal = std::rand() % 100;
+                                char itemSymbol = 'M';
+                                if (randVal < 1) itemSymbol = 'S';        // 1%
+                                else if (randVal < 10) itemSymbol = 'L';  // 9%
+                                else if (randVal < 30) itemSymbol = 'F';  // 20%
+                                else if (randVal < 60) itemSymbol = 'V';  // 30%
+                                
+                                sf::Vector2f itemPos(col * m_tileMap.data().tileSize, row * m_tileMap.data().tileSize);
+                                auto newItem = m_objectFactory.createItem(itemSymbol, itemPos);
+                                if (auto floatingItem = dynamic_cast<FloatingItem*>(newItem.get())) {
+                                    floatingItem->StartSpawning((row - 1) * m_tileMap.data().tileSize, 0.5f);
+                                }
+                                m_items.push_back(std::move(newItem));
+                            }
+                        } else if (m_tileMap.data().rows[row][col] == '#') {
+                            if (m_invincibilityTimeRemaining > 0.f) {
+                                m_tileMap.breakBlock(row, col);
+                                bumped = true;
                                 AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
-                            } else {
-                                AudioManager::getInstance().playEffect(SoundEffect::Jump);
+                            } else if (m_player->isSuper()) {
+                                bool destroyed = m_tileMap.hitBlock(row, col);
+                                bumped = true;
+                                if (destroyed) {
+                                    AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
+                                } else {
+                                    AudioManager::getInstance().playEffect(SoundEffect::Jump);
+                                }
+                            }
+                        }
+
+                        // Check for enemies standing on top of the bumped block
+                        if (bumped && (m_player->isSuper() || m_invincibilityTimeRemaining > 0.f)) {
+                            float tileSize = static_cast<float>(m_tileMap.data().tileSize);
+                            sf::FloatRect blockTopRect(col * tileSize, row * tileSize - 2.f, tileSize, 4.f);
+                            
+                            for (auto& enemy : m_enemies) {
+                                if (enemy->IsActive() && !enemy->IsFlung() && enemy->GetBounds().intersects(blockTopRect)) {
+                                    enemy->Fling();
+                                    GameEventManager::GetInstance().Notify({GameEventType::EnemyDefeated, 100, "Enemy defeated by block bump!"});
+                                }
                             }
                         }
                     }
@@ -723,6 +760,7 @@ bool PlayState::handleEnemyCollisions()
     {
         if (
             !enemy->IsActive() ||
+            enemy->IsFlung() ||
             !bounds.intersects(enemy->GetBounds())
         )
         {
