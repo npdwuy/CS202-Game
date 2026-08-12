@@ -319,7 +319,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                 });
                 m_fireballs.push_back(std::move(fb));
                 m_player->triggerThrow();
-                m_fireballCooldown = 1.0f; // Cooldown 1s theo yêu cầu
+                m_fireballCooldown = 0.6f; // Cooldown 0.6s theo yêu cầu
             }
         }
     }
