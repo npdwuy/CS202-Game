@@ -213,10 +213,8 @@ void TexturedTileRenderer::render(
     const sf::VertexArray& tileVertices,
     const sf::VertexArray& sceneryVertices,
     const sf::VertexArray& backgroundVertices
-) const {
-    target.draw(backgroundVertices);
-    target.draw(sceneryVertices);
-
+) const
+{
     sf::RenderStates states;
     states.texture = &m_texture;
     target.draw(tileVertices, states);

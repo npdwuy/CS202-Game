@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Graphics.hpp>
 #include "GameState.hpp"
 #include "factories/LevelObjectFactory.hpp"
 #include "levels/TileMap.hpp"
@@ -66,4 +67,37 @@ private:
 
     std::unique_ptr<Button> m_menuButton;
     sf::Texture m_buttonTexture;
+
+struct BackgroundLayer
+{
+    std::shared_ptr<sf::Texture> texture;
+    sf::Sprite sprite;
+
+    float parallaxFactor = 0.f;
+    float driftAmplitude = 0.f;
+    float driftSpeed = 0.f;
+};
+
+std::vector<BackgroundLayer> m_backgroundLayers;
+
+float m_backgroundAnimationTime = 0.f;
+
+void loadBackgroundLayers();
+
+void addBackgroundLayer(
+    const std::string& path,
+    float parallaxFactor,
+    float driftAmplitude,
+    float driftSpeed,
+    bool required
+);
+
+void updateBackgroundLayers(
+    sf::Time timePerFrame,
+    const sf::View& view
+);
+
+void renderBackgroundLayers(
+    sf::RenderWindow& window
+);
 };

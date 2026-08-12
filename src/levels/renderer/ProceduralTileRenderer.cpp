@@ -224,8 +224,7 @@ void ProceduralTileRenderer::render(
     const sf::VertexArray& tileVertices,
     const sf::VertexArray& sceneryVertices,
     const sf::VertexArray& backgroundVertices
-) const {
-    target.draw(backgroundVertices);
-    target.draw(sceneryVertices);
+) const
+{
     target.draw(tileVertices);
 }

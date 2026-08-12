@@ -15,6 +15,7 @@
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
 
+#include <filesystem>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -25,6 +26,7 @@ PlayState::PlayState(bool loadSavedGame)
     : m_hud(ResourceManager::getInstance().getFont(
           "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
       )) {
+    loadBackgroundLayers();
 
     const sf::Font& hudFont = ResourceManager::getInstance().getFont(
         "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
@@ -230,6 +232,10 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
+        updateBackgroundLayers(
+        timePerFrame,
+        m_camera.view()
+    );
     updateTimedPowerUps(timePerFrame);
     updateLevelTimer(timePerFrame);
     m_hud.update(timePerFrame);
@@ -289,7 +295,11 @@ void PlayState::Update(sf::Time timePerFrame) {
 
 void PlayState::Render(sf::RenderWindow& window) {
     const sf::View& screenView = GameManager::getInstance().getGameView();
+
     window.setView(m_camera.view());
+
+    renderBackgroundLayers(window);
+
     const sf::FloatRect visibleWorld = m_camera.visibleBounds(96.f);
 
     m_tileMap.render(window);
@@ -854,4 +864,216 @@ bool PlayState::hasActiveBoss() const {
 
 std::string PlayState::levelPath(int levelNumber) {
     return "levels/level" + std::to_string(levelNumber) + ".txt";
+}
+
+void PlayState::addBackgroundLayer(
+    const std::string& path,
+    float parallaxFactor,
+    float driftAmplitude,
+    float driftSpeed,
+    bool required
+)
+{
+    if (!std::filesystem::exists(path))
+    {
+        if (required)
+        {
+            throw std::runtime_error(
+                "Missing required background layer: " + path
+            );
+        }
+
+        return;
+    }
+
+    auto texture = std::make_shared<sf::Texture>();
+
+    if (!texture->loadFromFile(path))
+    {
+        if (required)
+        {
+            throw std::runtime_error(
+                "Failed to load background layer: " + path
+            );
+        }
+
+        return;
+    }
+
+    BackgroundLayer layer;
+
+    layer.texture = texture;
+    layer.sprite.setTexture(*texture);
+
+    layer.parallaxFactor = parallaxFactor;
+    layer.driftAmplitude = driftAmplitude;
+    layer.driftSpeed = driftSpeed;
+
+    m_backgroundLayers.push_back(
+        std::move(layer)
+    );
+}
+
+void PlayState::loadBackgroundLayers()
+{
+    m_backgroundLayers.clear();
+
+    // Base background - bắt buộc phải có.
+    addBackgroundLayer(
+        "assets/backgrounds/level_bg.png",
+        0.20f,
+        0.f,
+        0.f,
+        true
+    );
+
+    // Optional cloud layer.
+    // Nếu chưa có file thì hệ thống tự bỏ qua.
+    addBackgroundLayer(
+        "assets/backgrounds/clouds.png",
+        0.35f,
+        35.f,
+        0.35f,
+        false
+    );
+
+    // Optional foreground layer.
+    addBackgroundLayer(
+        "assets/backgrounds/foreground.png",
+        0.75f,
+        8.f,
+        0.20f,
+        false
+    );
+}
+
+void PlayState::updateBackgroundLayers(
+    sf::Time timePerFrame,
+    const sf::View& view
+)
+{
+    m_backgroundAnimationTime +=
+        timePerFrame.asSeconds();
+
+    const sf::Vector2f viewSize =
+        view.getSize();
+
+    const sf::Vector2f viewCenter =
+        view.getCenter();
+
+    const sf::FloatRect worldBounds =
+        m_tileMap.worldBounds();
+
+    const float cameraLeft =
+        viewCenter.x - viewSize.x * 0.5f;
+
+    const float availableTravel =
+        std::max(
+            1.f,
+            worldBounds.width - viewSize.x
+        );
+
+    const float cameraProgress =
+        std::clamp(
+            (cameraLeft - worldBounds.left) /
+                availableTravel,
+            0.f,
+            1.f
+        );
+
+    for (BackgroundLayer& layer :
+         m_backgroundLayers)
+    {
+        if (!layer.texture)
+        {
+            continue;
+        }
+
+        const sf::Vector2u textureSize =
+            layer.texture->getSize();
+
+        if (
+            textureSize.x == 0 ||
+            textureSize.y == 0
+        )
+        {
+            continue;
+        }
+
+        const float scaleX =
+            viewSize.x /
+            static_cast<float>(textureSize.x);
+
+        const float scaleY =
+            viewSize.y /
+            static_cast<float>(textureSize.y);
+
+        // Cover toàn màn hình nhưng không làm méo ảnh.
+        const float scale =
+            std::max(scaleX, scaleY);
+
+        layer.sprite.setScale(
+            scale,
+            scale
+        );
+
+        const float scaledWidth =
+            static_cast<float>(textureSize.x)
+            * scale;
+
+        const float scaledHeight =
+            static_cast<float>(textureSize.y)
+            * scale;
+
+        const float overflowX =
+            std::max(
+                0.f,
+                scaledWidth - viewSize.x
+            );
+
+        // Camera trái:
+        // ảnh hơi dịch sang phải.
+        //
+        // Camera phải:
+        // ảnh hơi dịch sang trái.
+        const float parallaxOffset =
+            (0.5f - cameraProgress)
+            * overflowX
+            * layer.parallaxFactor;
+
+        // Chuyển động nhẹ độc lập với camera.
+        const float driftOffset =
+            std::sin(
+                m_backgroundAnimationTime
+                * layer.driftSpeed
+            )
+            * std::min(
+                layer.driftAmplitude,
+                overflowX * 0.25f
+            );
+
+        layer.sprite.setPosition(
+            viewCenter.x
+                - scaledWidth * 0.5f
+                + parallaxOffset
+                + driftOffset,
+
+            viewCenter.y
+                - scaledHeight * 0.5f
+        );
+    }
+}
+
+void PlayState::renderBackgroundLayers(
+    sf::RenderWindow& window
+)
+{
+    for (const BackgroundLayer& layer :
+         m_backgroundLayers)
+    {
+        if (layer.texture)
+        {
+            window.draw(layer.sprite);
+        }
+    }
 }
