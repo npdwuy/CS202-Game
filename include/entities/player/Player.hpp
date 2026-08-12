@@ -77,6 +77,8 @@ public:
         : Character(position, CollisionWidth, CollisionHeight),
           speed_(speed), jumpPower_(jumpPower), baseJumpPower_(jumpPower),
           label_(std::move(label)) {}
+          
+    bool isSuper() const { return mushroom_ || fireMario_; }
 
     std:: string name() const override{
         return label_;

@@ -52,14 +52,12 @@ void GameHud::setData(const GameHudData& data) {
 
 void GameHud::update(sf::Time deltaTime) {
     const float seconds = std::max(0.f, deltaTime.asSeconds());
-    if (m_displayedScore != m_data.score) {
-        const int difference = m_data.score - m_displayedScore;
-        const int step = std::max(
-            1,
-            static_cast<int>(std::ceil(std::abs(difference) *
-                                       std::min(1.f, seconds * 9.f)))
-        );
-        m_displayedScore += std::clamp(difference, -step, step);
+    if (m_displayedScore != static_cast<float>(m_data.score)) {
+        float difference = m_data.score - m_displayedScore;
+        m_displayedScore += difference * std::min(1.f, seconds * 15.f);
+        if (std::abs(m_data.score - m_displayedScore) < 0.5f) {
+            m_displayedScore = static_cast<float>(m_data.score);
+        }
     }
 
     m_statusTimeRemaining = std::max(
@@ -113,8 +111,15 @@ void GameHud::layout(const sf::View& screenView) {
     m_scoreText.setPosition(left + 90.f, top + 14.f);
     m_infoText.setPosition(left + 420.f, top + 14.f);
 
-    m_timeText.setPosition(right - 200.f, top + 14.f);
-    m_powerText.setPosition(right - 450.f, top + 14.f);
+    // Right-align time text
+    sf::FloatRect timeBounds = m_timeText.getLocalBounds();
+    m_timeText.setOrigin(timeBounds.left + timeBounds.width, 0.f);
+    m_timeText.setPosition(right - 40.f, top + 14.f);
+
+    // Right-align power text, placing it safely to the left of time text
+    sf::FloatRect powerBounds = m_powerText.getLocalBounds();
+    m_powerText.setOrigin(powerBounds.left + powerBounds.width, 0.f);
+    m_powerText.setPosition(right - 220.f, top + 14.f);
 
     // Controls text moved to bottom-right corner to keep header clean
     const sf::FloatRect controlsBounds = m_controlsText.getLocalBounds();
@@ -154,7 +159,7 @@ void GameHud::render(sf::RenderTarget& target) const {
 }
 
 void GameHud::refreshText() {
-    m_scoreText.setString("SCORE  " + formatScore(m_displayedScore));
+    m_scoreText.setString("SCORE  " + formatScore(static_cast<int>(std::round(m_displayedScore))));
     m_infoText.setString(
         "WORLD  " + std::to_string(m_data.level) +
         "    LIVES  x" + std::to_string(m_data.lives) +

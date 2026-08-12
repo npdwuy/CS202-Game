@@ -248,7 +248,9 @@ void PlayState::Update(sf::Time timePerFrame) {
                 m_player->setFacing(1);
                 m_exitSequence = ExitSequence::WalkingRight;
             } else {
-                m_player->setVelocity({0.f, 200.f}); // SLIDING DOWN!
+                sf::Vector2f pos = m_player->position();
+                pos.y += 100.f * timePerFrame.asSeconds();
+                m_player->setPosition(pos);
             }
             m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
         } else if (m_exitSequence == ExitSequence::WalkingRight) {
@@ -297,7 +299,11 @@ void PlayState::Update(sf::Time timePerFrame) {
     );
     m_hud.update(timePerFrame);
     
-    m_player->update(timePerFrame);
+    if (m_player) {
+        m_player->update(timePerFrame);
+    }
+    
+    m_tileMap.update(timePerFrame);
     if (m_player->consumeJumpEvent()) {
         AudioManager::getInstance().playEffect(SoundEffect::Jump);
     }
@@ -515,7 +521,16 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
                 return;
             }
 
-            m_tileMap.resolveCollision(character, deltaTime);
+            m_tileMap.resolveCollision(character, deltaTime, [&](int row, int col) {
+                if (&character == m_player.get()) {
+                    if (row < m_tileMap.data().rows.size() - 2) {
+                        if (m_player->isSuper()) {
+                            m_tileMap.breakBlock(row, col);
+                            AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
+                        }
+                    }
+                }
+            });
 
             // Constrain player position to camera's left edge
             const sf::FloatRect cameraBounds = m_camera.visibleBounds();
