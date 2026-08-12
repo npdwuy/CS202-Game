@@ -23,6 +23,7 @@ protected:
     bool jumpedThisFrame_ = false;
     bool jumpHeld_ = false;
 
+    bool invincible_ = false;
     std::string label_;
 
 public:
@@ -79,6 +80,8 @@ public:
           label_(std::move(label)) {}
           
     bool isSuper() const { return powerUp_ != PowerUpState::Small; }
+    bool isInvincible() const { return invincible_; }
+    void setInvincible(bool invincible) { invincible_ = invincible; }
 
     std:: string name() const override{
         return label_;

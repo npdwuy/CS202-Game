@@ -10,6 +10,10 @@
 void TileMap::load(const std::string& path) {
     m_data = LevelLoader::loadFromFile(path);
 
+    // Clear cracked block tracking on level load
+    m_crackedBlocks.clear();
+    m_crackedSet.clear();
+
     std::string tilesetPath = "assets/sprites/tilesets/WU_Field_plain.png";
     if (m_data.difficulty == "Medium") {
         tilesetPath = "assets/sprites/tilesets/WU_Field_underground.png";
@@ -34,6 +38,39 @@ void TileMap::render(sf::RenderWindow& window) const {
         window.draw(m_backgroundVertices);
         window.draw(m_sceneryVertices);
         window.draw(m_tileVertices);
+    }
+
+    // Draw crack overlay on cracked blocks
+    const float ts = static_cast<float>(m_data.tileSize);
+    for (const auto& cracked : m_crackedBlocks) {
+        float bx = static_cast<float>(cracked.col) * ts;
+        float by = static_cast<float>(cracked.row) * ts + cracked.bounceOffset;
+
+        // Diagonal length for X crack pattern
+        float diag = std::sqrt(ts * ts + ts * ts);
+
+        // Crack line 1: top-left to bottom-right
+        sf::RectangleShape line1(sf::Vector2f(diag, 2.5f));
+        line1.setOrigin(0.f, 1.25f);
+        line1.setPosition(bx, by);
+        line1.setRotation(45.f);
+        line1.setFillColor(sf::Color(60, 30, 10, 200));
+        window.draw(line1);
+
+        // Crack line 2: top-right to bottom-left
+        sf::RectangleShape line2(sf::Vector2f(diag, 2.5f));
+        line2.setOrigin(0.f, 1.25f);
+        line2.setPosition(bx + ts, by);
+        line2.setRotation(135.f);
+        line2.setFillColor(sf::Color(60, 30, 10, 200));
+        window.draw(line2);
+
+        // Additional small crack for visual richness
+        sf::RectangleShape crack3(sf::Vector2f(ts * 0.4f, 1.5f));
+        crack3.setPosition(bx + ts * 0.3f, by + ts * 0.5f);
+        crack3.setRotation(-30.f);
+        crack3.setFillColor(sf::Color(40, 20, 5, 180));
+        window.draw(crack3);
     }
 
     window.draw(m_exitPole);
@@ -187,15 +224,42 @@ void TileMap::update(sf::Time dt) {
             ++it;
         }
     }
+
+    // Update cracked block bounce animations
+    for (auto& cracked : m_crackedBlocks) {
+        if (cracked.isBouncing) {
+            cracked.bounceTimer += seconds;
+            if (cracked.bounceTimer >= CrackedBlock::BounceDuration) {
+                cracked.bounceTimer = CrackedBlock::BounceDuration;
+                cracked.bounceOffset = 0.f;
+                cracked.isBouncing = false;
+            } else {
+                // Sin wave bounce: go up then back down
+                float progress = cracked.bounceTimer / CrackedBlock::BounceDuration;
+                cracked.bounceOffset = -CrackedBlock::BounceHeight * std::sin(progress * 3.14159f);
+            }
+        }
+    }
 }
 
 void TileMap::breakBlock(int row, int col) {
-    if (row < 0 || row >= m_data.rows.size() || col < 0 || col >= m_data.rows[row].size()) {
+    if (row < 0 || row >= static_cast<int>(m_data.rows.size()) || col < 0 || col >= static_cast<int>(m_data.rows[row].size())) {
         return;
     }
     
     if (m_data.rows[row][col] == '#') {
         m_data.rows[row][col] = '.';
+
+        // Remove from cracked tracking if it was cracked
+        auto key = std::make_pair(row, col);
+        if (m_crackedSet.count(key)) {
+            m_crackedSet.erase(key);
+            m_crackedBlocks.erase(
+                std::remove_if(m_crackedBlocks.begin(), m_crackedBlocks.end(),
+                    [row, col](const CrackedBlock& cb) { return cb.row == row && cb.col == col; }),
+                m_crackedBlocks.end());
+        }
+
         rebuildGeometry();
         
         float ts = static_cast<float>(m_data.tileSize);
@@ -221,6 +285,33 @@ void TileMap::breakBlock(int row, int col) {
             m_debris.push_back(debris);
         }
     }
+}
+
+bool TileMap::hitBlock(int row, int col) {
+    if (row < 0 || row >= static_cast<int>(m_data.rows.size()) || col < 0 || col >= static_cast<int>(m_data.rows[row].size())) {
+        return false;
+    }
+    if (m_data.rows[row][col] != '#') {
+        return false;
+    }
+
+    auto key = std::make_pair(row, col);
+    if (m_crackedSet.count(key)) {
+        // Already cracked -> 2nd hit -> destroy
+        breakBlock(row, col);
+        return true;
+    }
+
+    // 1st hit -> crack it with bounce animation
+    m_crackedSet.insert(key);
+    CrackedBlock cb;
+    cb.row = row;
+    cb.col = col;
+    cb.bounceTimer = 0.f;
+    cb.bounceOffset = 0.f;
+    cb.isBouncing = true;
+    m_crackedBlocks.push_back(cb);
+    return false;
 }
 
 const LevelData& TileMap::data() const {

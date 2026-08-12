@@ -524,9 +524,18 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
             m_tileMap.resolveCollision(character, deltaTime, [&](int row, int col) {
                 if (&character == m_player.get()) {
                     if (row < m_tileMap.data().rows.size() - 2) {
-                        if (m_player->isSuper()) {
+                        if (m_invincibilityTimeRemaining > 0.f) {
+                            // Star power: phá ngay 1 hit
                             m_tileMap.breakBlock(row, col);
                             AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
+                        } else if (m_player->isSuper()) {
+                            // Mushroom/Fire: cần 2 hit
+                            bool destroyed = m_tileMap.hitBlock(row, col);
+                            if (destroyed) {
+                                AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
+                            } else {
+                                AudioManager::getInstance().playEffect(SoundEffect::Jump);
+                            }
                         }
                     }
                 }
@@ -847,6 +856,11 @@ void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
         0.f,
         m_invincibilityTimeRemaining - deltaTime
     );
+
+    // Sync invincible flag on player for visual effects (rainbow)
+    if (m_player) {
+        m_player->setInvincible(m_invincibilityTimeRemaining > 0.f);
+    }
 
     const float previousSpeedTime = m_speedBoostTimeRemaining;
     m_speedBoostTimeRemaining = std::max(
