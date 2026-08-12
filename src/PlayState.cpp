@@ -283,7 +283,7 @@ void PlayState::Update(sf::Time timePerFrame) {
 
     if (m_levelStarting) {
         m_startTimer += timePerFrame.asSeconds();
-        if (m_startTimer >= 0.6f) { // Quicker 0.6s opening
+        if (m_startTimer >= 1.0f) { // 1.0s opening to match closing duration
             m_levelStarting = false;
             if (m_player) {
                 m_player->setInputEnabled(true);
@@ -386,9 +386,9 @@ void PlayState::Render(sf::RenderWindow& window) {
     if (m_levelStarting || m_exitSequence == ExitSequence::IrisWipe) {
         float rawProgress = 0.f;
         if (m_levelStarting) {
-            rawProgress = std::clamp(m_startTimer / 0.6f, 0.0f, 1.0f); 
-            // Cubic Ease-Out for opening
-            rawProgress = 1.0f - std::pow(1.0f - rawProgress, 3.0f);
+            rawProgress = std::clamp(m_startTimer / 1.0f, 0.0f, 1.0f); 
+            // Cubic Ease-In for opening (mirroring closing wipe)
+            rawProgress = std::pow(rawProgress, 3.0f);
         } else {
             rawProgress = std::clamp(1.0f - (m_exitTimer / 1.0f), 0.0f, 1.0f); 
             // Cubic Ease-In for closing
