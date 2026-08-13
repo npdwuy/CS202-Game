@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "entities/projectiles/Fireball.hpp"
 
 class PlayState
     : public GameState,
@@ -57,6 +58,7 @@ private:
     LevelObjectFactory m_objectFactory;
     std::vector<std::unique_ptr<Enemy>> m_enemies;
     std::vector<std::unique_ptr<Item>> m_items;
+    std::vector<std::unique_ptr<Fireball>> m_fireballs;
     std::unique_ptr<Player> m_player;
 
     SaveData m_saveData;
@@ -65,6 +67,7 @@ private:
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
+    float m_fireballCooldown = 0.f;
     bool m_playerDamagePending = false;
     float m_timeRemaining = 400.f;
 
