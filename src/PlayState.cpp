@@ -252,19 +252,6 @@ void PlayState::Input(const sf::Event& event) {
         return;
     }
 
-    if (event.key.code == sf::Keyboard::Z && m_player && m_player->isFireMario()) {
-        if (m_fireballs.size() < 2) { // Max 2 fireballs
-            auto fb = std::make_unique<Fireball>(
-                m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
-                m_player->facing()
-            );
-            fb->setCollisionResolver([this](Character& c, sf::Time dt) {
-                m_tileMap.resolveCollision(c, dt);
-            });
-            m_fireballs.push_back(std::move(fb));
-            m_player->triggerThrow();
-        }
-    }
 
     const sf::Keyboard::Key pauseKey =
         GameManager::getInstance().getSettings().getKeyBinding("Pause");
@@ -284,7 +271,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                 m_exitSequence = ExitSequence::WalkingRight;
             } else {
                 sf::Vector2f pos = m_player->position();
-                pos.y += 100.f * timePerFrame.asSeconds();
+                pos.y += 250.f * timePerFrame.asSeconds();
                 m_player->setPosition(pos);
             }
             m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
@@ -336,6 +323,25 @@ void PlayState::Update(sf::Time timePerFrame) {
     
     if (m_player) {
         m_player->update(timePerFrame);
+
+        if (m_fireballCooldown > 0.f) {
+            m_fireballCooldown -= timePerFrame.asSeconds();
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
+            if (m_fireballs.size() < 20) { // Tăng giới hạn lên 20 để không bị khựng khi đạn chưa biến mất
+                auto fb = std::make_unique<Fireball>(
+                    m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                    m_player->facing()
+                );
+                fb->setCollisionResolver([this](Character& c, sf::Time dt) {
+                    m_tileMap.resolveCollision(c, dt);
+                });
+                m_fireballs.push_back(std::move(fb));
+                m_player->triggerThrow();
+                m_fireballCooldown = 0.35f; // Cooldown 0.35s
+            }
+        }
     }
     
     m_tileMap.update(timePerFrame);
@@ -390,6 +396,14 @@ void PlayState::Update(sf::Time timePerFrame) {
                 }
                 break;
             }
+        }
+    }
+
+    const sf::FloatRect visibleWorld = m_camera.visibleBounds(200.f); // slightly larger bounds
+
+    for (auto& fb : m_fireballs) {
+        if (!visibleWorld.intersects(fb->GetBounds())) {
+            fb->Destroy();
         }
     }
 

@@ -20,7 +20,9 @@ void FloatingItem::Update(sf::Time timePerFrame) {
     if (m_isSpawning) {
         m_spawnTime += timePerFrame.asSeconds();
         float t = std::min(m_spawnTime / m_spawnDuration, 1.0f);
-        m_basePosition.y = m_spawnStartPosition.y + (m_spawnTargetY - m_spawnStartPosition.y) * t;
+        // Dùng ease-out quad để item trồi lên mượt hơn (chậm dần về cuối)
+        float easedT = 1.0f - (1.0f - t) * (1.0f - t);
+        m_basePosition.y = m_spawnStartPosition.y + (m_spawnTargetY - m_spawnStartPosition.y) * easedT;
         SetVisualPosition(m_basePosition);
         if (t >= 1.0f) {
             m_isSpawning = false;
