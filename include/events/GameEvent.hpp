@@ -12,7 +12,8 @@ enum class GameEventType {
     PlayerDamaged,
     PlayerFell,
     LevelCompleted,
-    TimeExpired
+    TimeExpired,
+    EnemyFiredProjectile
 };
 
 struct GameEvent {

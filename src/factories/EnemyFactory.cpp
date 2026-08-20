@@ -64,12 +64,12 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
         case 'B':
             return std::make_unique<BossEnemy>(
                 sf::Vector2f(
-                    position.x,
-                    position.y - tileSize * 0.5f
+                    position.x + tileSize * 0.5f, 
+                    position.y + tileSize         
                 ),
-                minimumX,
-                maximumX,
-                45.f
+                minimumX, 
+                maximumX, 
+                25.f      
             );
 
         default:

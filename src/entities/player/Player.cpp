@@ -78,6 +78,25 @@ void Player:: update(sf::Time timePerFrame){
         return; // Skip input and physics while transforming
     }
 
+    if (bossKnockbackTimer_ > 0.0f) {
+        bossKnockbackTimer_ -= timePerFrame.asSeconds();
+        float t = 1.0f - std::max(0.0f, bossKnockbackTimer_ / bossKnockbackDuration_);
+        float speed = 750.f * std::pow(1.0f - t, 1.4f);
+        velocity_.x = bossKnockbackDir_ * speed;
+
+        const float gravityScale = velocity_.y > 0.0f ? 1.0f : 0.88f;
+        velocity_.y = std::min(980.0f, velocity_.y + 1850.0f * gravityScale * timePerFrame.asSeconds());
+
+        moveCharacter(timePerFrame);
+        animationTime_ += timePerFrame.asSeconds();
+        movedThisFrame_ = false;
+
+        if (onGround_ && bossKnockbackTimer_ < 0.2f) {
+            bossKnockbackTimer_ = 0.0f;
+        }
+        return; // Skip normal player keyboard input during boss knockback fling
+    }
+
     auto& settings = GameManager::getInstance().getSettings();
 
     bool jumpPressed = false;
