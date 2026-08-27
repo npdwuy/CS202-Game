@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include "entities/projectiles/Fireball.hpp"
+#include "entities/projectiles/BossFireball.hpp"
 
 class PlayState
     : public GameState,
@@ -59,6 +60,7 @@ private:
     std::vector<std::unique_ptr<Enemy>> m_enemies;
     std::vector<std::unique_ptr<Item>> m_items;
     std::vector<std::unique_ptr<Fireball>> m_fireballs;
+    std::vector<std::unique_ptr<BossFireball>> m_bossFireballs;
     std::unique_ptr<Player> m_player;
 
     SaveData m_saveData;

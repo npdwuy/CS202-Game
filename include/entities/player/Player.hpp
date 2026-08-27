@@ -64,12 +64,29 @@ protected:
 
     float throwTimer_ = 0.0f;
 
+    // Boss knockback timer
+    float bossKnockbackTimer_ = 0.0f;
+    float bossKnockbackDuration_ = 0.45f;
+    float bossKnockbackDir_ = 0.0f;
+
     void performJump();
 
 public:
     void triggerThrow() {
         throwTimer_ = 0.15f;
     }
+
+    void triggerBossKnockback(float pushDirection, float duration = 0.7f) {
+        bossKnockbackTimer_ = duration;
+        bossKnockbackDuration_ = duration;
+        bossKnockbackDir_ = pushDirection;
+        velocity_.x = pushDirection * 750.f;
+        velocity_.y = -620.f;
+        onGround_ = false;
+        currentState = State::Jump;
+    }
+
+    bool isBossKnockbackActive() const { return bossKnockbackTimer_ > 0.0f; }
 
 public:
     enum class State { Stand, Walk, Jump, Fall, HitRoof, TransitionStand, Dead, PoleSlide, AutoWalk };

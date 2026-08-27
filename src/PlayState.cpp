@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -197,6 +198,25 @@ void PlayState::OnGameEvent(const GameEvent& event)
         case GameEventType::TimeExpired:
             triggerDeath();
             break;
+
+        case GameEventType::EnemyFiredProjectile: {
+            if (event.data.rfind("BossFiredProjectile:", 0) == 0) {
+                std::string data = event.data.substr(20);
+                std::stringstream ss(data);
+                std::string token;
+                std::vector<float> values;
+                while (std::getline(ss, token, ',')) {
+                    values.push_back(std::stof(token));
+                }
+                if (values.size() >= 4) {
+                    m_bossFireballs.push_back(std::make_unique<BossFireball>(
+                        sf::Vector2f(values[0], values[1]),
+                        sf::Vector2f(values[2], values[3])
+                    ));
+                }
+            }
+            break;
+        }
     }
 
     updateHud();
@@ -353,6 +373,10 @@ void PlayState::Update(sf::Time timePerFrame) {
     updateLevelTimer(timePerFrame);
 
     for (auto& enemy : m_enemies) {
+        // Give the boss the player's current position so it can chase Mario
+        if (auto* boss = dynamic_cast<BossEnemy*>(enemy.get())) {
+            boss->SetPlayerPosition(m_player->position());
+        }
         enemy->Update(timePerFrame);
     }
 
@@ -369,9 +393,13 @@ void PlayState::Update(sf::Time timePerFrame) {
         if (fb->IsDestroyed()) continue;
         for (auto& enemy : m_enemies) {
             if (enemy->IsActive() && fb->GetBounds().intersects(enemy->GetBounds())) {
-                enemy->Deactivate();
                 fb->Destroy();
-                // Optionally add score or effect
+                // Boss uses TakeDamage() to respect multi-hit HP
+                if (auto* boss = dynamic_cast<BossEnemy*>(enemy.get())) {
+                    boss->TakeDamage();
+                } else {
+                    enemy->Deactivate();
+                }
                 break;
             }
         }
@@ -390,6 +418,41 @@ void PlayState::Update(sf::Time timePerFrame) {
             return fb->IsDestroyed();
         }),
         m_fireballs.end()
+    );
+
+    // Cập nhật và xử lý va chạm của Boss Fireballs
+    for (auto& fireball : m_bossFireballs) {
+        fireball->Update(timePerFrame);
+
+        if (!fireball->IsDestroyed()) {
+            const sf::FloatRect fbBounds = fireball->GetBounds();
+            const sf::FloatRect mapBounds = m_tileMap.worldBounds();
+            if (fbBounds.left < 0.f || fbBounds.left > mapBounds.width + 200.f) {
+                fireball->Destroy();
+                continue;
+            }
+
+            if (m_player && !m_player->isDead() && !m_player->isTransforming()) {
+                if (playerBounds().intersects(fbBounds)) {
+                    fireball->Destroy();
+                    if (m_invincibilityTimeRemaining <= 0.f && m_damageCooldown <= 0.f) {
+                        sf::Vector2f knockback = m_player->velocity();
+                        knockback.x = (m_player->position().x < fbBounds.left) ? -280.f : 280.f;
+                        knockback.y = -350.f;
+                        m_player->setVelocity(knockback);
+
+                        handlePlayerDamage();
+                    }
+                }
+            }
+        }
+    }
+
+    m_bossFireballs.erase(
+        std::remove_if(m_bossFireballs.begin(), m_bossFireballs.end(), [](const std::unique_ptr<BossFireball>& fb) {
+            return fb->IsDestroyed();
+        }),
+        m_bossFireballs.end()
     );
 
     handleItemCollisions();
@@ -458,6 +521,12 @@ void PlayState::Render(sf::RenderWindow& window) {
     for (const auto& fb : m_fireballs) {
         if (visibleWorld.intersects(fb->GetBounds())) {
             fb->Render(window);
+        }
+    }
+
+    for (const auto& fireball : m_bossFireballs) {
+        if (visibleWorld.intersects(fireball->GetBounds())) {
+            fireball->Render(window);
         }
     }
 
@@ -545,6 +614,8 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_tileMap.load(levelPath(levelNumber));
     m_enemies.clear();
     m_items.clear();
+    m_fireballs.clear();
+    m_bossFireballs.clear();
     createLevelObjects();
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
@@ -845,40 +916,84 @@ bool PlayState::handleEnemyCollisions()
                 enemy.get()
             ) != nullptr;
 
+        if (isBoss) {
+            auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
+            if (boss && boss->IsHurt()) {
+                continue; // Ignore collisions while boss is flashing red in hurt state
+            }
+        }
+
         if (m_invincibilityTimeRemaining > 0.f)
         {
-            enemy->Deactivate();
-            GameEventManager::GetInstance().Notify(
-                {
-                    GameEventType::EnemyDefeated,
-                    isBoss ? 2000 : 200,
-                    isBoss
-                        ? "Boss defeated - the exit is open!"
-                        : "Enemy defeated by Star power"
+            if (isBoss) {
+                auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
+                if (boss) {
+                    boss->TakeDamage();
+                    if (!boss->IsActive()) {
+                        GameEventManager::GetInstance().Notify(
+                            {
+                                GameEventType::EnemyDefeated,
+                                2000,
+                                "Boss defeated - the exit is open!"
+                            }
+                        );
+                    }
                 }
-            );
+            } else {
+                enemy->Deactivate();
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::EnemyDefeated,
+                        200,
+                        "Enemy defeated by Star power"
+                    }
+                );
+            }
             continue;
         }
 
         if (stomped)
         {
-            enemy->Deactivate();
+            if (isBoss) {
+                // Boss has multiple HP – use TakeDamage() instead of instant kill
+                auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
+                if (boss) {
+                    boss->TakeDamage();
+                    m_damageCooldown = 1.5f; // Grant Mario invincibility frames right after stomping Boss
+                    
+                    // Tính toán tâm Boss để biết Mario nên văng sang trái hay phải
+                    float bossCenterX = boss->GetBounds().left + boss->GetBounds().width / 2.f;
+                    float pushDirection = (m_player->position().x < bossCenterX) ? -1.f : 1.f;
+                    
+                    // Bộ đếm thời gian văng mượt Mario sang một khoảng xa
+                    m_player->triggerBossKnockback(pushDirection, 0.7f);
 
-            sf::Vector2f velocity =
-                m_player->velocity();
-
-            velocity.y = -330.f;
-            m_player->setVelocity(velocity);
-
-            GameEventManager::GetInstance().Notify(
-                {
-                    GameEventType::EnemyDefeated,
-                    isBoss ? 2000 : 200,
-                    isBoss
-                        ? "Boss defeated - the exit is open!"
-                        : "Enemy defeated"
+                    // Only notify defeat if boss actually died
+                    if (!boss->IsActive()) {
+                        GameEventManager::GetInstance().Notify(
+                            {
+                                GameEventType::EnemyDefeated,
+                                2000,
+                                "Boss defeated - the exit is open!"
+                            }
+                        );
+                    }
                 }
-            );
+            } else {
+                // Bounce player up for normal enemies (Giữ nguyên lực nảy cũ)
+                sf::Vector2f velocity = m_player->velocity();
+                velocity.y = -330.f;
+                m_player->setVelocity(velocity);
+
+                enemy->Deactivate();
+                GameEventManager::GetInstance().Notify(
+                    {
+                        GameEventType::EnemyDefeated,
+                        200,
+                        "Enemy defeated"
+                    }
+                );
+            }
         }
         else
         {
