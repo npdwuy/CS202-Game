@@ -15,6 +15,7 @@
 #include "persistence/SaveManager.hpp"
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
+#include "entities/enemies/Koopa.hpp"
 
 #include <filesystem>
 #include <algorithm>
@@ -911,36 +912,45 @@ bool PlayState::handleEnemyCollisions()
                 enemyBounds.top +
                 enemyBounds.height * 0.65f;
 
-        const bool isBoss =
-            dynamic_cast<const BossEnemy*>(
-                enemy.get()
-            ) != nullptr;
+        auto* boss =
+            dynamic_cast<BossEnemy*>(enemy.get());
 
-        if (isBoss) {
-            auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
-            if (boss && boss->IsHurt()) {
-                continue; // Ignore collisions while boss is flashing red in hurt state
-            }
+        auto* koopa =
+            dynamic_cast<Koopa*>(enemy.get());
+
+        const bool isBoss = boss != nullptr;
+
+        // Ignore collision while Boss is flashing
+        // during its temporary hurt state.
+        if (boss && boss->IsHurt())
+        {
+            continue;
         }
 
+        // =========================================================
+        // STAR / INVINCIBILITY COLLISION
+        // =========================================================
         if (m_invincibilityTimeRemaining > 0.f)
         {
-            if (isBoss) {
-                auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
-                if (boss) {
-                    boss->TakeDamage();
-                    if (!boss->IsActive()) {
-                        GameEventManager::GetInstance().Notify(
-                            {
-                                GameEventType::EnemyDefeated,
-                                2000,
-                                "Boss defeated - the exit is open!"
-                            }
-                        );
-                    }
+            if (boss)
+            {
+                boss->TakeDamage();
+
+                if (!boss->IsActive())
+                {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::EnemyDefeated,
+                            2000,
+                            "Boss defeated - the exit is open!"
+                        }
+                    );
                 }
-            } else {
+            }
+            else
+            {
                 enemy->Deactivate();
+
                 GameEventManager::GetInstance().Notify(
                     {
                         GameEventType::EnemyDefeated,
@@ -949,69 +959,171 @@ bool PlayState::handleEnemyCollisions()
                     }
                 );
             }
+
             continue;
         }
 
+        // =========================================================
+        // PLAYER STOMPS ENEMY
+        // =========================================================
         if (stomped)
         {
-            if (isBoss) {
-                // Boss has multiple HP – use TakeDamage() instead of instant kill
-                auto* boss = dynamic_cast<BossEnemy*>(enemy.get());
-                if (boss) {
-                    boss->TakeDamage();
-                    m_damageCooldown = 1.5f; // Grant Mario invincibility frames right after stomping Boss
-                    
-                    // Tính toán tâm Boss để biết Mario nên văng sang trái hay phải
-                    float bossCenterX = boss->GetBounds().left + boss->GetBounds().width / 2.f;
-                    float pushDirection = (m_player->position().x < bossCenterX) ? -1.f : 1.f;
-                    
-                    // Bộ đếm thời gian văng mượt Mario sang một khoảng xa
-                    m_player->triggerBossKnockback(pushDirection, 0.7f);
+            // -----------------------------------------------------
+            // BOSS
+            // -----------------------------------------------------
+            if (boss)
+            {
+                boss->TakeDamage();
 
-                    // Only notify defeat if boss actually died
-                    if (!boss->IsActive()) {
-                        GameEventManager::GetInstance().Notify(
-                            {
-                                GameEventType::EnemyDefeated,
-                                2000,
-                                "Boss defeated - the exit is open!"
-                            }
-                        );
-                    }
-                }
-            } else {
-                // Bounce player up for normal enemies (Giữ nguyên lực nảy cũ)
-                sf::Vector2f velocity = m_player->velocity();
-                velocity.y = -330.f;
-                m_player->setVelocity(velocity);
+                m_damageCooldown = 1.5f;
 
-                enemy->Deactivate();
-                GameEventManager::GetInstance().Notify(
-                    {
-                        GameEventType::EnemyDefeated,
-                        200,
-                        "Enemy defeated"
-                    }
+                const float bossCenterX =
+                    boss->GetBounds().left +
+                    boss->GetBounds().width / 2.f;
+
+                const float pushDirection =
+                    m_player->position().x < bossCenterX
+                        ? -1.f
+                        : 1.f;
+
+                m_player->triggerBossKnockback(
+                    pushDirection,
+                    0.7f
                 );
-            }
-        }
-        else
-        {
-            if (m_damageCooldown > 0.f) {
+
+                if (!boss->IsActive())
+                {
+                    GameEventManager::GetInstance().Notify(
+                        {
+                            GameEventType::EnemyDefeated,
+                            2000,
+                            "Boss defeated - the exit is open!"
+                        }
+                    );
+                }
+
                 continue;
             }
 
-            // Knockback logic is removed, damage is handled entirely by freeze/shrink mechanics.
+            // Bounce Mario after stomping a normal enemy.
+            sf::Vector2f velocity =
+                m_player->velocity();
+
+            velocity.y = -330.f;
+
+            m_player->setVelocity(
+                velocity
+            );
+
+            // -----------------------------------------------------
+            // KOOPA SPECIAL BEHAVIOR
+            // -----------------------------------------------------
+            if (koopa)
+            {
+                // First stomp:
+                //
+                // Walking Koopa -> idle shell
+                if (koopa->IsWalking())
+                {
+                    koopa->EnterShell();
+
+                    continue;
+                }
+
+                // Second stomp:
+                //
+                // Idle shell -> moving shell
+                if (koopa->IsShellIdle())
+                {
+                    const float playerCenter =
+                        bounds.left +
+                        bounds.width * 0.5f;
+
+                    const float koopaCenter =
+                        enemyBounds.left +
+                        enemyBounds.width * 0.5f;
+
+                    // Kick the shell away from Mario.
+                    const int direction =
+                        playerCenter < koopaCenter
+                            ? 1
+                            : -1;
+
+                    koopa->KickShell(
+                        direction
+                    );
+
+                    continue;
+                }
+
+                // Do not deactivate a moving shell.
+                if (koopa->IsShellMoving())
+                {
+                    continue;
+                }
+            }
+
+            // -----------------------------------------------------
+            // NORMAL ENEMY
+            // -----------------------------------------------------
+            enemy->Deactivate();
+
             GameEventManager::GetInstance().Notify(
                 {
-                    GameEventType::PlayerDamaged,
-                    0,
-                    ""
+                    GameEventType::EnemyDefeated,
+                    200,
+                    "Enemy defeated"
                 }
             );
 
-            return true;
+            continue;
         }
+
+        // =========================================================
+        // SIDE COLLISION
+        // =========================================================
+
+        // Mario touches an idle Koopa shell:
+        // kick it instead of taking damage.
+        if (koopa && koopa->IsShellIdle())
+        {
+            const float playerCenter =
+                bounds.left +
+                bounds.width * 0.5f;
+
+            const float koopaCenter =
+                enemyBounds.left +
+                enemyBounds.width * 0.5f;
+
+            const int direction =
+                playerCenter < koopaCenter
+                    ? 1
+                    : -1;
+
+            koopa->KickShell(
+                direction
+            );
+
+            continue;
+        }
+
+        // Walking Koopa, moving shell,
+        // Goomba, FlyingEnemy, Boss, etc.
+        // damage Mario normally.
+        if (m_damageCooldown > 0.f)
+        {
+            continue;
+        }
+
+        GameEventManager::GetInstance().Notify(
+            {
+                GameEventType::PlayerDamaged,
+                0,
+                ""
+            }
+        );
+
+        return true;
     }
 
     return false;
