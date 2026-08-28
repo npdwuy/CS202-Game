@@ -7,6 +7,13 @@
 
 class Koopa : public Enemy {
 public:
+    enum class State
+    {
+        Walking,
+        ShellIdle,
+        ShellMoving
+    };
+
     Koopa(
         sf::Vector2f position,
         float speed,
@@ -22,9 +29,17 @@ public:
 
     bool IsActive() const override;
     void Deactivate() override;
-    
+
     void Fling() override;
     bool IsFlung() const override;
+
+    void EnterShell();
+    void KickShell(int direction);
+
+    State GetState() const;
+    bool IsWalking() const;
+    bool IsShellIdle() const;
+    bool IsShellMoving() const;
 
 private:
     sf::Sprite m_sprite;
@@ -36,6 +51,12 @@ private:
 
     int m_currentFrame;
     bool m_active;
+
+    State m_state = State::Walking;
+
+    float m_shellSpeed = 450.f;
+    int m_shellDirection = 1;
+
     bool m_flung = false;
     sf::Vector2f m_velocity;
 };
