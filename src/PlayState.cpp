@@ -379,8 +379,16 @@ void PlayState::Update(sf::Time timePerFrame) {
             boss->SetPlayerPosition(m_player->position());
         }
         enemy->Update(timePerFrame);
+        if (auto* koopa =
+        dynamic_cast<Koopa*>(enemy.get()))
+{
+    koopa->UpdateShellPhysics(
+        timePerFrame,
+        m_tileMap
+    );
+}
     }
-
+handleMovingShellEnemyCollisions();
     for (auto& item : m_items) {
         item->Update(timePerFrame);
     }
@@ -1143,6 +1151,102 @@ bool PlayState::handleEnemyCollisions()
     }
 
     return false;
+}
+
+void PlayState::handleMovingShellEnemyCollisions()
+{
+    for (auto& shellEnemy : m_enemies)
+    {
+        // Only a moving Koopa shell can attack other enemies.
+        auto* shell =
+            dynamic_cast<Koopa*>(shellEnemy.get());
+
+        if (
+            !shell ||
+            !shell->IsActive() ||
+            shell->IsFlung() ||
+            !shell->IsShellMoving()
+        )
+        {
+            continue;
+        }
+
+        const sf::FloatRect shellBounds =
+            shell->GetBounds();
+
+        for (auto& targetEnemy : m_enemies)
+        {
+            // Do not collide the shell with itself.
+            if (targetEnemy.get() == shellEnemy.get())
+            {
+                continue;
+            }
+
+            if (
+                !targetEnemy->IsActive() ||
+                targetEnemy->IsFlung()
+            )
+            {
+                continue;
+            }
+
+            if (
+                !shellBounds.intersects(
+                    targetEnemy->GetBounds()
+                )
+            )
+            {
+                continue;
+            }
+
+            // =====================================================
+            // BOSS
+            // =====================================================
+            if (auto* boss =
+                    dynamic_cast<BossEnemy*>(
+                        targetEnemy.get()
+                    ))
+            {
+                // Boss already has its own temporary hurt state,
+                // so the shell cannot damage it every frame.
+                if (!boss->IsHurt())
+                {
+                    boss->TakeDamage();
+
+                    if (!boss->IsActive())
+                    {
+                        GameEventManager::GetInstance().Notify(
+                            {
+                                GameEventType::EnemyDefeated,
+                                2000,
+                                "Boss defeated by Koopa shell"
+                            }
+                        );
+                    }
+                }
+
+                // Shell keeps moving after hitting the Boss.
+                continue;
+            }
+
+            // =====================================================
+            // NORMAL ENEMY
+            // =====================================================
+            targetEnemy->Deactivate();
+
+            GameEventManager::GetInstance().Notify(
+                {
+                    GameEventType::EnemyDefeated,
+                    200,
+                    "Enemy defeated by Koopa shell"
+                }
+            );
+
+            // IMPORTANT:
+            // Do not deactivate shellEnemy here.
+            // The shell continues moving and can hit more enemies.
+        }
+    }
 }
 
 bool PlayState::handlePlayerFall()
