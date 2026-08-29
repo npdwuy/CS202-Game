@@ -44,6 +44,16 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
+    if (m_shellKickDelay > 0.f)
+{
+    m_shellKickDelay -= timePerFrame.asSeconds();
+
+    if (m_shellKickDelay < 0.f)
+    {
+        m_shellKickDelay = 0.f;
+    }
+}
+
     if (m_flung)
     {
         m_velocity.y +=
@@ -66,17 +76,44 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    if (m_state == State::ShellMoving)
+if (m_state == State::ShellMoving)
+{
+    const float dt =
+        timePerFrame.asSeconds();
+
+    const float distance =
+        m_shellSpeed
+        * static_cast<float>(m_shellDirection)
+        * dt;
+
+    m_sprite.move(
+        distance,
+        0.f
+    );
+
+    m_animationTime += dt;
+
+    const float shellFrameDuration = 0.08f;
+
+    if (m_animationTime >= shellFrameDuration)
     {
-        const float distance =
-            m_shellSpeed
-            * static_cast<float>(m_shellDirection)
-            * timePerFrame.asSeconds();
+        m_animationTime = 0.f;
 
-        m_sprite.move(distance, 0.f);
+        m_currentFrame =
+            (m_currentFrame + 1) % 4;
 
-        return;
+        m_sprite.setTextureRect(
+            sf::IntRect(
+                m_currentFrame * 48,
+                0,
+                48,
+                48
+            )
+        );
     }
+
+    return;
+}
 
     m_animationTime += timePerFrame.asSeconds();
 
@@ -136,8 +173,22 @@ void Koopa::EnterShell()
     }
 
     m_state = State::ShellIdle;
+
     m_animationTime = 0.f;
     m_currentFrame = 0;
+
+    m_shellKickDelay = 0.35f;
+
+    m_sprite.setTexture(
+        ResourceManager::getInstance().getTexture(
+            "assets/sprites/enemies/koopa_shell.png"
+        ),
+        true
+    );
+
+    m_sprite.setTextureRect(
+        sf::IntRect(0, 0, 48, 48)
+    );
 }
 
 void Koopa::KickShell(int direction)
@@ -151,6 +202,20 @@ void Koopa::KickShell(int direction)
 
     m_shellDirection =
         direction >= 0 ? 1 : -1;
+
+    m_animationTime = 0.f;
+    m_currentFrame = 0;
+
+    m_sprite.setTexture(
+        ResourceManager::getInstance().getTexture(
+            "assets/sprites/enemies/koopa_shell_move.png"
+        ),
+        true
+    );
+
+    m_sprite.setTextureRect(
+        sf::IntRect(0, 0, 48, 48)
+    );
 }
 
 Koopa::State Koopa::GetState() const
@@ -191,4 +256,10 @@ void Koopa::Fling()
 
 bool Koopa::IsFlung() const {
     return m_flung;
+}
+
+bool Koopa::CanKickShell() const
+{
+    return m_state == State::ShellIdle
+        && m_shellKickDelay <= 0.f;
 }

@@ -918,10 +918,9 @@ bool PlayState::handleEnemyCollisions()
         auto* koopa =
             dynamic_cast<Koopa*>(enemy.get());
 
-        const bool isBoss = boss != nullptr;
-
-        // Ignore collision while Boss is flashing
-        // during its temporary hurt state.
+        // =========================================================
+        // BOSS HURT STATE
+        // =========================================================
         if (boss && boss->IsHurt())
         {
             continue;
@@ -979,7 +978,7 @@ bool PlayState::handleEnemyCollisions()
 
                 const float bossCenterX =
                     boss->GetBounds().left +
-                    boss->GetBounds().width / 2.f;
+                    boss->GetBounds().width * 0.5f;
 
                 const float pushDirection =
                     m_player->position().x < bossCenterX
@@ -1005,7 +1004,9 @@ bool PlayState::handleEnemyCollisions()
                 continue;
             }
 
-            // Bounce Mario after stomping a normal enemy.
+            // -----------------------------------------------------
+            // BOUNCE MARIO
+            // -----------------------------------------------------
             sf::Vector2f velocity =
                 m_player->velocity();
 
@@ -1016,13 +1017,12 @@ bool PlayState::handleEnemyCollisions()
             );
 
             // -----------------------------------------------------
-            // KOOPA SPECIAL BEHAVIOR
+            // KOOPA
             // -----------------------------------------------------
             if (koopa)
             {
                 // First stomp:
-                //
-                // Walking Koopa -> idle shell
+                // Walking -> ShellIdle
                 if (koopa->IsWalking())
                 {
                     koopa->EnterShell();
@@ -1030,11 +1030,18 @@ bool PlayState::handleEnemyCollisions()
                     continue;
                 }
 
-                // Second stomp:
-                //
-                // Idle shell -> moving shell
+                // Shell is already idle.
                 if (koopa->IsShellIdle())
                 {
+                    // During the short protection time after
+                    // entering the shell, do absolutely nothing.
+                    if (!koopa->CanKickShell())
+                    {
+                        continue;
+                    }
+
+                    // Second separate stomp:
+                    // ShellIdle -> ShellMoving
                     const float playerCenter =
                         bounds.left +
                         bounds.width * 0.5f;
@@ -1043,7 +1050,6 @@ bool PlayState::handleEnemyCollisions()
                         enemyBounds.left +
                         enemyBounds.width * 0.5f;
 
-                    // Kick the shell away from Mario.
                     const int direction =
                         playerCenter < koopaCenter
                             ? 1
@@ -1056,7 +1062,8 @@ bool PlayState::handleEnemyCollisions()
                     continue;
                 }
 
-                // Do not deactivate a moving shell.
+                // Never deactivate a moving shell because
+                // Mario stomped it.
                 if (koopa->IsShellMoving())
                 {
                     continue;
@@ -1080,13 +1087,22 @@ bool PlayState::handleEnemyCollisions()
         }
 
         // =========================================================
-        // SIDE COLLISION
+        // SIDE COLLISION WITH IDLE KOOPA SHELL
         // =========================================================
-
-        // Mario touches an idle Koopa shell:
-        // kick it instead of taking damage.
-        if (koopa && koopa->IsShellIdle())
+        if (
+            koopa &&
+            koopa->IsShellIdle()
+        )
         {
+            // Mario may still overlap the shell immediately
+            // after the first stomp.
+            //
+            // Ignore this overlap until the kick delay expires.
+            if (!koopa->CanKickShell())
+            {
+                continue;
+            }
+
             const float playerCenter =
                 bounds.left +
                 bounds.width * 0.5f;
@@ -1107,9 +1123,9 @@ bool PlayState::handleEnemyCollisions()
             continue;
         }
 
-        // Walking Koopa, moving shell,
-        // Goomba, FlyingEnemy, Boss, etc.
-        // damage Mario normally.
+        // =========================================================
+        // NORMAL SIDE DAMAGE
+        // =========================================================
         if (m_damageCooldown > 0.f)
         {
             continue;

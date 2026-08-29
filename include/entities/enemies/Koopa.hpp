@@ -7,6 +7,7 @@
 
 class Koopa : public Enemy {
 public:
+    bool CanKickShell() const;
     enum class State
     {
         Walking,
@@ -59,4 +60,5 @@ private:
 
     bool m_flung = false;
     sf::Vector2f m_velocity;
+    float m_shellKickDelay = 0.f;
 };
