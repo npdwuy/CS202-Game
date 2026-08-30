@@ -1,53 +1,39 @@
 #include "ui/Panel.hpp"
 
-Panel::Panel(const sf::Texture& texture, sf::Vector2f position, sf::Vector2f size, float cornerSize)
+Panel::Panel(sf::Vector2f position, sf::Vector2f size, float cornerSize)
 {
-    m_nineSlice = std::make_unique<NineSlice>(texture, size, cornerSize);
-    m_nineSlice->setOrigin(size.x / 2.f, size.y / 2.f);
-    m_nineSlice->setPosition(position);
+    m_shape.setSize(size);
+    m_shape.setCornerRadius(cornerSize);
+    m_shape.setCornerPointCount(10);
+    m_shape.setOrigin(size.x / 2.f, size.y / 2.f);
+    m_shape.setPosition(position);
 }
 
 void Panel::setPosition(sf::Vector2f position) {
-    if (m_nineSlice) {
-        m_nineSlice->setPosition(position);
-    }
+    m_shape.setPosition(position);
 }
 
 void Panel::setSize(sf::Vector2f size) {
-    if (m_nineSlice) {
-        m_nineSlice->setSize(size);
-        m_nineSlice->setOrigin(size.x / 2.f, size.y / 2.f);
-    }
+    m_shape.setSize(size);
+    m_shape.setOrigin(size.x / 2.f, size.y / 2.f);
 }
 
 void Panel::setCornerSize(float cornerSize) {
-    if (m_nineSlice) {
-        m_nineSlice->setCornerSize(cornerSize);
-    }
+    m_shape.setCornerRadius(cornerSize);
 }
 
 void Panel::setColor(sf::Color color) {
-    if (m_nineSlice) {
-        m_nineSlice->setColor(color);
-    }
+    m_shape.setFillColor(color);
 }
 
 sf::Vector2f Panel::getSize() const {
-    if (m_nineSlice) {
-        return m_nineSlice->getSize();
-    }
-    return sf::Vector2f(0.f, 0.f);
+    return m_shape.getSize();
 }
 
 sf::FloatRect Panel::getGlobalBounds() const {
-    if (m_nineSlice) {
-        return m_nineSlice->getGlobalBounds();
-    }
-    return sf::FloatRect();
+    return m_shape.getGlobalBounds();
 }
 
 void Panel::render(sf::RenderWindow& window) const {
-    if (m_nineSlice) {
-        window.draw(*m_nineSlice);
-    }
+    window.draw(m_shape);
 }

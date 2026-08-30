@@ -35,7 +35,7 @@ bool LevelObjectFactory::isEnemySymbol(char symbol)
     return symbol == 'G'
         || symbol == 'K'
         || symbol == 'E'
-        || symbol == 'B';
+        || symbol == 'Z';
 }
 
 bool LevelObjectFactory::isItemSymbol(char symbol) {

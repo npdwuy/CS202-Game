@@ -85,7 +85,6 @@ private:
     float m_flagScoreTimer = 0.f;
 
     std::unique_ptr<Button> m_menuButton;
-    sf::Texture m_buttonTexture;
 
 struct BackgroundLayer
 {

@@ -2,7 +2,7 @@
 #include "resources/ResourceManager.hpp"
 
 Mushroom::Mushroom(sf::Vector2f position)
-    : FloatingItem(position, 6.f, 2.f)
+    : FloatingItem(position, 0.f, 0.f)
 {
     m_sprite.setTexture(ResourceManager::getInstance().getTexture(
         "assets/sprites/items/mushroom.png"

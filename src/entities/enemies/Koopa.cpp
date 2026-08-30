@@ -105,3 +105,7 @@ void Koopa::Fling() {
 bool Koopa::IsFlung() const {
     return m_flung;
 }
+
+void Koopa::SetPlayerPosition(sf::Vector2f pos) {
+    m_movementStrategy->setPlayerPosition(pos);
+}

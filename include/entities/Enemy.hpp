@@ -16,4 +16,7 @@ public:
 
     virtual void Fling() {}
     virtual bool IsFlung() const { return false; }
+
+    // Override in enemies that react to the player's world position (AI).
+    virtual void SetPlayerPosition(sf::Vector2f /*pos*/) {}
 };

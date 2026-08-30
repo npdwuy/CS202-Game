@@ -99,3 +99,7 @@ void Goomba::Fling() {
 bool Goomba::IsFlung() const {
     return m_flung;
 }
+
+void Goomba::SetPlayerPosition(sf::Vector2f pos) {
+    m_movementStrategy->setPlayerPosition(pos);
+}

@@ -10,6 +10,7 @@
 #include "audio/AudioManager.hpp"
 #include "entities/enemies/BossEnemy.hpp"
 #include "entities/player/Mario.hpp"
+#include "entities/player/Luigi.hpp"
 #include "entities/player/Entity.hpp"
 #include "persistence/LoadManager.hpp"
 #include "persistence/SaveManager.hpp"
@@ -34,9 +35,6 @@ PlayState::PlayState(bool loadSavedGame)
         "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
     );
 
-    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
-        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
-    }
     
     m_flagScoreText.setFont(hudFont);
     m_flagScoreText.setCharacterSize(16);
@@ -44,8 +42,8 @@ PlayState::PlayState(bool loadSavedGame)
     m_flagScoreText.setOutlineColor(sf::Color::Black);
     m_flagScoreText.setOutlineThickness(1.f);
     
-    m_menuButton = std::make_unique<Button>("...", hudFont, m_buttonTexture, sf::Vector2f(24.f, 10.f), sf::Vector2f(40.f, 40.f), 24);
-    m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
+    m_menuButton = std::make_unique<Button>("...", hudFont, sf::Vector2f(24.f, 25.f), sf::Vector2f(40.f, 40.f), 24);
+    m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(255, 180, 0));
     m_menuButton->setCommand(std::make_unique<LambdaCommand>([]() {
         GameManager::getInstance().pushState(std::make_unique<PauseState>());
     }));
@@ -81,6 +79,9 @@ PlayState::PlayState(bool loadSavedGame)
     }
     else
     {
+        // Fresh start: use the character chosen in CharacterSelectState
+        m_saveData.selectedCharacter =
+            GameManager::getInstance().getSettings().getSelectedCharacter();
         loadLevel(1, false);
         showStatus(
             "Level 1 - Green Hill Start",
@@ -373,7 +374,13 @@ void PlayState::Update(sf::Time timePerFrame) {
     updateLevelTimer(timePerFrame);
 
     for (auto& enemy : m_enemies) {
-        // Give the boss the player's current position so it can chase Mario
+        // Broadcast player position to every enemy.
+        // BossEnemy has its own SetPlayerPosition override; Goomba/Koopa
+        // forward it to their ChaseStrategy. Other enemies ignore it (no-op).
+        if (m_player) {
+            enemy->SetPlayerPosition(m_player->position());
+        }
+        // Keep legacy BossEnemy::SetPlayerPosition call for safety
         if (auto* boss = dynamic_cast<BossEnemy*>(enemy.get())) {
             boss->SetPlayerPosition(m_player->position());
         }
@@ -584,7 +591,7 @@ void PlayState::Render(sf::RenderWindow& window) {
     const float top = viewCenter.y - viewSize.y * 0.5f;
 
     if (m_menuButton) {
-        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 10.f));
+        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 25.f));
     }
 
     m_hud.layout(screenView);
@@ -643,7 +650,11 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
         }
     }
 
-    m_player = std::make_unique<Mario>(spawnPosition);
+    if (m_saveData.selectedCharacter == "Luigi") {
+        m_player = std::make_unique<Luigi>(spawnPosition);
+    } else {
+        m_player = std::make_unique<Mario>(spawnPosition);
+    }
     if (m_speedBoostTimeRemaining > 0.f) {
         m_player->setSpeedMultiplier(1.45f);
     }
@@ -677,11 +688,12 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
                                 sf::Vector2f itemPos(col * m_tileMap.data().tileSize, row * m_tileMap.data().tileSize);
                                 auto newItem = m_objectFactory.createItem(itemSymbol, itemPos);
                                 if (auto floatingItem = dynamic_cast<FloatingItem*>(newItem.get())) {
-                                    floatingItem->StartSpawning((row - 1) * m_tileMap.data().tileSize, 0.5f);
+                                    float targetY = row * m_tileMap.data().tileSize - floatingItem->GetBounds().height;
+                                    floatingItem->StartSpawning(targetY, 0.5f);
                                 }
                                 m_items.push_back(std::move(newItem));
                             }
-                        } else if (m_tileMap.data().rows[row][col] == '#') {
+                        } else if (m_tileMap.data().rows[row][col] == 'B') {
                             if (m_invincibilityTimeRemaining > 0.f) {
                                 m_tileMap.breakBlock(row, col);
                                 bumped = true;
@@ -1123,7 +1135,7 @@ void PlayState::updateLevelTimer(sf::Time timePerFrame) {
 void PlayState::handleLevelExit() {
     if (m_exitSequence != ExitSequence::None) return;
 
-    if (!playerBounds().intersects(m_tileMap.exitBounds())) {
+    if (!m_tileMap.data().hasExit || !playerBounds().intersects(m_tileMap.exitBounds())) {
         return;
     }
 
@@ -1285,7 +1297,7 @@ bool PlayState::hasActiveBoss() const {
 }
 
 std::string PlayState::levelPath(int levelNumber) {
-    return "levels/level" + std::to_string(levelNumber) + ".txt";
+    return "levels/demo.txt";
 }
 
 void PlayState::addBackgroundLayer(
@@ -1496,6 +1508,14 @@ void PlayState::updateBackgroundLayers(
                 - scaledHeight * 0.5f
         );
     }
+
+    // Update dynamic clouds position
+    for (auto& c : m_clouds) {
+        c.worldPosition.x -= c.driftSpeed * timePerFrame.asSeconds();
+        if (c.worldPosition.x < -2000.f) {
+            c.worldPosition.x += 15000.f;
+        }
+    }
 }
 
 void PlayState::renderBackgroundLayers(
@@ -1525,7 +1545,7 @@ void PlayState::renderBackgroundLayers(
             cloudSprite.setScale(c.scale, c.scale);
             
             // Calculate position in world space with parallax applied
-            float parallaxWorldX = c.worldPosition.x + (cameraLeft * (1.f - c.parallaxFactor)) - (m_backgroundAnimationTime * c.driftSpeed);
+            float parallaxWorldX = c.worldPosition.x + (cameraLeft * (1.f - c.parallaxFactor));
             cloudSprite.setPosition(parallaxWorldX, c.worldPosition.y);
             
             // Draw all clouds (SFML culls efficiently anyway, or we could add manual culling if needed)

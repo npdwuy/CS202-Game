@@ -2,7 +2,7 @@
 #include "resources/ResourceManager.hpp"
 
 FireFlower::FireFlower(sf::Vector2f position)
-    : FloatingItem(position, 7.f, 2.5f)
+    : FloatingItem(position, 0.f, 0.f)
 {
     m_sprite.setTexture(ResourceManager::getInstance().getTexture(
         "assets/sprites/items/fire_flower.png"

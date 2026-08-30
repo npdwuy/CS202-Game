@@ -6,9 +6,7 @@
 #include <stdexcept>
 
 OptionsState::OptionsState() {
-    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
-        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
-    }
+
 
     if (!m_font.loadFromFile("assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf")) {
         throw std::runtime_error("Failed to load assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf");
@@ -25,7 +23,7 @@ void OptionsState::initUI() {
     m_dimOverlay.setFillColor(sf::Color(0, 0, 0, 150));
 
     // Centered Panel Background
-    m_panelBackground = std::make_unique<Panel>(m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(900.f, 850.f), 10.f);
+    m_panelBackground = std::make_unique<Panel>(sf::Vector2f(960.f, 540.f), sf::Vector2f(900.f, 850.f), 15.f);
     m_panelBackground->setColor(sf::Color(30, 30, 30, 240));
 
     // Title
@@ -66,7 +64,7 @@ void OptionsState::initUI() {
     createLabel("Difficulty", "", 255.f);
     m_difficultyButton = std::make_unique<Button>(
         SettingsManager::difficultyToString(settings.getDifficulty()),
-        m_font, m_buttonTexture, sf::Vector2f(1050.f, 255.f), sf::Vector2f(240.f, 50.f), 24
+        m_font, sf::Vector2f(1050.f, 255.f), sf::Vector2f(240.f, 50.f), 24
     );
     m_difficultyButton->setColors(sf::Color(60, 60, 60), sf::Color(80, 80, 80), sf::Color::White);
     m_difficultyButton->setCommand(std::make_unique<LambdaCommand>([this]() {
@@ -110,7 +108,7 @@ void OptionsState::initUI() {
         sf::Keyboard::Key key = settings.getKeyBinding(actions[i].second);
         auto btn = std::make_unique<Button>(
             SettingsManager::keyToString(key),
-            m_font, m_buttonTexture, sf::Vector2f(1050.f, y), sf::Vector2f(240.f, 40.f), 20
+            m_font, sf::Vector2f(1050.f, y), sf::Vector2f(240.f, 40.f), 20
         );
         btn->setColors(sf::Color(60, 60, 60), sf::Color(80, 80, 80), sf::Color::White);
         
@@ -124,7 +122,7 @@ void OptionsState::initUI() {
 
     // Reset Defaults
     m_resetButton = std::make_unique<Button>(
-        "RESET DEFAULTS", m_font, m_buttonTexture, sf::Vector2f(960.f, 825.f), sf::Vector2f(300.f, 50.f), 22
+        "RESET DEFAULTS", m_font, sf::Vector2f(960.f, 825.f), sf::Vector2f(300.f, 50.f), 22
     );
     m_resetButton->setColors(sf::Color(120, 40, 40), sf::Color(150, 60, 60), sf::Color::White);
     m_resetButton->setCommand(std::make_unique<LambdaCommand>([this]() {
@@ -144,7 +142,7 @@ void OptionsState::initUI() {
 
     // Back Button
     m_backButton = std::make_unique<Button>(
-        "BACK", m_font, m_buttonTexture, sf::Vector2f(960.f, 895.f), sf::Vector2f(300.f, 50.f), 22
+        "BACK", m_font, sf::Vector2f(960.f, 895.f), sf::Vector2f(300.f, 50.f), 22
     );
     m_backButton->setColors(sf::Color(40, 100, 40), sf::Color(60, 130, 60), sf::Color::White);
     m_backButton->setCommand(std::make_unique<PopStateCommand>());

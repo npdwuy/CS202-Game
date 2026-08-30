@@ -86,8 +86,10 @@ void TileMap::render(sf::RenderWindow& window) const {
         qb.Render(window);
     }
 
-    window.draw(m_exitPole);
-    window.draw(m_exitFlag);
+    if (m_data.hasExit) {
+        window.draw(m_exitPole);
+        window.draw(m_exitFlag);
+    }
 
     for (const auto& debris : m_debris) {
         if (debris.useSprite) {
@@ -148,7 +150,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
 
         for (int row = firstRow; row <= lastRow; ++row) {
             for (int column = firstColumn; column <= lastColumn; ++column) {
-                if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
+                char c = m_data.rows[row][column];
+                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
                     continue;
                 }
 
@@ -279,7 +282,7 @@ void TileMap::breakBlock(int row, int col) {
         return;
     }
     
-    if (m_data.rows[row][col] == '#') {
+    if (m_data.rows[row][col] == 'B') {
         m_data.rows[row][col] = '.';
 
         // Remove from cracked tracking if it was cracked
@@ -359,7 +362,7 @@ bool TileMap::hitBlock(int row, int col) {
     if (row < 0 || row >= static_cast<int>(m_data.rows.size()) || col < 0 || col >= static_cast<int>(m_data.rows[row].size())) {
         return false;
     }
-    if (m_data.rows[row][col] != '#') {
+    if (m_data.rows[row][col] != 'B') {
         return false;
     }
 
@@ -419,7 +422,8 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
         return false;
     }
 
-    return m_data.rows[row][column] == '#' || m_data.rows[row][column] == '?' || m_data.rows[row][column] == '!';
+    char c = m_data.rows[row][column];
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
@@ -454,7 +458,8 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 
     for (int row = firstRow; row <= lastRow; ++row) {
         for (int column = firstColumn; column <= lastColumn; ++column) {
-            if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
+            char c = m_data.rows[row][column];
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
                 continue;
             }
 

@@ -42,7 +42,7 @@ int main() {
             << "@difficulty=Test\n"
             << "@tile_size=48\n"
             << "@map\n"
-            << "P?X\n"
+            << "P&X\n"
             << "###\n";
     }
 

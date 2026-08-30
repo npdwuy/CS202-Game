@@ -22,7 +22,6 @@ private:
 
 private:
     sf::Font m_font;
-    sf::Texture m_buttonTexture;
 
     sf::RectangleShape m_dimOverlay;
     std::unique_ptr<Panel> m_panelBackground;

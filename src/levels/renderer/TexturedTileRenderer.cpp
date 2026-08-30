@@ -96,6 +96,39 @@ void TexturedTileRenderer::appendTexturedQuad(
     vertices.append({{bounds.left, bounds.top + bounds.height}, color, {texCoords.left, texCoords.top + texCoords.height}});
 }
 
+sf::Vector2i TexturedTileRenderer::getTileCoordFor(const LevelData& data, int row, int col) const {
+    char c = data.rows[row][col];
+    auto isGround = [](char ch) { return ch == '#' || ch == '=' || ch == 'T' || ch == 'D'; };
+    const bool left = (col == 0) || isGround(data.rows[row][col - 1]);
+    const bool right = (col + 1 >= static_cast<int>(data.rows[row].size())) || isGround(data.rows[row][col + 1]);
+
+    sf::Vector2i tileCoord = m_layout.dirtCenter;
+
+    if (c == 'B' || c == '?' || c == '!') {
+        tileCoord = m_layout.highBlock;
+    } else if (c == 'T') {
+        if (!left && right) tileCoord = m_layout.highSurfaceLeft;
+        else if (left && !right) tileCoord = m_layout.highSurfaceRight;
+        else if (!left && !right) tileCoord = m_layout.highSurfaceIsolated;
+        else tileCoord = m_layout.highSurfaceCenter;
+    } else if (c == 'D') {
+        if (!left && right) tileCoord = m_layout.highDirtLeft;
+        else if (left && !right) tileCoord = m_layout.highDirtRight;
+        else if (!left && !right) tileCoord = m_layout.highDirtIsolated;
+        else tileCoord = m_layout.highDirtCenter;
+    } else if (c == '#') {
+        if (!left && right) tileCoord = m_layout.surfaceLeft;
+        else if (left && !right) tileCoord = m_layout.surfaceRight;
+        else if (!left && !right) tileCoord = m_layout.surfaceIsolated;
+        else tileCoord = m_layout.surfaceCenter;
+    } else if (c == '=') {
+        if (!left && right) tileCoord = m_layout.dirtLeft;
+        else if (left && !right) tileCoord = m_layout.dirtRight;
+        else tileCoord = m_layout.dirtCenter;
+    }
+    return tileCoord;
+}
+
 void TexturedTileRenderer::buildGeometry(
     sf::VertexArray& tileVertices,
     sf::VertexArray& sceneryVertices,
@@ -150,7 +183,8 @@ void TexturedTileRenderer::buildGeometry(
 
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
-            if (data.rows[row][column] != '#') {
+            char c = data.rows[row][column];
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
                 continue;
             }
 
@@ -163,37 +197,7 @@ void TexturedTileRenderer::buildGeometry(
                 static_cast<float>(row) * tileSize
             };
 
-            const bool above = (row > 0 && (data.rows[row - 1][column] == '#' || data.rows[row - 1][column] == '?' || data.rows[row - 1][column] == '!'));
-            const bool below = (row + 1 < data.rows.size() && (data.rows[row + 1][column] == '#' || data.rows[row + 1][column] == '?' || data.rows[row + 1][column] == '!'));
-            const bool left = (column == 0) || (data.rows[row][column - 1] == '#' || data.rows[row][column - 1] == '?' || data.rows[row][column - 1] == '!');
-            const bool right = (column + 1 >= data.rows[row].size()) || (data.rows[row][column + 1] == '#' || data.rows[row][column + 1] == '?' || data.rows[row][column + 1] == '!');
-
-            sf::Vector2i tileCoord = m_layout.dirtCenter;
-
-            if (row < data.rows.size() - 2) {
-                // High/Floating block
-                tileCoord = m_layout.highBlock;
-            } else if (!above) {
-                // Grass Surface
-                if (!left && right) {
-                    tileCoord = m_layout.surfaceLeft;
-                } else if (left && !right) {
-                    tileCoord = m_layout.surfaceRight;
-                } else if (!left && !right) {
-                    tileCoord = m_layout.surfaceIsolated;
-                } else {
-                    tileCoord = m_layout.surfaceCenter;
-                }
-            } else {
-                // Dirt Fill Below Surface
-                if (!left && right) {
-                    tileCoord = m_layout.dirtLeft;
-                } else if (left && !right) {
-                    tileCoord = m_layout.dirtRight;
-                } else {
-                    tileCoord = m_layout.dirtCenter;
-                }
-            }
+            sf::Vector2i tileCoord = getTileCoordFor(data, row, column);
 
             const int tileCol = tileCoord.x;
             const int tileRow = tileCoord.y;
@@ -265,34 +269,7 @@ void TexturedTileRenderer::buildSingleTile(
         static_cast<float>(row) * tileSize + offset.y
     };
 
-    const bool above = (row > 0 && data.rows[row - 1][col] == '#');
-    const bool below = (row + 1 < static_cast<int>(data.rows.size()) && data.rows[row + 1][col] == '#');
-    const bool left = (col == 0) || (data.rows[row][col - 1] == '#');
-    const bool right = (col + 1 >= static_cast<int>(data.rows[row].size())) || (data.rows[row][col + 1] == '#');
-
-    sf::Vector2i tileCoord = m_layout.dirtCenter;
-
-    if (row < static_cast<int>(data.rows.size()) - 2) {
-        tileCoord = m_layout.highBlock;
-    } else if (!above) {
-        if (!left && right) {
-            tileCoord = m_layout.surfaceLeft;
-        } else if (left && !right) {
-            tileCoord = m_layout.surfaceRight;
-        } else if (!left && !right) {
-            tileCoord = m_layout.surfaceIsolated;
-        } else {
-            tileCoord = m_layout.surfaceCenter;
-        }
-    } else {
-        if (!left && right) {
-            tileCoord = m_layout.dirtLeft;
-        } else if (left && !right) {
-            tileCoord = m_layout.dirtRight;
-        } else {
-            tileCoord = m_layout.dirtCenter;
-        }
-    }
+    sf::Vector2i tileCoord = getTileCoordFor(data, row, col);
 
     sf::FloatRect texCoords(
         static_cast<float>(tileCoord.x) * sourceTileSize,
@@ -312,34 +289,7 @@ bool TexturedTileRenderer::isTransparent(const LevelData& data, int row, int col
     const float sourceTileSize = 64.f;
     const float destTileSize = static_cast<float>(data.tileSize);
 
-    const bool above = (row > 0 && data.rows[row - 1][col] == '#');
-    const bool below = (row + 1 < static_cast<int>(data.rows.size()) && data.rows[row + 1][col] == '#');
-    const bool left = (col == 0) || (data.rows[row][col - 1] == '#');
-    const bool right = (col + 1 >= static_cast<int>(data.rows.size())) || (data.rows[row][col + 1] == '#');
-
-    sf::Vector2i tileCoord = m_layout.dirtCenter;
-
-    if (row < static_cast<int>(data.rows.size()) - 2) {
-        tileCoord = m_layout.highBlock;
-    } else if (!above) {
-        if (!left && right) {
-            tileCoord = m_layout.surfaceLeft;
-        } else if (left && !right) {
-            tileCoord = m_layout.surfaceRight;
-        } else if (!left && !right) {
-            tileCoord = m_layout.surfaceIsolated;
-        } else {
-            tileCoord = m_layout.surfaceCenter;
-        }
-    } else {
-        if (!left && right) {
-            tileCoord = m_layout.dirtLeft;
-        } else if (left && !right) {
-            tileCoord = m_layout.dirtRight;
-        } else {
-            tileCoord = m_layout.dirtCenter;
-        }
-    }
+    sf::Vector2i tileCoord = getTileCoordFor(data, row, col);
 
     float ratio = sourceTileSize / destTileSize;
     int srcX = static_cast<int>(localX * ratio);

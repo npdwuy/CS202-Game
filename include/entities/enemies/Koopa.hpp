@@ -26,6 +26,8 @@ public:
     void Fling() override;
     bool IsFlung() const override;
 
+    void SetPlayerPosition(sf::Vector2f pos) override;
+
 private:
     sf::Sprite m_sprite;
 

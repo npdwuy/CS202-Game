@@ -3,7 +3,7 @@
 #include "resources/ResourceManager.hpp"
 
 OneUpMushroom::OneUpMushroom(sf::Vector2f position)
-    : FloatingItem(position, 7.f, 2.2f) {
+    : FloatingItem(position, 0.f, 0.f) {
     const sf::Texture& texture = ResourceManager::getInstance().getTexture(
         "assets/sprites/items/mushroom.png"
     );

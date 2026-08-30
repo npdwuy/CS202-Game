@@ -7,11 +7,7 @@
 #include <stdexcept>
 
 PauseState::PauseState() {
-  if (!m_buttonTexture.loadFromFile(
-          "assets/sprites/button/btn_transparent.png")) {
-    throw std::runtime_error(
-        "Failed to load assets/sprites/button/btn_transparent.png");
-  }
+
 
   if (!m_font.loadFromFile(
           "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf")) {
@@ -29,7 +25,7 @@ void PauseState::initUI() {
   m_dimOverlay.setFillColor(sf::Color(0, 0, 0, 150));
 
   // Centered panel background
-  m_panelBackground = std::make_unique<Panel>(m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(450.f, 550.f), 10.f);
+  m_panelBackground = std::make_unique<Panel>(sf::Vector2f(960.f, 540.f), sf::Vector2f(450.f, 550.f), 15.f);
   m_panelBackground->setColor(sf::Color(30, 30, 30, 240));
 
   // Title text
@@ -45,16 +41,16 @@ void PauseState::initUI() {
   // Buttons
   sf::Vector2f btnSize(300.f, 60.f);
   m_resumeButton =
-      std::make_unique<Button>("RESUME", m_font, m_buttonTexture,
+      std::make_unique<Button>("RESUME", m_font,
                                sf::Vector2f(960.f, 410.f), btnSize, 24);
   m_optionsButton =
-      std::make_unique<Button>("OPTIONS", m_font, m_buttonTexture,
+      std::make_unique<Button>("OPTIONS", m_font,
                                sf::Vector2f(960.f, 500.f), btnSize, 24);
   m_menuButton =
-      std::make_unique<Button>("MAIN MENU", m_font, m_buttonTexture,
+      std::make_unique<Button>("MAIN MENU", m_font,
                                sf::Vector2f(960.f, 590.f), btnSize, 24);
   m_exitButton =
-      std::make_unique<Button>("EXIT GAME", m_font, m_buttonTexture,
+      std::make_unique<Button>("EXIT GAME", m_font,
                                sf::Vector2f(960.f, 680.f), btnSize, 24);
 
   m_resumeButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255),

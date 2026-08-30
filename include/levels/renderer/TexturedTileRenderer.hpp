@@ -15,6 +15,18 @@ struct TilesetLayout {
 
     // High/Floating Block
     sf::Vector2i highBlock{1, 0};
+
+    // High Ground Surface (T)
+    sf::Vector2i highSurfaceLeft{11, 7};
+    sf::Vector2i highSurfaceCenter{9, 7};
+    sf::Vector2i highSurfaceRight{10, 7};
+    sf::Vector2i highSurfaceIsolated{4, 13};
+
+    // High Ground Dirt (D)
+    sf::Vector2i highDirtLeft{11, 8};
+    sf::Vector2i highDirtCenter{9, 8};
+    sf::Vector2i highDirtRight{10, 8};
+    sf::Vector2i highDirtIsolated{5, 13};
 };
 
 class TexturedTileRenderer : public TileRenderer {
@@ -49,6 +61,8 @@ public:
     bool getTileSprite(sf::Sprite& outSprite, int quadrant) const override;
 
 private:
+    sf::Vector2i getTileCoordFor(const LevelData& data, int row, int col) const;
+
     void appendTexturedQuad(
         sf::VertexArray& vertices,
         const sf::FloatRect& bounds,

@@ -1,115 +1,147 @@
 #include "MenuState.hpp"
-#include "AboutState.hpp"
+#include "CharacterSelectState.hpp"
 #include "GameManager.hpp"
 #include "OptionsState.hpp"
 #include "PlayState.hpp"
 #include "commands/MenuCommands.hpp"
-#include <iostream>
+#include "resources/ResourceManager.hpp"
+
 #include <stdexcept>
 
 MenuState::MenuState() {
-  if (!m_backgroundTexture.loadFromFile("assets/sprites/menu_bg.png")) {
-    throw std::runtime_error("Failed to load assets/sprites/menu_bg.png");
-  }
-  m_backgroundSprite.setTexture(m_backgroundTexture);
+    m_font = ResourceManager::getInstance().getFont(
+        "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
+    );
 
-  if (!m_buttonTexture.loadFromFile(
-          "assets/sprites/button/btn_transparent.png")) {
-    throw std::runtime_error(
-        "Failed to load assets/sprites/button/btn_transparent.png");
-  }
+    // ── Load scrolling map background ────────────────────────────────────────
+    m_bgMap.load("levels/demo.txt");
 
-  if (!m_font.loadFromFile(
-          "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf")) {
-    throw std::runtime_error(
-        "Failed to load "
-        "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf");
-  }
+    const sf::View& gameView = GameManager::getInstance().getGameView();
+    const sf::FloatRect world = m_bgMap.worldBounds();
 
-  // Centered vertical layout
-  sf::Vector2f btnSize(380.f, 120.f);
-  m_playButton = std::make_unique<Button>("PLAY", m_font, m_buttonTexture, sf::Vector2f(960.f, 390.f), btnSize, 33);
-  m_loadButton = std::make_unique<Button>("LOAD", m_font, m_buttonTexture, sf::Vector2f(960.f, 510.f), btnSize, 33);
-  m_optionsButton = std::make_unique<Button>("OPTIONS", m_font, m_buttonTexture, sf::Vector2f(960.f, 630.f), btnSize, 33);
-  m_aboutButton = std::make_unique<Button>("ABOUT", m_font, m_buttonTexture, sf::Vector2f(960.f, 750.f), btnSize, 33);
-  m_exitButton = std::make_unique<Button>("EXIT", m_font, m_buttonTexture, sf::Vector2f(960.f, 870.f), btnSize, 33);
+    m_bgCamera = gameView;
+    // Position camera at the bottom of the map so the ground / platforms are visible
+    float camCenterY = world.height - gameView.getSize().y / 2.f;
+    m_bgCamera.setCenter(gameView.getSize().x / 2.f, camCenterY);
 
-  // Set colors
-  m_playButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
-  m_loadButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
-  m_aboutButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
-  m_optionsButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
-  m_exitButton->setColors(sf::Color::White, sf::Color(255, 210, 210, 255), sf::Color(245, 222, 179));
+    // ── Button layout: pill-shaped (cornerRadius = height/2) ────────────────
+    // 4 buttons stacked vertically, centred at x=960 (half of 1920)
+    const sf::Vector2f btnSize(340.f, 72.f);
+    const float cornerR = btnSize.y / 2.f;   // = 36 → fully rounded ends
+    const float cx      = gameView.getSize().x / 2.f;
 
-  // Button callbacks
-  m_playButton->setCommand(std::make_unique<LambdaCommand>([]() {
-    std::cout << "Transitioning to PlayState...\n";
-    GameManager::getInstance().changeState(std::make_unique<PlayState>());
-  }));
+    const sf::Color normalOrange (255, 155, 40,  215);
+    const sf::Color hoverYellow  (255, 215, 0,   255);
+    const sf::Color normalRed    (210, 55,  55,  215);
+    const sf::Color hoverRed     (255, 80,  80,  255);
+    const sf::Color white        (255, 255, 255);
 
-  m_loadButton->setCommand(std::make_unique<LambdaCommand>([]() {
-    std::cout << "Loading saved game...\n";
-    GameManager::getInstance().changeState(std::make_unique<PlayState>(true));
-  }));
+    auto makeBtn = [&](const std::string& label, float cy,
+                       sf::Color norm, sf::Color hov) {
+        auto btn = std::make_unique<Button>(label, m_font,
+                                            sf::Vector2f(cx, cy), btnSize, 30);
+        btn->setColors(norm, hov, white);
+        btn->setShapeCornerRadius(cornerR);
+        return btn;
+    };
 
-  m_aboutButton->setCommand(std::make_unique<LambdaCommand>([]() {
-    std::cout << "Opening AboutState...\n";
-    GameManager::getInstance().pushState(std::make_unique<AboutState>());
-  }));
+    // Vertical spacing: buttons centred in the lower 55 % of a 1080 px screen
+    m_playButton    = makeBtn("PLAY",    600.f, normalOrange, hoverYellow);
+    m_loadButton    = makeBtn("LOAD",    700.f, normalOrange, hoverYellow);
+    m_optionsButton = makeBtn("OPTIONS", 800.f, normalOrange, hoverYellow);
+    m_exitButton    = makeBtn("EXIT",    900.f, normalRed,    hoverRed   );
 
-  m_optionsButton->setCommand(std::make_unique<LambdaCommand>([]() {
-    std::cout << "Opening OptionsState...\n";
-    GameManager::getInstance().pushState(std::make_unique<OptionsState>());
-  }));
+    // ── Commands ─────────────────────────────────────────────────────────────
+    m_playButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().changeState(
+            std::make_unique<CharacterSelectState>()
+        );
+    }));
 
-  m_exitButton->setCommand(std::make_unique<ExitGameCommand>());
+    m_loadButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().changeState(
+            std::make_unique<PlayState>(true)   // true = load saved game
+        );
+    }));
+
+    m_optionsButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().pushState(std::make_unique<OptionsState>());
+    }));
+
+    m_exitButton->setCommand(std::make_unique<ExitGameCommand>());
 }
 
-void MenuState::Input(const sf::Event &event) {
-  sf::RenderWindow &window = GameManager::getInstance().getWindow();
+void MenuState::Input(const sf::Event& event) {
+    sf::RenderWindow& window = GameManager::getInstance().getWindow();
 
-  if (event.type == sf::Event::MouseMoved) {
-    sf::Vector2f mousePos = window.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
-    m_playButton->update(mousePos);
-    m_loadButton->update(mousePos);
-    m_optionsButton->update(mousePos);
-    m_aboutButton->update(mousePos);
-    m_exitButton->update(mousePos);
-  }
-
-  if (event.type == sf::Event::MouseButtonReleased) {
-    sf::Vector2f mousePos = window.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
-    if (m_playButton->handleClick(event, mousePos))
-      return;
-    if (m_loadButton->handleClick(event, mousePos))
-      return;
-    if (m_optionsButton->handleClick(event, mousePos))
-      return;
-    if (m_aboutButton->handleClick(event, mousePos))
-      return;
-    if (m_exitButton->handleClick(event, mousePos))
-      return;
-  }
-
-  if (event.type == sf::Event::KeyPressed) {
-    if (event.key.code == sf::Keyboard::Enter) {
-      std::cout << "Transitioning to PlayState...\n";
-      GameManager::getInstance().changeState(std::make_unique<PlayState>());
-    } else if (event.key.code == sf::Keyboard::Escape) {
-      std::cout << "Exiting game from Main Menu...\n";
-      GameManager::getInstance().quit();
+    if (event.type == sf::Event::MouseMoved) {
+        sf::Vector2f mp = window.mapPixelToCoords(
+            sf::Vector2i(event.mouseMove.x, event.mouseMove.y),
+            GameManager::getInstance().getGameView()
+        );
+        m_playButton   ->update(mp);
+        m_loadButton   ->update(mp);
+        m_optionsButton->update(mp);
+        m_exitButton   ->update(mp);
     }
-  }
+
+    if (event.type == sf::Event::MouseButtonReleased) {
+        sf::Vector2f mp = window.mapPixelToCoords(
+            sf::Vector2i(event.mouseButton.x, event.mouseButton.y),
+            GameManager::getInstance().getGameView()
+        );
+        if (m_playButton   ->handleClick(event, mp)) return;
+        if (m_loadButton   ->handleClick(event, mp)) return;
+        if (m_optionsButton->handleClick(event, mp)) return;
+        if (m_exitButton   ->handleClick(event, mp)) return;
+    }
+
+    if (event.type == sf::Event::KeyPressed) {
+        if (event.key.code == sf::Keyboard::Return) {
+            // Default Enter → go to character select
+            GameManager::getInstance().changeState(
+                std::make_unique<CharacterSelectState>()
+            );
+        } else if (event.key.code == sf::Keyboard::Escape) {
+            GameManager::getInstance().quit();
+        }
+    }
 }
 
-void MenuState::Update(sf::Time timePerFrame) {}
+void MenuState::Update(sf::Time timePerFrame) {
+    // Scroll the background map to the right; wrap at map edge.
+    m_scrollX += ScrollSpeed * timePerFrame.asSeconds();
 
-void MenuState::Render(sf::RenderWindow &window) {
-  window.draw(m_backgroundSprite);
+    const sf::FloatRect world   = m_bgMap.worldBounds();
+    const float          viewHW  = m_bgCamera.getSize().x / 2.f;
 
-  m_playButton->render(window);
-  m_loadButton->render(window);
-  m_optionsButton->render(window);
-  m_aboutButton->render(window);
-  m_exitButton->render(window);
+    if (m_scrollX + viewHW > world.width) {
+        m_scrollX = 0.f;   // seamless wrap back to start
+    }
+
+    m_bgCamera.setCenter(m_scrollX + viewHW, m_bgCamera.getCenter().y);
+}
+
+void MenuState::Render(sf::RenderWindow& window) {
+    const sf::View& screenView = GameManager::getInstance().getGameView();
+
+    // 1. Draw scrolling map with the scrolling camera
+    window.setView(m_bgCamera);
+    m_bgMap.render(window);
+
+    // 2. Switch to the fixed screen view for all UI
+    window.setView(screenView);
+
+    // 3. Semi-transparent dark overlay so buttons are readable over the map
+    sf::RectangleShape overlay(screenView.getSize());
+    overlay.setOrigin(screenView.getSize() / 2.f);
+    overlay.setPosition(screenView.getCenter());
+    overlay.setFillColor(sf::Color(0, 0, 0, 130));
+    window.draw(overlay);
+
+    // 4. Draw the 4 buttons
+    m_playButton   ->render(window);
+    m_loadButton   ->render(window);
+    m_optionsButton->render(window);
+    m_exitButton   ->render(window);
 }

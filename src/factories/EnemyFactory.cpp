@@ -5,6 +5,7 @@
 #include "entities/enemies/Goomba.hpp"
 #include "entities/enemies/Koopa.hpp"
 
+#include "entities/strategies/ChaseStrategy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
 #include "entities/strategies/PatrolStrategy.hpp"
 
@@ -35,9 +36,10 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
             return std::make_unique<Goomba>(
                 position,
                 70.f,
-                std::make_unique<PatrolStrategy>(
+                std::make_unique<ChaseStrategy>(
                     minimumX,
-                    maximumX
+                    maximumX,
+                    280.f   // aggro radius: 280 px ≈ ~5.8 tiles
                 )
             );
 
@@ -45,9 +47,10 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
             return std::make_unique<Koopa>(
                 position,
                 55.f,
-                std::make_unique<PatrolStrategy>(
+                std::make_unique<ChaseStrategy>(
                     minimumX,
-                    maximumX
+                    maximumX,
+                    320.f   // Koopa has slightly longer aggro range
                 )
             );
 
@@ -61,7 +64,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                 )
             );
 
-        case 'B':
+        case 'Z':
             return std::make_unique<BossEnemy>(
                 sf::Vector2f(
                     position.x + tileSize * 0.5f, 

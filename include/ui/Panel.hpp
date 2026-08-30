@@ -1,12 +1,12 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include "ui/NineSlice.hpp"
+#include "ui/RoundedRectangleShape.hpp"
 #include <memory>
 
 class Panel {
 public:
-    Panel(const sf::Texture& texture, sf::Vector2f position, sf::Vector2f size, float cornerSize = 10.f);
+    Panel(sf::Vector2f position, sf::Vector2f size, float cornerSize = 10.f);
     ~Panel() = default;
 
     void setPosition(sf::Vector2f position);
@@ -20,5 +20,5 @@ public:
     void render(sf::RenderWindow& window) const;
 
 private:
-    std::unique_ptr<NineSlice> m_nineSlice;
+    RoundedRectangleShape m_shape;
 };
