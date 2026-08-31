@@ -44,7 +44,11 @@ void PlayerCamera::reset(
         worldBounds
     );
     m_maxCenterX = m_center.x;
-    m_view.setCenter(m_center);
+    
+    // Round to integer to prevent subpixel jitter/tearing
+    sf::Vector2f roundedCenter(std::round(m_center.x), std::round(m_center.y));
+    m_view.setCenter(roundedCenter);
+    
     m_initialized = true;
 }
 
@@ -97,7 +101,10 @@ void PlayerCamera::update(
         m_view.getSize(),
         worldBounds
     );
-    m_view.setCenter(m_center);
+
+    // Round to integer to prevent subpixel jitter/tearing while camera moves
+    sf::Vector2f roundedCenter(std::round(m_center.x), std::round(m_center.y));
+    m_view.setCenter(roundedCenter);
 }
 
 const sf::View& PlayerCamera::view() const {
