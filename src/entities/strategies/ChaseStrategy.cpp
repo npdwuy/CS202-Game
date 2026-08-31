@@ -15,42 +15,46 @@ void ChaseStrategy::setPlayerPosition(sf::Vector2f playerPos) {
 }
 
 void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFrame) {
-    const float dt  = timePerFrame.asSeconds();
-    sf::Vector2f pos = sprite.getPosition();
+    const float dt = timePerFrame.asSeconds();
+
+    // BUG FIX 2: read the sprite's original absolute scale once per frame.
+    // We only flip the *sign* of scaleX; the magnitude must stay unchanged.
+    // (Goomba is 3.f, Koopa is 1.f – we must not overwrite that.)
+    const float absScaleX = std::abs(sprite.getScale().x);
+    const float scaleY    = sprite.getScale().y;
 
     if (m_hasPlayerPos) {
-        const float dx = m_playerPos.x - pos.x;
+        const float dx = m_playerPos.x - sprite.getPosition().x;
 
         if (std::abs(dx) <= m_aggroRadius) {
-            // ── Chase mode: move toward the player, 30 % faster ──────────────
-            const float chaseSpeed = speed * 1.3f;
-            const float dir        = (dx > 0.f) ? 1.f : -1.f;
+            // ── Chase mode: move toward the player at 130 % speed ────────────
+            const float dir = (dx > 0.f) ? 1.f : -1.f;
+            sprite.move(dir * speed * 1.3f * dt, 0.f);
 
-            sprite.move(dir * chaseSpeed * dt, 0.f);
-
-            // Flip sprite horizontally so it faces the player
-            const float absScaleX = std::abs(sprite.getScale().x);
-            const float scaleY    = sprite.getScale().y;
+            // Flip sprite to face the player (preserve original scale magnitude)
             sprite.setScale(dir * absScaleX, scaleY);
             return;
         }
     }
 
-    // ── Patrol mode: walk between leftBound and rightBound ──────────────────
-    float newX = pos.x + static_cast<float>(m_direction) * speed * dt;
+    // ── Patrol mode: walk between leftBound and rightBound ───────────────────
+    // BUG FIX 1: use sprite.getPosition().x (top-left) AND account for
+    // spriteWidth when testing the right boundary, matching PatrolStrategy.
+    float newX = sprite.getPosition().x
+               + static_cast<float>(m_direction) * speed * dt;
+
+    const float spriteWidth = sprite.getGlobalBounds().width;
 
     if (newX <= m_leftBound) {
         m_direction = 1;
         newX        = m_leftBound;
-    } else if (newX >= m_rightBound) {
+    } else if (newX + spriteWidth >= m_rightBound) {
         m_direction = -1;
-        newX        = m_rightBound;
+        newX        = m_rightBound - spriteWidth;
     }
 
-    sprite.setPosition(newX, pos.y);
+    sprite.setPosition(newX, sprite.getPosition().y);
 
-    // Flip to face walking direction
-    const float absScaleX = std::abs(sprite.getScale().x);
-    const float scaleY    = sprite.getScale().y;
+    // Flip to face the walking direction (preserve original scale magnitude)
     sprite.setScale(static_cast<float>(m_direction) * absScaleX, scaleY);
 }
