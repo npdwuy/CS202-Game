@@ -762,7 +762,8 @@ void PlayState::createLevelObjects() {
                     request.symbol,
                     request.position,
                     tileSize,
-                    levelWidth
+                    levelWidth,
+                    m_tileMap
                 )
             );
         } else if (LevelObjectFactory::isItemSymbol(request.symbol)) {

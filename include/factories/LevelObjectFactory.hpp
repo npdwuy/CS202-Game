@@ -5,13 +5,16 @@
 
 #include <memory>
 
+class TileMap;
+
 class LevelObjectFactory {
 public:
     std::unique_ptr<Enemy> createEnemy(
         char symbol,
         sf::Vector2f position,
         float tileSize,
-        float levelWidth
+        float levelWidth,
+        const TileMap& tileMap
     ) const;
 
     std::unique_ptr<Item> createItem(

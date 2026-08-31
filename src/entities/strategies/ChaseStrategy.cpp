@@ -46,7 +46,8 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
     const float left  = sprite.getGlobalBounds().left;
     const float width = sprite.getGlobalBounds().width;
 
-    if (m_hasPlayerPos) {
+    // Check for chase mode ONLY if we are not in cooldown
+    if (m_hasPlayerPos && m_patrolBouncesRemaining <= 0) {
         const float spriteCentreX = left + width * 0.5f;
         const float dx = m_playerPos.x - spriteCentreX;
 
@@ -63,18 +64,29 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
             const float newLeft  = sprite.getGlobalBounds().left;
             const float newWidth = sprite.getGlobalBounds().width;
 
+            bool hitBound = false;
             if (newLeft <= m_leftBound) {
                 if (sprite.getScale().x < 0.f) {
                     sprite.setPosition(m_leftBound + newWidth, sprite.getPosition().y);
                 } else {
                     sprite.setPosition(m_leftBound, sprite.getPosition().y);
                 }
+                hitBound = true;
+                m_direction = 1;
             } else if (newLeft + newWidth >= m_rightBound) {
                 if (sprite.getScale().x < 0.f) {
                     sprite.setPosition(m_rightBound, sprite.getPosition().y);
                 } else {
                     sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
                 }
+                hitBound = true;
+                m_direction = -1;
+            }
+            
+            if (hitBound) {
+                // Tắt đi theo Mario tối thiểu 1 chu kì (2 lần chạm biên)
+                m_patrolBouncesRemaining = 2;
+                setFacing(sprite, static_cast<float>(m_direction));
             }
             
             return;
@@ -91,6 +103,7 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
     const float newLeft  = sprite.getGlobalBounds().left;
     const float newWidth = sprite.getGlobalBounds().width;
 
+    bool hitBound = false;
     if (newLeft <= m_leftBound) {
         // Clamp left edge
         if (sprite.getScale().x < 0.f) {
@@ -99,6 +112,7 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
             sprite.setPosition(m_leftBound, sprite.getPosition().y);
         }
         m_direction = 1;
+        hitBound = true;
     } else if (newLeft + newWidth >= m_rightBound) {
         // Clamp right edge
         if (sprite.getScale().x < 0.f) {
@@ -107,5 +121,10 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
             sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
         }
         m_direction = -1;
+        hitBound = true;
+    }
+
+    if (hitBound && m_patrolBouncesRemaining > 0) {
+        m_patrolBouncesRemaining--;
     }
 }

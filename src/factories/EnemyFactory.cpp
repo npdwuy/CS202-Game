@@ -4,6 +4,7 @@
 #include "entities/enemies/FlyingEnemy.hpp"
 #include "entities/enemies/Goomba.hpp"
 #include "entities/enemies/Koopa.hpp"
+#include "levels/TileMap.hpp"
 
 #include "entities/strategies/ChaseStrategy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
@@ -17,18 +18,43 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     char symbol,
     sf::Vector2f position,
     float tileSize,
-    float levelWidth
+    float levelWidth,
+    const TileMap& tileMap
 )
 {
-    const float minimumX = std::max(
-        0.f,
-        position.x - tileSize * 2.f
-    );
+    float minimumX = std::max(0.f, position.x - tileSize * 2.f);
+    float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 2.f);
 
-    const float maximumX = std::min(
-        std::max(0.f, levelWidth - tileSize),
-        position.x + tileSize * 2.f
-    );
+    if (symbol == 'G' || symbol == 'K') {
+        // Scan left and right to find exact platform bounds
+        float leftScan = position.x;
+        const float footY = position.y + tileSize + 2.f;
+        const float bodyY = position.y + tileSize * 0.5f;
+        const float step = 10.f;
+
+        // Quét sang trái
+        while (leftScan >= 0.f) {
+            float nextLeft = leftScan - step;
+            if (tileMap.isSolidAt(sf::Vector2f(nextLeft, bodyY)) || 
+                !tileMap.isSolidAt(sf::Vector2f(nextLeft, footY))) {
+                break;
+            }
+            leftScan = nextLeft;
+        }
+        minimumX = leftScan;
+
+        // Quét sang phải (tính từ mép phải của quái vật)
+        float rightScan = position.x + tileSize;
+        while (rightScan <= levelWidth) {
+            float nextRight = rightScan + step;
+            if (tileMap.isSolidAt(sf::Vector2f(nextRight, bodyY)) || 
+                !tileMap.isSolidAt(sf::Vector2f(nextRight, footY))) {
+                break;
+            }
+            rightScan = nextRight;
+        }
+        maximumX = std::max(minimumX, rightScan - tileSize);
+    }
 
     switch (symbol)
     {
