@@ -50,6 +50,7 @@ public:
     bool IsShellMoving() const;
 
     bool CanKickShell() const;
+    bool IsSafeFromPlayer() const;
 
     // Handles gravity, falling, landing,
     // and horizontal terrain collision for the shell.
