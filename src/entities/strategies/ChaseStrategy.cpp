@@ -27,6 +27,9 @@ static void setFacing(sf::Sprite& sprite, float dir) {
         // Record visual left edge before flipping
         const float currentLeft = sprite.getGlobalBounds().left;
         
+        // Flip
+        sprite.setScale(newScale, sprite.getScale().y);
+        
         // Re-anchor to prevent position jumping
         // If scale is negative, the sprite's origin (top-left) is now physically on the right side of the visual bounds.
         if (newScale < 0.f) {
