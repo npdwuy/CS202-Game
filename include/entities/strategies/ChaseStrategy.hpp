@@ -27,4 +27,5 @@ private:
     bool  m_hasPlayerPos = false;
     int   m_direction    = -1;   // patrol direction: -1 = left, +1 = right
     int   m_patrolBouncesRemaining = 0; // Cooldown cycles after hitting bounds during chase
+    float m_lastDirChangeX = -9999.f; // Track X coordinate of last direction change
 };
