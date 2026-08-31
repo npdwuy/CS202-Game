@@ -54,11 +54,24 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
             // Xoay hướng
             setFacing(sprite, dir);
             
-            // Cập nhật lại vùng tuần tra (Patrol zone) quanh vị trí hiện tại
-            // Fix triệt để lỗi Teleport/Snap khi rớt khỏi chase mode
-            const float currentLeft = sprite.getGlobalBounds().left;
-            m_leftBound  = currentLeft - 64.f;           // 2 tiles left
-            m_rightBound = currentLeft + width + 64.f;   // 2 tiles right
+            // Giới hạn không cho quái vật đi xuyên tường/rơi khỏi platform bằng cách
+            // ép nó phải ở trong m_leftBound và m_rightBound kể cả khi đang chase.
+            const float newLeft  = sprite.getGlobalBounds().left;
+            const float newWidth = sprite.getGlobalBounds().width;
+
+            if (newLeft <= m_leftBound) {
+                if (sprite.getScale().x < 0.f) {
+                    sprite.setPosition(m_leftBound + newWidth, sprite.getPosition().y);
+                } else {
+                    sprite.setPosition(m_leftBound, sprite.getPosition().y);
+                }
+            } else if (newLeft + newWidth >= m_rightBound) {
+                if (sprite.getScale().x < 0.f) {
+                    sprite.setPosition(m_rightBound, sprite.getPosition().y);
+                } else {
+                    sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
+                }
+            }
             
             return;
         }
