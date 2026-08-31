@@ -17,14 +17,15 @@ void ChaseStrategy::setPlayerPosition(sf::Vector2f playerPos) {
 // Helper: Safely flip the sprite without shifting its visual bounding box
 static void setFacing(sf::Sprite& sprite, float dir) {
     const float absScale = std::abs(sprite.getScale().x);
-    const float newScale = (dir < 0.f) ? absScale : -absScale; // facing left = positive scale, facing right = negative scale (because original sprite faces left)
+    // Nếu sprite gốc (trong ảnh) quay mặt sang TRÁI:
+    // Hướng < 0 (trái) -> scale dương. Hướng > 0 (phải) -> scale âm.
+    // Nhưng user báo bị ngược, tức là sprite gốc quay mặt sang PHẢI!
+    // Vậy: Hướng > 0 (phải) -> scale dương. Hướng < 0 (trái) -> scale âm.
+    const float newScale = (dir > 0.f) ? absScale : -absScale;
 
     if (sprite.getScale().x != newScale) {
         // Record visual left edge before flipping
         const float currentLeft = sprite.getGlobalBounds().left;
-        
-        // Flip
-        sprite.setScale(newScale, sprite.getScale().y);
         
         // Re-anchor to prevent position jumping
         // If scale is negative, the sprite's origin (top-left) is now physically on the right side of the visual bounds.
