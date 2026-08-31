@@ -7,11 +7,11 @@
 #include <stdexcept>
 
 // ── Layout constants ─────────────────────────────────────────────────────────
-static constexpr float kScreenW   = 1920.f;
-static constexpr float kScreenH   = 1080.f;
-static constexpr float kMarioX    = 620.f;
-static constexpr float kLuigiX    = 1300.f;
-static constexpr float kCharY     = 400.f;
+static constexpr float kScreenW     = 1920.f;
+static constexpr float kScreenH     = 1080.f;
+static constexpr float kMarioX      = 620.f;
+static constexpr float kLuigiX      = 1300.f;
+static constexpr float kCharY       = 560.f;   // was 400 – moved down
 static constexpr float kSpriteScale = 5.5f;
 // ─────────────────────────────────────────────────────────────────────────────
 

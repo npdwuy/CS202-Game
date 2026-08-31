@@ -17,44 +17,41 @@ void ChaseStrategy::setPlayerPosition(sf::Vector2f playerPos) {
 void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFrame) {
     const float dt = timePerFrame.asSeconds();
 
-    // BUG FIX 2: read the sprite's original absolute scale once per frame.
-    // We only flip the *sign* of scaleX; the magnitude must stay unchanged.
-    // (Goomba is 3.f, Koopa is 1.f – we must not overwrite that.)
-    const float absScaleX = std::abs(sprite.getScale().x);
-    const float scaleY    = sprite.getScale().y;
+    // ── Use getGlobalBounds().left as the LEFT edge of the sprite ────────────
+    // IMPORTANT: never use negative scaleX to flip the sprite here.
+    // A negative scaleX shifts the sprite's visual left edge away from
+    // position.x, breaking all boundary math. We just move the sprite
+    // forward/backward and let the sprite sheet face one way (same as the
+    // original PatrolStrategy which also never flipped).
+    const float left  = sprite.getGlobalBounds().left;
+    const float width = sprite.getGlobalBounds().width;
 
     if (m_hasPlayerPos) {
-        const float dx = m_playerPos.x - sprite.getPosition().x;
+        // Use the centre of the sprite as reference for aggro distance
+        const float spriteCentreX = left + width * 0.5f;
+        const float dx = m_playerPos.x - spriteCentreX;
 
         if (std::abs(dx) <= m_aggroRadius) {
-            // ── Chase mode: move toward the player at 130 % speed ────────────
+            // ── Chase mode: move toward the player at 130 % normal speed ─────
             const float dir = (dx > 0.f) ? 1.f : -1.f;
             sprite.move(dir * speed * 1.3f * dt, 0.f);
-
-            // Flip sprite to face the player (preserve original scale magnitude)
-            sprite.setScale(dir * absScaleX, scaleY);
             return;
         }
     }
 
     // ── Patrol mode: walk between leftBound and rightBound ───────────────────
-    // BUG FIX 1: use sprite.getPosition().x (top-left) AND account for
-    // spriteWidth when testing the right boundary, matching PatrolStrategy.
-    float newX = sprite.getPosition().x
-               + static_cast<float>(m_direction) * speed * dt;
+    // Matches PatrolStrategy exactly: move first, then clamp.
+    const float distance = static_cast<float>(m_direction) * speed * dt;
+    sprite.move(distance, 0.f);
 
-    const float spriteWidth = sprite.getGlobalBounds().width;
+    const float newLeft  = sprite.getGlobalBounds().left;
+    const float newWidth = sprite.getGlobalBounds().width;
 
-    if (newX <= m_leftBound) {
+    if (newLeft <= m_leftBound) {
+        sprite.setPosition(m_leftBound, sprite.getPosition().y);
         m_direction = 1;
-        newX        = m_leftBound;
-    } else if (newX + spriteWidth >= m_rightBound) {
+    } else if (newLeft + newWidth >= m_rightBound) {
+        sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
         m_direction = -1;
-        newX        = m_rightBound - spriteWidth;
     }
-
-    sprite.setPosition(newX, sprite.getPosition().y);
-
-    // Flip to face the walking direction (preserve original scale magnitude)
-    sprite.setScale(static_cast<float>(m_direction) * absScaleX, scaleY);
 }
