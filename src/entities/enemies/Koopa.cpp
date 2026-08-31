@@ -43,6 +43,8 @@ Koopa::Koopa(
         sf::IntRect(0, 0, 48, 48)
     );
 
+    m_sprite.setScale(1.5f, 1.5f);
+
     m_sprite.setPosition(position);
 }
 
