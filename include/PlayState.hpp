@@ -39,6 +39,7 @@ private:
     void loadGame();
     void handleItemCollisions();
     bool handleEnemyCollisions();
+    void handleMovingShellEnemyCollisions();
     bool handlePlayerFall();
     void handleLevelExit();
     void finishLevelExit();
