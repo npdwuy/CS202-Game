@@ -80,14 +80,12 @@ PlayState::PlayState(bool loadSavedGame)
     }
     else
     {
-        // Fresh start: use the character chosen in CharacterSelectState
+        // Fresh start: use the character and level chosen in select screens
         m_saveData.selectedCharacter =
             GameManager::getInstance().getSettings().getSelectedCharacter();
-        loadLevel(1, false);
-        showStatus(
-            "Level 1 - Green Hill Start",
-            2.5f
-        );
+        const int startLevel =
+            GameManager::getInstance().getSettings().getSelectedLevel();
+        loadLevel(startLevel, false);
     }
 
     updateHud();
@@ -1535,7 +1533,7 @@ bool PlayState::hasActiveBoss() const {
 }
 
 std::string PlayState::levelPath(int levelNumber) {
-    return "levels/demo.txt";
+    return "levels/level" + std::to_string(levelNumber) + ".txt";
 }
 
 void PlayState::addBackgroundLayer(

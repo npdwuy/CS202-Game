@@ -18,6 +18,15 @@ void SettingsManager::setSelectedCharacter(const std::string& name) {
     m_selectedCharacter = name;
 }
 
+int SettingsManager::getSelectedLevel() const {
+    return m_selectedLevel;
+}
+
+void SettingsManager::setSelectedLevel(int level) {
+    if (level >= 1 && level <= 3)
+        m_selectedLevel = level;
+}
+
 Difficulty SettingsManager::getDifficulty() const {
     return m_difficulty;
 }

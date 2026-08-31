@@ -1,5 +1,6 @@
 #include "CharacterSelectState.hpp"
 #include "GameManager.hpp"
+#include "LevelSelectState.hpp"
 #include "PlayState.hpp"
 #include "commands/MenuCommands.hpp"
 #include "resources/ResourceManager.hpp"
@@ -119,14 +120,12 @@ CharacterSelectState::CharacterSelectState() {
 
 void CharacterSelectState::confirmSelection() {
     // Write selected character into a fresh SaveData and launch play
-    auto playState = std::make_unique<PlayState>(false);
-    // We need to pass the character choice; easiest way: mutate SaveData
-    // via a static or via a dedicated PlayState constructor overload.
-    // For now: store in settings as a temporary string.
     GameManager::getInstance().getSettings().setSelectedCharacter(
-        m_selected == 1 ? "Luigi" : "Mario"
+        m_selected == 0 ? "Mario" : "Luigi"
     );
-    GameManager::getInstance().changeState(std::move(playState));
+    GameManager::getInstance().changeState(
+        std::make_unique<LevelSelectState>()
+    );
 }
 
 void CharacterSelectState::Input(const sf::Event& event) {
