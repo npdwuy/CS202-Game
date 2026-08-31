@@ -43,8 +43,6 @@ Koopa::Koopa(
         sf::IntRect(0, 0, 48, 48)
     );
 
-    m_sprite.setScale(1.5f, 1.5f);
-
     m_sprite.setPosition(position);
 }
 
@@ -202,8 +200,7 @@ void Koopa::UpdateShellPhysics(
             static_cast<float>(m_shellDirection) *
             dt;
 
-        const sf::FloatRect currentBounds =
-            m_sprite.getGlobalBounds();
+        const sf::FloatRect currentBounds = GetBounds();
 
         sf::FloatRect nextHorizontal(
             currentBounds.left + dx,
@@ -246,8 +243,7 @@ void Koopa::UpdateShellPhysics(
     // =========================================================
     // CHECK FOR GROUND
     // =========================================================
-    sf::FloatRect bounds =
-        m_sprite.getGlobalBounds();
+    sf::FloatRect bounds = GetBounds();
 
     const float footY =
         bounds.top +
@@ -315,8 +311,7 @@ void Koopa::UpdateShellPhysics(
         const float dy =
             m_shellVerticalVelocity * dt;
 
-        bounds =
-            m_sprite.getGlobalBounds();
+        bounds = GetBounds();
 
         sf::FloatRect nextVertical(
             bounds.left + 4.f,
@@ -423,7 +418,27 @@ void Koopa::Render(
 
 sf::FloatRect Koopa::GetBounds() const
 {
-    return m_sprite.getGlobalBounds();
+    sf::FloatRect bounds = m_sprite.getGlobalBounds();
+
+    // Bounding box chuẩn xác hơn, loại bỏ phần viền trong suốt
+    if (m_state == State::Walking)
+    {
+        // Khi đi bộ: thu gọn 2 bên và một chút trên đầu
+        bounds.left += 8.f;
+        bounds.width -= 16.f;
+        bounds.top += 4.f;
+        bounds.height -= 4.f;
+    }
+    else
+    {
+        // Khi ở trong mai (Idle/Moving): mai rùa rất lùn, nằm ở nửa dưới
+        bounds.left += 8.f;
+        bounds.width -= 16.f;
+        bounds.top += 20.f;     // Cắt bỏ 20px khoảng trống phía trên
+        bounds.height -= 20.f;
+    }
+
+    return bounds;
 }
 
 bool Koopa::IsActive() const
