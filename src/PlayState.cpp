@@ -1146,6 +1146,11 @@ bool PlayState::handleEnemyCollisions()
         // =========================================================
         // NORMAL SIDE DAMAGE
         // =========================================================
+        if (koopa && koopa->IsSafeFromPlayer())
+        {
+            continue;
+        }
+
         if (m_damageCooldown > 0.f)
         {
             continue;

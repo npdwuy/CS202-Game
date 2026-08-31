@@ -513,6 +513,7 @@ void Koopa::KickShell(int direction)
             : -1;
 
     m_shellVerticalVelocity = 0.f;
+    m_shellKickDelay = 0.2f;
 
     m_animationTime = 0.f;
     m_currentFrame = 0;
@@ -563,6 +564,11 @@ bool Koopa::IsShellMoving() const
 bool Koopa::CanKickShell() const
 {
     return m_state == State::ShellIdle && m_shellKickDelay <= 0.f;
+}
+
+bool Koopa::IsSafeFromPlayer() const
+{
+    return m_shellKickDelay > 0.f;
 }
 
 // =============================================================
