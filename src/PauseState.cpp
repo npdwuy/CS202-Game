@@ -53,14 +53,16 @@ void PauseState::initUI() {
       std::make_unique<Button>("EXIT GAME", m_font,
                                sf::Vector2f(960.f, 680.f), btnSize, 24);
 
+  const sf::Color darkBrownText(120, 60, 20);
+
   m_resumeButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255),
-                            sf::Color(245, 222, 179));
+                            darkBrownText);
   m_optionsButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255),
-                             sf::Color(245, 222, 179));
+                             darkBrownText);
   m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255),
-                          sf::Color(245, 222, 179));
+                          darkBrownText);
   m_exitButton->setColors(sf::Color::White, sf::Color(255, 210, 210, 255),
-                          sf::Color(245, 222, 179));
+                          darkBrownText);
 
   // Callbacks
   m_resumeButton->setCommand(std::make_unique<PopStateCommand>());
