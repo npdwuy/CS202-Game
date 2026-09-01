@@ -100,6 +100,25 @@ void TileMap::render(sf::RenderWindow& window) const {
     }
 }
 
+void TileMap::renderForegroundPipes(sf::RenderWindow& window) const {
+    if (m_renderer) {
+        sf::VertexArray pipeTiles(sf::Quads);
+        for (int row = 0; row < m_data.rows.size(); ++row) {
+            for (int col = 0; col < m_data.rows[row].size(); ++col) {
+                char c = m_data.rows[row][col];
+                if (c == 'W' || c == '|') {
+                    m_renderer->buildSingleTile(pipeTiles, m_data, row, col, sf::Vector2f(0.f, 0.f));
+                }
+            }
+        }
+        if (pipeTiles.getVertexCount() > 0) {
+            sf::VertexArray emptyTri(sf::Triangles);
+            sf::VertexArray emptyQuad(sf::Quads);
+            m_renderer->render(window, pipeTiles, emptyTri, emptyQuad);
+        }
+    }
+}
+
 void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof) const {
     const float deltaTime = timePerFrame.asSeconds();
     if (deltaTime <= 0.f) {
@@ -151,7 +170,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
         for (int row = firstRow; row <= lastRow; ++row) {
             for (int column = firstColumn; column <= lastColumn; ++column) {
                 char c = m_data.rows[row][column];
-                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
+                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
+                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                     continue;
                 }
 
@@ -423,7 +443,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     }
 
     char c = m_data.rows[row][column];
-    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
+    return c == '#' || c == 'B' || c == '?' || c == '!' || c == '=' || c == 'W' || c == '|' || c == '[' || c == ']';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
@@ -459,7 +479,7 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
     for (int row = firstRow; row <= lastRow; ++row) {
         for (int column = firstColumn; column <= lastColumn; ++column) {
             char c = m_data.rows[row][column];
-            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
                 continue;
             }
 

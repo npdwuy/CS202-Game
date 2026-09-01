@@ -44,6 +44,7 @@ class TileMap {
 public:
     void load(const std::string& path);
     void render(sf::RenderWindow& window) const;
+    void renderForegroundPipes(sf::RenderWindow& window) const;
     void update(sf::Time dt);
     void resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof = nullptr) const;
     void breakBlock(int row, int col);

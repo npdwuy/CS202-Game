@@ -159,7 +159,7 @@ void ProceduralTileRenderer::buildGeometry(
             };
 
             sf::Color fillColor = row % 2U == 0U ? palette.lightFill : palette.darkFill;
-            if (c == 'W' || c == '|') {
+            if (c == 'W' || c == '|' || c == '[' || c == ']') {
                 fillColor = sf::Color(0, 160, 0); // Pipe Green
             }
             appendQuad(
@@ -256,9 +256,14 @@ void ProceduralTileRenderer::buildSingleTile(
         static_cast<float>(row) * tileSize + offset.y
     };
 
-    const sf::Color fillColor = row % 2 == 0
+    sf::Color fillColor = row % 2 == 0
         ? palette.lightFill
         : palette.darkFill;
+        
+    char c = data.rows[row][col];
+    if (c == 'W' || c == '|' || c == '[' || c == ']') {
+        fillColor = sf::Color(0, 160, 0); // Pipe Green
+    }
         
     appendQuad(
         vertices,

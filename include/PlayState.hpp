@@ -134,6 +134,7 @@ void renderBackgroundLayers(
 );
 
     bool m_isWarping = false;
+    bool m_wasWarping = false;
     float m_warpTimer = 0.f;
     int m_warpDestinationLevel = 4;
     sf::RectangleShape m_warpFadeOverlay;

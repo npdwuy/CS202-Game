@@ -354,6 +354,7 @@ void PlayState::Update(sf::Time timePerFrame) {
         
         if (m_warpTimer > 1.2f) {
             m_isWarping = false;
+            m_wasWarping = true;
             m_warpTimer = 0.f;
             if (m_player) m_player->isWarpingDown_ = false;
             m_warpFadeOverlay.setFillColor(sf::Color(0, 0, 0, 0));
@@ -362,17 +363,65 @@ void PlayState::Update(sf::Time timePerFrame) {
         return;
     }
 
-    if (m_player && m_player->onGround() && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-        sf::Vector2f bottomCenter = m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height());
-        int col = static_cast<int>(bottomCenter.x / m_tileMap.data().tileSize);
-        int row = static_cast<int>((bottomCenter.y + 2.f) / m_tileMap.data().tileSize);
-        if (row >= 0 && row < m_tileMap.data().rows.size() && col >= 0 && col < m_tileMap.data().rows[row].size()) {
-            if (m_tileMap.data().rows[row][col] == 'W') {
-                m_isWarping = true;
-                m_warpTimer = 0.f;
-                m_warpDestinationLevel = (m_saveData.currentLevel == 4) ? 1 : 4;
-                m_player->startWarpDown();
-                AudioManager::getInstance().playEffect(SoundEffect::Pipe);
+    if (m_player && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        if (m_player->onGround()) {
+            const auto& data = m_tileMap.data();
+            sf::FloatRect bounds = m_player->GetBounds();
+            
+            float centerX = bounds.left + bounds.width / 2.0f;
+            float bottomY = bounds.top + bounds.height + 2.0f; 
+            
+            int col = static_cast<int>(centerX / data.tileSize);
+            int row = static_cast<int>(bottomY / data.tileSize);
+            
+            if (row >= 0 && row < data.rows.size() && col >= 0 && col < data.rows[row].size()) {
+                if (data.rows[row][col] == 'W') {
+                    m_isWarping = true;
+                    m_warpTimer = 0.f;
+                    
+                    if (m_saveData.currentLevel == 1) m_warpDestinationLevel = 4;
+                    else if (m_saveData.currentLevel == 4) m_warpDestinationLevel = 1;
+                    
+                    m_player->isWarpingDown_ = true;
+                    m_player->setVelocity({0.f, 25.f}); 
+                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                }
+            }
+        }
+    }
+    
+    // Horizontal Warp Logic
+    if (m_player && (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))) {
+        const auto& data = m_tileMap.data();
+        sf::FloatRect bounds = m_player->GetBounds();
+        
+        float rightX = bounds.left + bounds.width + 2.0f;
+        float leftX = bounds.left - 2.0f;
+        float centerY = bounds.top + bounds.height / 2.0f;
+        
+        int colR = static_cast<int>(rightX / data.tileSize);
+        int colL = static_cast<int>(leftX / data.tileSize);
+        int row = static_cast<int>(centerY / data.tileSize);
+        
+        if (row >= 0 && row < data.rows.size()) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && colR >= 0 && colR < data.rows[row].size()) {
+                if (data.rows[row][colR] == '[' || data.rows[row][colR] == ']') {
+                    m_isWarping = true;
+                    m_warpTimer = 0.f;
+                    m_warpDestinationLevel = 1;
+                    m_player->isWarpingDown_ = true; // Use same flag to disable physics
+                    m_player->setVelocity({25.f, 0.f}); // Slide right
+                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                }
+            } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && colL >= 0 && colL < data.rows[row].size()) {
+                if (data.rows[row][colL] == '[' || data.rows[row][colL] == ']') {
+                    m_isWarping = true;
+                    m_warpTimer = 0.f;
+                    m_warpDestinationLevel = 1;
+                    m_player->isWarpingDown_ = true; 
+                    m_player->setVelocity({-25.f, 0.f}); // Slide left
+                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                }
             }
         }
     }
@@ -644,20 +693,24 @@ void PlayState::Render(sf::RenderWindow& window) {
     if (m_player) {
         m_player->Render(window);
     }
+    m_tileMap.renderForegroundPipes(window);
 
     if (m_showFlagScore) {
         window.draw(m_flagScoreText);
     }
 
-    if (m_levelStarting || m_exitSequence == ExitSequence::IrisWipe) {
+    if (m_levelStarting || m_exitSequence == ExitSequence::IrisWipe || m_isWarping) {
         float rawProgress = 0.f;
         if (m_levelStarting) {
             rawProgress = std::clamp(m_startTimer / 1.0f, 0.0f, 1.0f); 
             // Cubic Ease-In for opening (mirroring closing wipe)
             rawProgress = std::pow(rawProgress, 3.0f);
-        } else {
+        } else if (m_exitSequence == ExitSequence::IrisWipe) {
             rawProgress = std::clamp(1.0f - (m_exitTimer / 1.0f), 0.0f, 1.0f); 
             // Cubic Ease-In for closing
+            rawProgress = std::pow(rawProgress, 3.0f);
+        } else if (m_isWarping) {
+            rawProgress = std::clamp(1.0f - (m_warpTimer / 1.2f), 0.0f, 1.0f);
             rawProgress = std::pow(rawProgress, 3.0f);
         }
         
@@ -703,9 +756,6 @@ void PlayState::Render(sf::RenderWindow& window) {
     if (m_menuButton) {
         m_menuButton->render(window);
     }
-    if (m_isWarping) {
-        window.draw(m_warpFadeOverlay);
-    }
 }
 
 void PlayState::handleLevelStart() {
@@ -734,7 +784,29 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     createLevelObjects();
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
-    if (restoreSavedPosition && m_saveData.hasPlayerPosition) {
+    
+    if (m_wasWarping) {
+        m_wasWarping = false;
+        // Find the first 'W' or '[' pipe
+        bool foundPipe = false;
+        for (int r = 0; r < m_tileMap.data().rows.size(); ++r) {
+            for (int c = 0; c < m_tileMap.data().rows[r].size(); ++c) {
+                char ch = m_tileMap.data().rows[r][c];
+                if (ch == 'W' || ch == '[') {
+                    spawnPosition = sf::Vector2f(
+                        c * m_tileMap.data().tileSize,
+                        (r - 1) * m_tileMap.data().tileSize
+                    );
+                    // For a horizontal pipe, spawning above it might be weird, but 
+                    // it prevents getting stuck inside it. A better logic could spawn 
+                    // adjacent to it. For now, spawning above 'W' is perfect.
+                    foundPipe = true;
+                    break;
+                }
+            }
+            if (foundPipe) break;
+        }
+    } else if (restoreSavedPosition && m_saveData.hasPlayerPosition) {
         const sf::Vector2f savedPosition{
             m_saveData.playerX,
             m_saveData.playerY
