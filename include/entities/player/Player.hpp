@@ -4,7 +4,7 @@
 
 class Player : public Character {
 public:
-    static constexpr float CollisionWidth = 38.f;
+    static constexpr float CollisionWidth = 32.f;
     static constexpr float CollisionHeight = 45.f;
 protected:
     bool inputEnabled_ = true;

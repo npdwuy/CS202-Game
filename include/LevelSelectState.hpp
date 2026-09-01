@@ -34,6 +34,7 @@ private:
 
     // 3 level buttons + back button
     std::array<std::unique_ptr<Button>, 3> m_levelButtons;
+    std::unique_ptr<Button> m_generateButton;
     std::unique_ptr<Button> m_backButton;
 
     // Level info texts

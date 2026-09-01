@@ -23,8 +23,9 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     const TileMap& tileMap
 )
 {
-    float minimumX = std::max(0.f, position.x - tileSize * 2.f);
-    float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 2.f);
+    // Default amplitude was 2 tiles. The user requested 2.5x increase (2.0 * 2.5 = 5.0 tiles).
+    float minimumX = std::max(0.f, position.x - tileSize * 5.f);
+    float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 5.f);
 
     if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h') {
         // Scan left and right to find exact platform bounds

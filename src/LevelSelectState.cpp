@@ -1,4 +1,5 @@
 #include "LevelSelectState.hpp"
+#include "GenerateLevelState.hpp"
 #include "CharacterSelectState.hpp"
 #include "GameManager.hpp"
 #include "PlayState.hpp"
@@ -51,27 +52,25 @@ LevelSelectState::LevelSelectState() {
     }
 
     // ── 3 Level buttons ──────────────────────────────────────────────────────
-    const sf::Vector2f btnSize(420.f, 100.f);
+    const sf::Vector2f btnSize(350.f, 100.f);
     const float cornerR = btnSize.y / 2.f;
     const float cx = gameView.getSize().x / 2.f;
 
     const sf::Color normalBlue  (40,  120, 210, 215);
     const sf::Color hoverBlue   (80,  180, 255, 255);
-    const sf::Color normalGreen (40,  170,  80, 215);
-    const sf::Color hoverGreen  (60,  220, 100, 255);
-    const sf::Color normalRed   (200,  55,  55, 215);
+    const sf::Color normalGreen (40,  160,  60, 215);
+    const sf::Color hoverGreen  (80,  220, 100, 255);
+    const sf::Color normalRed   (180,  40,  40, 215);
     const sf::Color hoverRed    (255,  80,  80, 255);
-    const sf::Color white       (255, 255, 255);
+    const sf::Color white       (255, 255, 255, 255);
 
     const sf::Color normalColors[3] = { normalBlue, normalGreen, normalRed };
-    const sf::Color hoverColors [3] = { hoverBlue,  hoverGreen,  hoverRed  };
+    const sf::Color hoverColors[3]  = { hoverBlue,  hoverGreen,  hoverRed };
     const float yPositions [3] = { 360.f, 520.f, 680.f };
 
     for (int i = 0; i < 3; ++i) {
-        // Button label: "LEVEL N  -  Subtitle"
-        std::string label = std::string(kLevelInfo[i].name)
-                          + "  -  "
-                          + kLevelInfo[i].hint;
+        // Button label: "LEVEL N"
+        std::string label = kLevelInfo[i].name;
         auto btn = std::make_unique<Button>(label, m_font,
                                             sf::Vector2f(cx, yPositions[i]),
                                             btnSize, 34);
@@ -103,9 +102,20 @@ LevelSelectState::LevelSelectState() {
         }
     }
 
-    // ── Back button ──────────────────────────────────────────────────────────
+    // Generate Level button
+    m_generateButton = std::make_unique<Button>("GENERATE LEVEL", m_font,
+                                            sf::Vector2f(cx, 790.f),
+                                            sf::Vector2f(350.f, 60.f), 26);
+    m_generateButton->setColors(sf::Color(120, 40, 150, 215),
+                                sf::Color(180, 80, 220, 255), white);
+    m_generateButton->setShapeCornerRadius(30.f);
+    m_generateButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().changeState(std::make_unique<GenerateLevelState>());
+    }));
+
+    // Back button
     m_backButton = std::make_unique<Button>("BACK", m_font,
-                                            sf::Vector2f(cx, 830.f),
+                                            sf::Vector2f(cx, 870.f),
                                             sf::Vector2f(240.f, 60.f), 26);
     m_backButton->setColors(sf::Color(80, 80, 80, 200),
                             sf::Color(140, 140, 140, 255), white);
@@ -131,6 +141,7 @@ void LevelSelectState::Input(const sf::Event& event) {
             sf::Vector2i(event.mouseMove.x, event.mouseMove.y), view
         );
         for (auto& btn : m_levelButtons) btn->update(mp);
+        m_generateButton->update(mp);
         m_backButton->update(mp);
     }
 
@@ -140,6 +151,7 @@ void LevelSelectState::Input(const sf::Event& event) {
         );
         for (auto& btn : m_levelButtons)
             if (btn->handleClick(event, mp)) return;
+        if (m_generateButton->handleClick(event, mp)) return;
         if (m_backButton->handleClick(event, mp)) return;
     }
 
@@ -148,6 +160,9 @@ void LevelSelectState::Input(const sf::Event& event) {
             case sf::Keyboard::Num1: selectLevel(1); break;
             case sf::Keyboard::Num2: selectLevel(2); break;
             case sf::Keyboard::Num3: selectLevel(3); break;
+            case sf::Keyboard::Num4: 
+                GameManager::getInstance().changeState(std::make_unique<GenerateLevelState>());
+                break;
             case sf::Keyboard::Escape:
                 GameManager::getInstance().changeState(
                     std::make_unique<CharacterSelectState>()
@@ -197,6 +212,7 @@ void LevelSelectState::Render(sf::RenderWindow& window) {
         window.draw(m_difficultyText[i]);
     }
 
-    // 6. Back button
+    // 6. Generate & Back button
+    m_generateButton->render(window);
     m_backButton->render(window);
 }
