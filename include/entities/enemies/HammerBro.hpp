@@ -54,7 +54,7 @@ private:
     bool m_flung = false;
 
     float m_attackCooldown = 0.f;
-    float m_attackTimer = 0.f;
+    float m_stateTimer = 0.f;
     float m_animationTimer = 0.f;
     int m_currentFrame = 0;
 };

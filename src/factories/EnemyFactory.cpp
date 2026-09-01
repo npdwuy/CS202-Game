@@ -110,7 +110,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                     position.x + tileSize * 0.5f,
                     position.y + tileSize
                 ),
-                50.f,
+                30.f,  // Small HammerBro - tốc độ vừa
                 std::make_unique<ChaseStrategy>(
                     minimumX,
                     maximumX,
@@ -126,7 +126,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                     position.x + tileSize * 0.5f,
                     position.y + tileSize
                 ),
-                50.f,
+                18.f,  // Big HammerBro - tốc độ chậm hơn
                 std::make_unique<ChaseStrategy>(
                     minimumX,
                     maximumX,
