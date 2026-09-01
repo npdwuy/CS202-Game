@@ -776,7 +776,6 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
-    m_tileMap.setDrawSky(false);
     m_enemies.clear();
     m_items.clear();
     m_fireballs.clear();

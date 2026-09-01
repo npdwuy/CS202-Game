@@ -17,6 +17,8 @@ const sf::Texture& ResourceManager::getTexture(const std::string& path) {
     if (!texture->loadFromFile(path)) {
         throw std::runtime_error("Failed to load texture resource: " + path);
     }
+    
+    texture->setSmooth(true);
 
     const sf::Texture& resource = *texture;
     m_textures.emplace(path, std::move(texture));

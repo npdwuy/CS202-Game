@@ -55,9 +55,6 @@ void Koopa::Update(sf::Time timePerFrame)
 
     const float dt = timePerFrame.asSeconds();
 
-    // =========================================================
-    // SHELL KICK DELAY
-    // =========================================================
     if (m_shellKickDelay > 0.f)
     {
         m_shellKickDelay -= dt;
@@ -68,9 +65,6 @@ void Koopa::Update(sf::Time timePerFrame)
         }
     }
 
-    // =========================================================
-    // FLUNG STATE
-    // =========================================================
     if (m_flung)
     {
         m_velocity.y += 2000.f * dt;
@@ -87,25 +81,11 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    // =========================================================
-    // IDLE SHELL
-    //
-    // Horizontal movement is disabled.
-    // Gravity is handled later by UpdateShellPhysics().
-    // =========================================================
     if (m_state == State::ShellIdle)
     {
         return;
     }
 
-    // =========================================================
-    // MOVING SHELL
-    //
-    // Horizontal movement + gravity are handled by
-    // UpdateShellPhysics().
-    //
-    // This section only handles shell animation.
-    // =========================================================
     if (m_state == State::ShellMoving)
     {
         m_animationTime += dt;
@@ -132,9 +112,6 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    // =========================================================
-    // NORMAL WALKING KOOPA
-    // =========================================================
     m_animationTime += dt;
 
     const float frameDuration = 0.22f;
@@ -190,9 +167,6 @@ void Koopa::UpdateShellPhysics(
     constexpr float gravity = 2000.f;
     constexpr float terminalVelocity = 1800.f;
 
-    // =========================================================
-    // HORIZONTAL SHELL MOVEMENT
-    // =========================================================
     if (m_state == State::ShellMoving)
     {
         const float dx =
@@ -228,7 +202,6 @@ void Koopa::UpdateShellPhysics(
 
         if (hitsWorldEdge || hitsWall)
         {
-            // Shell hits a wall -> reverse direction.
             m_shellDirection *= -1;
         }
         else
@@ -240,9 +213,6 @@ void Koopa::UpdateShellPhysics(
         }
     }
 
-    // =========================================================
-    // CHECK FOR GROUND
-    // =========================================================
     sf::FloatRect bounds = GetBounds();
 
     const float footY =
@@ -281,9 +251,6 @@ void Koopa::UpdateShellPhysics(
             )
         );
 
-    // =========================================================
-    // GRAVITY
-    // =========================================================
     if (
         hasGround &&
         m_shellVerticalVelocity >= 0.f
@@ -303,9 +270,6 @@ void Koopa::UpdateShellPhysics(
             );
     }
 
-    // =========================================================
-    // VERTICAL MOVEMENT
-    // =========================================================
     if (m_shellVerticalVelocity != 0.f)
     {
         const float dy =
@@ -328,13 +292,6 @@ void Koopa::UpdateShellPhysics(
             tileMap.intersectsSolid(nextVertical)
         )
         {
-            // -------------------------------------------------
-            // Shell is falling onto a platform.
-            //
-            // Find the maximum safe vertical movement so the
-            // shell lands directly above the tile instead of
-            // entering it.
-            // -------------------------------------------------
             float safeMove = 0.f;
             float collisionMove = dy;
 
@@ -380,13 +337,10 @@ void Koopa::UpdateShellPhysics(
             tileMap.intersectsSolid(nextVertical)
         )
         {
-            // Currently not normally used by the shell,
-            // but prevents upward motion through blocks.
             m_shellVerticalVelocity = 0.f;
         }
         else
         {
-            // No ground / obstacle -> continue falling.
             m_sprite.move(
                 0.f,
                 dy
@@ -394,9 +348,6 @@ void Koopa::UpdateShellPhysics(
         }
     }
 
-    // =========================================================
-    // FALL OUT OF LEVEL
-    // =========================================================
     if (
         m_sprite.getPosition().y >
         tileMap.worldBounds().height + 200.f
@@ -420,10 +371,8 @@ sf::FloatRect Koopa::GetBounds() const
 {
     sf::FloatRect bounds = m_sprite.getGlobalBounds();
 
-    // Bounding box chuẩn xác hơn, loại bỏ phần viền trong suốt
     if (m_state == State::Walking)
     {
-        // Khi đi bộ: thu gọn 2 bên và một chút trên đầu
         bounds.left += 8.f;
         bounds.width -= 16.f;
         bounds.top += 4.f;
@@ -431,10 +380,9 @@ sf::FloatRect Koopa::GetBounds() const
     }
     else
     {
-        // Khi ở trong mai (Idle/Moving): mai rùa rất lùn, nằm ở nửa dưới
         bounds.left += 8.f;
         bounds.width -= 16.f;
-        bounds.top += 20.f;     // Cắt bỏ 20px khoảng trống phía trên
+        bounds.top += 20.f;
         bounds.height -= 20.f;
     }
 
@@ -451,9 +399,6 @@ void Koopa::Deactivate()
     m_active = false;
 }
 
-// =============================================================
-// ENTER SHELL
-// =============================================================
 void Koopa::EnterShell()
 {
     if (
@@ -469,8 +414,6 @@ void Koopa::EnterShell()
     m_animationTime = 0.f;
     m_currentFrame = 0;
 
-    // Prevent the same stomp from immediately
-    // kicking the shell.
     m_shellKickDelay = 0.35f;
 
     m_shellVerticalVelocity = 0.f;
@@ -492,9 +435,6 @@ void Koopa::EnterShell()
     );
 }
 
-// =============================================================
-// KICK SHELL
-// =============================================================
 void Koopa::KickShell(int direction)
 {
     if (

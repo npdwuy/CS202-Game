@@ -9,14 +9,10 @@ public:
     ParallaxBackground();
     ~ParallaxBackground() = default;
 
-    // Load texture from file and prepare sprites
     bool load(const std::string& texturePath);
 
-    // Update the position of the background based on the camera view
-    // parallaxFactor determines how fast it scrolls (0 = static, 1 = moves with camera)
     void update(const sf::View& camera, float parallaxFactor = 0.5f);
 
-    // Render the seamless background
     void render(sf::RenderTarget& target) const;
 
 private:

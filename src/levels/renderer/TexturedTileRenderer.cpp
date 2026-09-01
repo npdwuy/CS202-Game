@@ -81,6 +81,7 @@ TexturedTileRenderer::TexturedTileRenderer(sf::Texture texture, TilesetLayout la
     : m_texture(std::move(texture)), m_layout(layout) {
     m_image = m_texture.copyToImage();
     m_pipeTexture.loadFromFile("assets/sprites/tilesets/WU_Field_castle.png");
+    m_pipeTexture.setSmooth(true);
 }
 
 void TexturedTileRenderer::appendTexturedQuad(
@@ -226,26 +227,25 @@ void TexturedTileRenderer::buildGeometry(
                     isTop = (row == 0) || (data.rows[row - 1][column] != '[' && data.rows[row - 1][column] != ']');
                 }
 
-                // Base UVs for vertical pipe in WU_Field_castle.png (grid is 64x64)
-                // Mouth is Y=0, Body is Y=64.
-                // Left half is X=880, Right half is X=944.
-                float texX = isLeft ? 880.f : 944.f;
-                float texY = 64.f; // Default body
-                if (c == 'W') texY = 0.f; // Mouth
+                constexpr float PipeTilesetLeftX = 880.f;
+                constexpr float PipeTilesetRightX = 944.f;
+                constexpr float PipeMouthY = 0.f;
+                constexpr float PipeBodyY = 64.f;
+                constexpr float PipeTileSize = 64.f;
+
+                float texX = isLeft ? PipeTilesetLeftX : PipeTilesetRightX;
+                float texY = PipeBodyY;
+                if (c == 'W') texY = PipeMouthY;
                 
                 if (c == '[' || c == ']') {
-                    bool isMouth = (column == 0) || (data.rows[row][column - 1] != c); // Left-facing mouth
+                    bool isMouth = (column == 0) || (data.rows[row][column - 1] != c);
                     
-                    // When rotated CCW, the top block of the horizontal pipe uses the RIGHT half of the vertical pipe.
-                    // The bottom block uses the LEFT half.
-                    texX = isTop ? 944.f : 880.f; 
-                    texY = isMouth ? 0.f : 64.f;
+                    texX = isTop ? PipeTilesetRightX : PipeTilesetLeftX; 
+                    texY = isMouth ? PipeMouthY : PipeBodyY;
                 }
 
-                sf::FloatRect texCoords(texX, texY, 64.f, 64.f);
+                sf::FloatRect texCoords(texX, texY, PipeTileSize, PipeTileSize);
                 
-                // Append pipe quad to sceneryVertices so it uses m_pipeTexture
-                // If it's a horizontal pipe, we rotate the UVs 90 degrees CCW (mouth points left)
                 if (c == '[' || c == ']') {
                     float u = texCoords.left;
                     float v = texCoords.top;
@@ -342,17 +342,23 @@ void TexturedTileRenderer::buildSingleTile(
             isTop = (row == 0) || (data.rows[row - 1][col] != '[' && data.rows[row - 1][col] != ']');
         }
 
-        float texX = isLeft ? 880.f : 944.f;
-        float texY = 64.f; 
-        if (c == 'W') texY = 0.f; 
+        constexpr float PipeTilesetLeftX = 880.f;
+        constexpr float PipeTilesetRightX = 944.f;
+        constexpr float PipeMouthY = 0.f;
+        constexpr float PipeBodyY = 64.f;
+        constexpr float PipeTileSize = 64.f;
+
+        float texX = isLeft ? PipeTilesetLeftX : PipeTilesetRightX;
+        float texY = PipeBodyY; 
+        if (c == 'W') texY = PipeMouthY; 
         
         if (c == '[' || c == ']') {
             bool isMouth = (col == 0) || (data.rows[row][col - 1] != c);
-            texX = isTop ? 944.f : 880.f;
-            texY = isMouth ? 0.f : 64.f;
+            texX = isTop ? PipeTilesetRightX : PipeTilesetLeftX;
+            texY = isMouth ? PipeMouthY : PipeBodyY;
         }
 
-        sf::FloatRect texCoords(texX, texY, 64.f, 64.f);
+        sf::FloatRect texCoords(texX, texY, PipeTileSize, PipeTileSize);
 
         if (c == '[' || c == ']') {
             float u = texCoords.left;
