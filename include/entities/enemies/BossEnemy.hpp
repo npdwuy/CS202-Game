@@ -53,7 +53,7 @@ private:
     bool m_flung = false;
 
     bool m_facingLeft = true;
-    float m_scale = 1.2f;
+    float m_scale = 1.44f; // Tăng kích thước 20% (1.2f * 1.20)
 
     float m_stateTimer = 0.f;
     float m_animationTimer = 0.f;
