@@ -223,9 +223,11 @@ void PlayState::OnGameEvent(const GameEvent& event)
                     values.push_back(std::stof(token));
                 }
                 if (values.size() >= 4) {
+                    float hammerScale = (values.size() >= 5) ? values[4] : 0.75f;
                     m_hammerProjectiles.push_back(std::make_unique<HammerProjectile>(
                         sf::Vector2f(values[0], values[1]),
-                        sf::Vector2f(values[2], values[3])
+                        sf::Vector2f(values[2], values[3]),
+                        hammerScale
                     ));
                 }
             }

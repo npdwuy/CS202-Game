@@ -4,7 +4,7 @@
 
 class HammerProjectile {
 public:
-    HammerProjectile(sf::Vector2f position, sf::Vector2f velocity);
+    HammerProjectile(sf::Vector2f position, sf::Vector2f velocity, float scale = 1.0f);
 
     void Update(sf::Time dt);
     void Render(sf::RenderWindow& window);

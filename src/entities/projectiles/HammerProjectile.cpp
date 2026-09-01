@@ -18,7 +18,7 @@ static sf::IntRect getValidHammerRect(const std::vector<sf::IntRect>& frames, in
     return sf::IntRect(624, 0, 48, 48);
 }
 
-HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity)
+HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity, float scale)
     : m_velocity(velocity), m_position(position) {
 
     const sf::Texture& texture = ResourceManager::getInstance().getTexture("assets/sprites/enemies/hammer_bro.png");
@@ -27,7 +27,7 @@ HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity)
     sf::IntRect rect = getValidHammerRect(framesHammer, 0);
     m_sprite.setTextureRect(rect);
     m_sprite.setOrigin(rect.width * 0.5f, rect.height * 0.5f);
-    m_sprite.setScale(0.75f, 0.75f);
+    m_sprite.setScale(scale, scale);
     m_sprite.setPosition(m_position);
 }
 
@@ -50,6 +50,11 @@ void HammerProjectile::Update(sf::Time dt) {
         sf::IntRect rect = getValidHammerRect(framesHammer, m_currentFrame);
         m_sprite.setTextureRect(rect);
     }
+
+    // Destroy if falls off screen
+    if (m_position.y > 2000.f) {
+        m_destroyed = true;
+    }
 }
 
 void HammerProjectile::Render(sf::RenderWindow& window) {
@@ -59,5 +64,15 @@ void HammerProjectile::Render(sf::RenderWindow& window) {
 }
 
 sf::FloatRect HammerProjectile::GetBounds() const {
-    return m_sprite.getGlobalBounds();
+    // Dùng vùng nhỏ hơn global bounds để va chạm chính xác hơn
+    sf::FloatRect full = m_sprite.getGlobalBounds();
+    const float shrinkX = full.width  * 0.20f;
+    const float shrinkY = full.height * 0.20f;
+    return sf::FloatRect(
+        full.left   + shrinkX,
+        full.top    + shrinkY,
+        full.width  - shrinkX * 2.f,
+        full.height - shrinkY * 2.f
+    );
 }
+

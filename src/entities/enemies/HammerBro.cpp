@@ -6,33 +6,35 @@
 #include <stdexcept>
 #include <utility>
 
-// --- DẠNG NHỎ (SMALL) - hammer_bro.png (672x98) ---
+// --- DẠNG NHỎ (SMALL) ---
 static const std::vector<sf::IntRect> framesWalkSmall = {
-    sf::IntRect(0,   23, 48, 74),
-    sf::IntRect(48,  23, 48, 74)
+    sf::IntRect(/* Small Walk Frame 1 */ 8, 23, 51, 75),
+    sf::IntRect(/* Small Walk Frame 2 */ 60, 23, 51, 75)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackSmall = {
-    sf::IntRect(96,  23, 48, 74),
-    sf::IntRect(144, 23, 48, 74)
+    sf::IntRect(/* Small Prep Frame 1 */ 123, 23, 51, 75),
+    sf::IntRect(/* Small Prep Frame 2 */ 174, 23, 51, 75)
 };
 static const std::vector<sf::IntRect> framesAttackSmall = {
-    sf::IntRect(192, 23, 48, 74),
-    sf::IntRect(240, 23, 48, 74)
+    sf::IntRect(/* Small Attack Frame 1 */ 236, 23, 51, 75)
 };
 
 // --- DẠNG LỚN (BIG) ---
 static const std::vector<sf::IntRect> framesWalkBig = {
-    sf::IntRect(288, 0, 48, 97),
-    sf::IntRect(336, 0, 48, 97)
+    sf::IntRect(/* Big Walk Frame 1 */ 300, 0, 75, 97),
+    sf::IntRect(/* Big Walk Frame 2 */ 375, 0, 75, 97)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackBig = {
-    sf::IntRect(384, 0, 48, 97),
-    sf::IntRect(432, 0, 48, 97)
+    sf::IntRect(/* Big Prep Frame 2 */ 462, 0, 75, 97)
 };
 static const std::vector<sf::IntRect> framesAttackBig = {
-    sf::IntRect(480, 0, 48, 97),
-    sf::IntRect(528, 0, 48, 97)
+    sf::IntRect(/* Big Attack Frame 2 */ 538, 0, 75, 97)
 };
+
+// Helper: bỏ qua frame nếu là placeholder (0,0,0,0)
+static bool isValidRect(const sf::IntRect& r) {
+    return r.width > 0 && r.height > 0;
+}
 
 // Helper: giống advanceAnimation của BossEnemy
 static void advanceAnimation(
@@ -80,9 +82,12 @@ HammerBro::HammerBro(
 
     const auto& walkFrames = m_isBig ? framesWalkBig : framesWalkSmall;
     sf::IntRect rect = walkFrames[0];
-    m_sprite.setTextureRect(rect);
-    m_sprite.setOrigin(rect.width * 0.5f, static_cast<float>(rect.height));
-    m_sprite.setScale(1.0f, 1.0f);
+    if (isValidRect(rect)) {
+        m_sprite.setTextureRect(rect);
+        m_sprite.setOrigin(rect.width * 0.5f, static_cast<float>(rect.height));
+    }
+    float scaleVal = m_isBig ? 0.8f : 0.7f;
+    m_sprite.setScale(scaleVal, scaleVal);
     m_sprite.setPosition(position);
 }
 
@@ -133,7 +138,10 @@ void HammerBro::Update(sf::Time dt) {
             // Animation đi bộ (loop)
             advanceAnimation(walkFrames, m_currentFrame, m_animationTimer,
                              walkInterval, true, animationEnded);
-            m_sprite.setTextureRect(walkFrames[m_currentFrame]);
+            {
+                const sf::IntRect& fr = walkFrames[m_currentFrame];
+                if (isValidRect(fr)) m_sprite.setTextureRect(fr);
+            }
 
             // Đủ thời gian + Mario trong tầm → chuyển sang PrepareAttack
             float distX = std::abs(m_playerPos.x -
@@ -163,7 +171,10 @@ void HammerBro::Update(sf::Time dt) {
             // Animation prepare (một lần, không loop)
             advanceAnimation(prepFrames, m_currentFrame, m_animationTimer,
                              prepInterval, false, animationEnded);
-            m_sprite.setTextureRect(prepFrames[m_currentFrame]);
+            {
+                const sf::IntRect& fr = prepFrames[m_currentFrame];
+                if (isValidRect(fr)) m_sprite.setTextureRect(fr);
+            }
 
             // Khi animation kết thúc → ném búa rồi chuyển sang Attack
             if (animationEnded) {
@@ -181,7 +192,10 @@ void HammerBro::Update(sf::Time dt) {
             // Animation attack (một lần, không loop)
             advanceAnimation(attackFrames, m_currentFrame, m_animationTimer,
                              attackInterval, false, animationEnded);
-            m_sprite.setTextureRect(attackFrames[m_currentFrame]);
+            {
+                const sf::IntRect& fr = attackFrames[m_currentFrame];
+                if (isValidRect(fr)) m_sprite.setTextureRect(fr);
+            }
 
             // Khi animation kết thúc → quay lại Walk
             if (animationEnded) {
@@ -209,7 +223,15 @@ sf::FloatRect HammerBro::GetBounds() const {
     if (m_state == HammerBroState::Dead || !m_active) {
         return sf::FloatRect(0.f, 0.f, 0.f, 0.f);
     }
-    return m_sprite.getGlobalBounds();
+    sf::FloatRect full = m_sprite.getGlobalBounds();
+    const float shrinkX = full.width * 0.15f;
+    const float shrinkY = full.height * 0.10f;
+    return sf::FloatRect(
+        full.left + shrinkX,
+        full.top + shrinkY,
+        full.width - shrinkX * 2.f,
+        full.height - shrinkY * 2.f
+    );
 }
 
 bool HammerBro::IsActive() const {
@@ -256,12 +278,15 @@ void HammerBro::FireProjectile() {
     spawnPos.y = spriteTop + 15.f;
 
     sf::Vector2f velocity(facingLeft ? -220.f : 220.f, -450.f);
+    // Small hammer projectile: -30% (0.525f), Big hammer projectile: +10% (0.825f)
+    float hammerScale = m_isBig ? 0.825f : 0.525f;
 
     std::string eventData =
         std::to_string(spawnPos.x) + "," +
         std::to_string(spawnPos.y) + "," +
         std::to_string(velocity.x) + "," +
-        std::to_string(velocity.y);
+        std::to_string(velocity.y) + "," +
+        std::to_string(hammerScale);
 
     GameEventManager::GetInstance().Notify({
         GameEventType::EnemyFiredProjectile, 0,
