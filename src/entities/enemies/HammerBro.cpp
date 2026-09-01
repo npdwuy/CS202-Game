@@ -8,30 +8,27 @@
 
 // --- DẠNG NHỎ (SMALL) ---
 static const std::vector<sf::IntRect> framesWalkSmall = {
-    sf::IntRect(0, 23, 48, 74),
-    sf::IntRect(48, 23, 48, 74)
+    sf::IntRect(/* Small Walk Frame 1 */ 8, 23, 51, 75),
+    sf::IntRect(/* Small Walk Frame 2 */ 60, 23, 51, 75)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackSmall = {
-    sf::IntRect(96, 23, 48, 74),
-    sf::IntRect(144, 23, 48, 74)
+    sf::IntRect(/* Small Prep Frame 1 */ 123, 23, 51, 75),
+    sf::IntRect(/* Small Prep Frame 2 */ 174, 23, 51, 75)
 };
 static const std::vector<sf::IntRect> framesAttackSmall = {
-    sf::IntRect(192, 23, 48, 74),
-    sf::IntRect(240, 23, 48, 74)
+    sf::IntRect(/* Small Attack Frame 1 */ 236, 23, 51, 75)
 };
 
 // --- DẠNG LỚN (BIG) ---
 static const std::vector<sf::IntRect> framesWalkBig = {
-    sf::IntRect(288, 0, 48, 97),
-    sf::IntRect(336, 0, 48, 97)
+    sf::IntRect(/* Big Walk Frame 1 */ 300, 0, 75, 97),
+    sf::IntRect(/* Big Walk Frame 2 */ 375, 0, 75, 97)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackBig = {
-    sf::IntRect(384, 0, 48, 97),
-    sf::IntRect(432, 0, 48, 97)
+    sf::IntRect(/* Big Prep Frame 2 */ 462, 0, 75, 97)
 };
 static const std::vector<sf::IntRect> framesAttackBig = {
-    sf::IntRect(480, 0, 48, 97),
-    sf::IntRect(528, 0, 48, 97)
+    sf::IntRect(/* Big Attack Frame 2 */ 538, 0, 75, 97)
 };
 
 static sf::IntRect getValidRect(const std::vector<sf::IntRect>& frames, int frameIndex, bool isBig) {
