@@ -12,6 +12,7 @@
 #include "ui/GameHud.hpp"
 #include "camera/PlayerCamera.hpp"
 #include "ui/Button.hpp"
+#include "ui/ParallaxBackground.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -59,6 +60,10 @@ private:
 
     TileMap m_tileMap;
     LevelObjectFactory m_objectFactory;
+    sf::View m_uiView;
+
+    ParallaxBackground m_parallaxBg;
+
     std::vector<std::unique_ptr<Enemy>> m_enemies;
     std::vector<std::unique_ptr<Item>> m_items;
     std::vector<std::unique_ptr<Fireball>> m_fireballs;

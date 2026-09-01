@@ -15,18 +15,9 @@ MenuState::MenuState() {
 
     // ── Load scrolling map background ────────────────────────────────────────
     m_bgMap.load("levels/demo.txt");
+    m_bgMap.setDrawSky(false);
     
-    m_bgTexture = std::make_shared<sf::Texture>();
-    if (m_bgTexture->loadFromFile("assets/backgrounds/level_bg.png")) {
-        m_bgTexture->setRepeated(true);
-        m_bgSprite.setTexture(*m_bgTexture);
-        // Cover a wide area so it can scroll seamlessly
-        m_bgSprite.setTextureRect(sf::IntRect(0, 0, 100000, m_bgTexture->getSize().y));
-        float scaleY = 1080.f / static_cast<float>(m_bgTexture->getSize().y);
-        m_bgSprite.setScale(scaleY, scaleY);
-        // Center the sprite vertically
-        m_bgSprite.setPosition(0.f, (1080.f - m_bgTexture->getSize().y * scaleY) / 2.f);
-    }
+    m_parallaxBg.load("assets/backgrounds/level_bg.png");
 
     const sf::View& gameView = GameManager::getInstance().getGameView();
     const sf::FloatRect world = m_bgMap.worldBounds();
@@ -132,6 +123,7 @@ void MenuState::Update(sf::Time timePerFrame) {
     }
 
     m_bgCamera.setCenter(m_scrollX + viewHW, m_bgCamera.getCenter().y);
+    m_parallaxBg.update(m_bgCamera, 0.5f);
 }
 
 void MenuState::Render(sf::RenderWindow& window) {
@@ -140,18 +132,7 @@ void MenuState::Render(sf::RenderWindow& window) {
     // 1. Draw scrolling map and background with the scrolling camera
     window.setView(m_bgCamera);
     
-    // The sprite needs to scroll too. We can draw it, but since it has a 
-    // different parallax speed, we'll shift its texture rect. Wait, it's easier to just 
-    // position it based on the camera.
-    if (m_bgTexture) {
-        // Simple parallax: move sprite position with camera but slower
-        sf::Vector2f camCenter = m_bgCamera.getCenter();
-        sf::Vector2f camSize = m_bgCamera.getSize();
-        float leftEdge = camCenter.x - camSize.x / 2.f;
-        
-        m_bgSprite.setPosition(leftEdge * 0.5f, m_bgSprite.getPosition().y);
-        window.draw(m_bgSprite);
-    }
+    m_parallaxBg.render(window);
     
     m_bgMap.render(window);
 

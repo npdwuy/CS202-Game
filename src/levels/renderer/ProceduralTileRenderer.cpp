@@ -233,6 +233,12 @@ void ProceduralTileRenderer::render(
     const sf::VertexArray& backgroundVertices
 ) const
 {
+    if (m_drawSky) {
+        target.draw(backgroundVertices);
+    }
+    if (m_drawHills) {
+        target.draw(sceneryVertices);
+    }
     target.draw(tileVertices);
 }
 

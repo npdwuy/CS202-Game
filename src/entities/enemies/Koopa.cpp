@@ -117,7 +117,7 @@ void Koopa::Update(sf::Time timePerFrame)
             m_animationTime = 0.f;
 
             m_currentFrame =
-                (m_currentFrame + 1) % 4;
+                (m_currentFrame + 1) % 2;
 
             m_sprite.setTextureRect(
                 sf::IntRect(

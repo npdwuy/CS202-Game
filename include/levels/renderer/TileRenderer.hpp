@@ -21,10 +21,13 @@ public:
         const LevelData& data,
         int row,
         int col,
-        sf::Vector2f offset
+        sf::Vector2f offset = {0.f, 0.f}
     ) const = 0;
 
     virtual bool isTransparent(const LevelData& data, int row, int col, int localX, int localY) const = 0;
+
+    virtual void setDrawSky(bool draw) {}
+    virtual void setDrawHills(bool draw) {}
 
     virtual void render(
         sf::RenderTarget& target,

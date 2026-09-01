@@ -3,6 +3,7 @@
 #include "GameState.hpp"
 #include "levels/TileMap.hpp"
 #include "ui/Button.hpp"
+#include "ui/ParallaxBackground.hpp"
 
 #include <SFML/Graphics.hpp>
 #include <memory>
@@ -22,11 +23,9 @@ private:
     // Scrolling map background
     TileMap  m_bgMap;
     sf::View m_bgCamera;
+    ParallaxBackground m_parallaxBg;
     float    m_scrollX = 0.f;
     static constexpr float ScrollSpeed = 50.f;  // px/s
-
-    std::shared_ptr<sf::Texture> m_bgTexture;
-    sf::Sprite m_bgSprite;
 
     // 4 menu buttons (PLAY, LOAD, OPTIONS, EXIT)
     std::unique_ptr<Button> m_playButton;

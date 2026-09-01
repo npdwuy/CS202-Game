@@ -776,6 +776,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
+    m_tileMap.setDrawSky(false);
     m_enemies.clear();
     m_items.clear();
     m_fireballs.clear();
@@ -1761,15 +1762,9 @@ void PlayState::addBackgroundLayer(
 void PlayState::loadBackgroundLayers()
 {
     m_backgroundLayers.clear();
-
-    // Base background - bắt buộc phải có.
-    addBackgroundLayer(
-        "assets/sprites/long_background.png",
-        0.20f,
-        0.f,
-        0.f,
-        true
-    );
+    
+    // We now use ParallaxBackground for level_bg.png
+    m_parallaxBg.load("assets/backgrounds/level_bg.png");
 
     // Initialize Dynamic Clouds System
     m_cloudTexture = std::make_shared<sf::Texture>();
@@ -1931,8 +1926,12 @@ void PlayState::renderBackgroundLayers(
     sf::RenderWindow& window
 )
 {
-    for (const BackgroundLayer& layer :
-         m_backgroundLayers)
+    // Draw the main parallax background
+    m_parallaxBg.update(window.getView(), 0.5f);
+    m_parallaxBg.render(window);
+
+    // Render original background layers (if any are still left)
+    for (const auto& layer : m_backgroundLayers)
     {
         if (layer.texture)
         {

@@ -31,6 +31,9 @@ public:
 
     sf::Color getTileColor(const LevelData& data) const override;
 
+    void setDrawSky(bool draw) override { m_drawSky = draw; }
+    void setDrawHills(bool draw) override { m_drawHills = draw; }
+
 private:
     struct TilePalette {
         sf::Color outline;
@@ -43,6 +46,9 @@ private:
         sf::Color farHill;
         sf::Color nearHill;
     };
+
+    bool m_drawSky = true;
+    bool m_drawHills = true;
 
     TilePalette paletteFor(const std::string& difficulty) const;
     void appendQuad(

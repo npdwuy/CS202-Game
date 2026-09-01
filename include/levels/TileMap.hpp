@@ -45,6 +45,18 @@ public:
     void load(const std::string& path);
     void render(sf::RenderWindow& window) const;
     void renderForegroundPipes(sf::RenderWindow& window) const;
+    
+    void setDrawSky(bool draw) {
+        if (m_renderer) {
+            m_renderer->setDrawSky(draw);
+        }
+    }
+    void setDrawHills(bool draw) {
+        if (m_renderer) {
+            m_renderer->setDrawHills(draw);
+        }
+    }
+    
     void update(sf::Time dt);
     void resolveCollision(Character& character, sf::Time timePerFrame, std::function<void(int row, int col)> onHitRoof = nullptr) const;
     void breakBlock(int row, int col);

@@ -24,8 +24,11 @@ LevelSelectState::LevelSelectState() {
         "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
     );
 
-    // ── Scrolling background map ─────────────────────────────────────────────
+    // ── Scrolling background map ─────────────────────────────────────────────    // Load scrolling background map
     m_bgMap.load("levels/demo.txt");
+    m_bgMap.setDrawSky(false);
+
+    m_parallaxBg.load("assets/backgrounds/level_bg.png");
 
     const sf::View& gameView = GameManager::getInstance().getGameView();
     const sf::FloatRect world = m_bgMap.worldBounds();
@@ -162,6 +165,7 @@ void LevelSelectState::Update(sf::Time timePerFrame) {
     const float viewHW = m_bgCamera.getSize().x / 2.f;
     if (m_scrollX + viewHW > world.width) m_scrollX = 0.f;
     m_bgCamera.setCenter(m_scrollX + viewHW, m_bgCamera.getCenter().y);
+    m_parallaxBg.update(m_bgCamera, 0.5f);
 }
 
 void LevelSelectState::Render(sf::RenderWindow& window) {
@@ -169,6 +173,9 @@ void LevelSelectState::Render(sf::RenderWindow& window) {
 
     // 1. Scrolling background
     window.setView(m_bgCamera);
+
+    m_parallaxBg.render(window);
+
     m_bgMap.render(window);
 
     // 2. Switch to screen-space

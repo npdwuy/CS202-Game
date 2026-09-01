@@ -226,23 +226,23 @@ void TexturedTileRenderer::buildGeometry(
                     isTop = (row == 0) || (data.rows[row - 1][column] != '[' && data.rows[row - 1][column] != ']');
                 }
 
-                // Base UVs for vertical pipe in WU_Field_castle.png
-                // Mouth: X=880 (left), X=952 (right), Y=4, 72x72
-                // Body: X=880 (left), X=952 (right), Y=76, 72x72
-                float texX = isLeft ? 880.f : 952.f;
-                float texY = 76.f; // Default body
-                if (c == 'W') texY = 4.f; // Mouth
+                // Base UVs for vertical pipe in WU_Field_castle.png (grid is 64x64)
+                // Mouth is Y=0, Body is Y=64.
+                // Left half is X=880, Right half is X=944.
+                float texX = isLeft ? 880.f : 944.f;
+                float texY = 64.f; // Default body
+                if (c == 'W') texY = 0.f; // Mouth
                 
-                // For horizontal pipes, treat [ as mouth and ] as body?
-                // Actually, level4 uses [ as the whole pipe.
-                // We can treat [ as mouth if the left is not [.
                 if (c == '[' || c == ']') {
                     bool isMouth = (column == 0) || (data.rows[row][column - 1] != c); // Left-facing mouth
-                    texX = isTop ? 880.f : 952.f;
-                    texY = isMouth ? 4.f : 76.f;
+                    
+                    // When rotated CCW, the top block of the horizontal pipe uses the RIGHT half of the vertical pipe.
+                    // The bottom block uses the LEFT half.
+                    texX = isTop ? 944.f : 880.f; 
+                    texY = isMouth ? 0.f : 64.f;
                 }
 
-                sf::FloatRect texCoords(texX, texY, 72.f, 72.f);
+                sf::FloatRect texCoords(texX, texY, 64.f, 64.f);
                 
                 // Append pipe quad to sceneryVertices so it uses m_pipeTexture
                 // If it's a horizontal pipe, we rotate the UVs 90 degrees CCW (mouth points left)
@@ -342,17 +342,17 @@ void TexturedTileRenderer::buildSingleTile(
             isTop = (row == 0) || (data.rows[row - 1][col] != '[' && data.rows[row - 1][col] != ']');
         }
 
-        float texX = isLeft ? 880.f : 952.f;
-        float texY = 76.f; 
-        if (c == 'W') texY = 4.f; 
+        float texX = isLeft ? 880.f : 944.f;
+        float texY = 64.f; 
+        if (c == 'W') texY = 0.f; 
         
         if (c == '[' || c == ']') {
             bool isMouth = (col == 0) || (data.rows[row][col - 1] != c);
-            texX = isTop ? 880.f : 952.f;
-            texY = isMouth ? 4.f : 76.f;
+            texX = isTop ? 944.f : 880.f;
+            texY = isMouth ? 0.f : 64.f;
         }
 
-        sf::FloatRect texCoords(texX, texY, 72.f, 72.f);
+        sf::FloatRect texCoords(texX, texY, 64.f, 64.f);
 
         if (c == '[' || c == ']') {
             float u = texCoords.left;
