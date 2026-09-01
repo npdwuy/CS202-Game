@@ -1,16 +1,17 @@
 #include "entities/player/Luigi.hpp"
 #include <cmath>
 
-// Luigi: jumps ~9% higher than Mario, runs ~14% slower.
+// Luigi stats:
 //   Mario:  speed=292, jumpPower=830
-//   Luigi:  speed=250, jumpPower=905
+//   Luigi:  speed=200 (slower -20%), jumpPower=1040.75 (jumps +15% higher)
 Luigi::Luigi(sf::Vector2f position)
-    : Player(position, "Luigi", 250.0f, 905.0f)
+    : Player(position, "Luigi", 200.0f, 1040.75f)
 {
     sf::Image image;
 
     // Prefer a dedicated Luigi sheet; fall back to Mario sheet tinted green.
     bool loaded = image.loadFromFile("assets/sprites/player/luigi.png");
+    bool dedicatedLoaded = loaded;
     if (!loaded) {
         loaded = image.loadFromFile("assets/sprites/player/mario.png");
     }
@@ -27,12 +28,13 @@ Luigi::Luigi(sf::Vector2f position)
     sprite_.setTexture(texture_);
     sprite_.setTextureRect(sf::IntRect(160, 15, 35, 47));
     sprite_.setOrigin(17.5f, 47.f);
-    sprite_.setScale(1.5f, 1.5f);
+    sprite_.setScale(1.2f, 1.65f); // ốm đi 20% (1.5 * 0.8), cao hơn 10% (1.5 * 1.10)
     sprite_.setPosition(position.x + width() / 2.0f, position.y + height());
 
-    // If we had to fall back to the Mario sheet, tint the sprite green so
-    // the player can tell the characters apart until a real Luigi sheet exists.
-    sprite_.setColor(sf::Color(140, 230, 140));
+    // Tint green only if using Mario fallback sheet
+    if (!dedicatedLoaded) {
+        sprite_.setColor(sf::Color(140, 230, 140));
+    }
 }
 
 void Luigi::update(sf::Time timePerFrame) {
@@ -125,18 +127,21 @@ void Luigi::update(sf::Time timePerFrame) {
         scaleAbs = baseScale * 1.275f;
     }
 
+    float scaleX = scaleAbs * 0.80f; // ốm đi 20%
+    float scaleY = scaleAbs * 1.10f; // cao hơn 10%
+
     float oldWidth  = width_;
     float oldHeight = height_;
-    width_  = 35.0f * scaleAbs * 0.90f;
+    width_  = 35.0f * scaleX * 0.90f;
     float topPadding = 2.0f;
-    height_ = (47.0f - topPadding) * scaleAbs;
+    height_ = (47.0f - topPadding) * scaleY;
     position_.x += (oldWidth - width_) / 2.0f;
     position_.y += oldHeight - height_;
 
     if (facing() < 0)
-        sprite_.setScale(-scaleAbs, scaleAbs);
+        sprite_.setScale(-scaleX, scaleY);
     else
-        sprite_.setScale( scaleAbs, scaleAbs);
+        sprite_.setScale( scaleX, scaleY);
 
     sprite_.setPosition(position_.x + width() / 2.0f, position_.y + height());
 }

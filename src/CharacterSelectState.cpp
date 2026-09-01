@@ -38,7 +38,8 @@ CharacterSelectState::CharacterSelectState() {
 
     // ── Load Luigi sprite (fallback to Mario tinted green) ───────────────────
     sf::Image luigiImg;
-    bool luigiLoaded = luigiImg.loadFromFile("assets/sprites/player/luigi.png");
+    bool dedicatedLuigiLoaded = luigiImg.loadFromFile("assets/sprites/player/luigi.png");
+    bool luigiLoaded = dedicatedLuigiLoaded;
     if (!luigiLoaded)
         luigiLoaded = luigiImg.loadFromFile("assets/sprites/player/mario.png");
     if (!luigiLoaded)
@@ -50,9 +51,11 @@ CharacterSelectState::CharacterSelectState() {
     m_luigiSprite.setTexture(m_luigiTexture);
     m_luigiSprite.setTextureRect(sf::IntRect(160, 15, 35, 47));
     m_luigiSprite.setOrigin(17.5f, 47.f);
-    m_luigiSprite.setScale(kSpriteScale, kSpriteScale);
+    m_luigiSprite.setScale(kSpriteScale * 0.80f, kSpriteScale * 1.10f); // ốm đi 20%, cao hơn 10%
     m_luigiSprite.setPosition(kLuigiX, kCharY);
-    m_luigiSprite.setColor(sf::Color(140, 230, 140));  // green tint until real sheet exists
+    if (!dedicatedLuigiLoaded) {
+        m_luigiSprite.setColor(sf::Color(140, 230, 140));  // green tint if using Mario fallback
+    }
 
     // ── Title ─────────────────────────────────────────────────────────────────
     m_titleText.setFont(m_font);
