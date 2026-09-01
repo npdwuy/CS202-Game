@@ -3,6 +3,7 @@
 #include "entities/enemies/BossEnemy.hpp"
 #include "entities/enemies/FlyingEnemy.hpp"
 #include "entities/enemies/Goomba.hpp"
+#include "entities/enemies/HammerBro.hpp"
 #include "entities/enemies/Koopa.hpp"
 #include "levels/TileMap.hpp"
 
@@ -25,7 +26,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     float minimumX = std::max(0.f, position.x - tileSize * 2.f);
     float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 2.f);
 
-    if (symbol == 'G' || symbol == 'K') {
+    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h' || symbol == 'B') {
         // Scan left and right to find exact platform bounds
         float leftScan = position.x;
         const float footY = position.y + tileSize + 2.f;
@@ -101,6 +102,31 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                 minimumX, 
                 maximumX, 
                 25.f      
+            );
+
+        case 'H':
+            return std::make_unique<HammerBro>(
+                sf::Vector2f(
+                    position.x + tileSize * 0.5f,
+                    position.y + tileSize
+                ),
+                minimumX,
+                maximumX,
+                40.f,
+                false // Small HammerBro
+            );
+
+        case 'h':
+        case 'B':
+            return std::make_unique<HammerBro>(
+                sf::Vector2f(
+                    position.x + tileSize * 0.5f,
+                    position.y + tileSize
+                ),
+                minimumX,
+                maximumX,
+                40.f,
+                true // Big HammerBro
             );
 
         default:

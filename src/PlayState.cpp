@@ -214,6 +214,20 @@ void PlayState::OnGameEvent(const GameEvent& event)
                         sf::Vector2f(values[2], values[3])
                     ));
                 }
+            } else if (event.data.rfind("HammerFiredProjectile:", 0) == 0) {
+                std::string data = event.data.substr(22);
+                std::stringstream ss(data);
+                std::string token;
+                std::vector<float> values;
+                while (std::getline(ss, token, ',')) {
+                    values.push_back(std::stof(token));
+                }
+                if (values.size() >= 4) {
+                    m_hammerProjectiles.push_back(std::make_unique<HammerProjectile>(
+                        sf::Vector2f(values[0], values[1]),
+                        sf::Vector2f(values[2], values[3])
+                    ));
+                }
             }
             break;
         }
@@ -469,6 +483,41 @@ handleMovingShellEnemyCollisions();
         m_bossFireballs.end()
     );
 
+    // Cập nhật và xử lý va chạm của Hammer Projectiles
+    for (auto& hammer : m_hammerProjectiles) {
+        hammer->Update(timePerFrame);
+
+        if (!hammer->IsDestroyed()) {
+            const sf::FloatRect hBounds = hammer->GetBounds();
+            const sf::FloatRect mapBounds = m_tileMap.worldBounds();
+            if (hBounds.left < 0.f || hBounds.left > mapBounds.width + 200.f || hBounds.top > mapBounds.height + 300.f) {
+                hammer->Destroy();
+                continue;
+            }
+
+            if (m_player && !m_player->isDead() && !m_player->isTransforming()) {
+                if (playerBounds().intersects(hBounds)) {
+                    hammer->Destroy();
+                    if (m_invincibilityTimeRemaining <= 0.f && m_damageCooldown <= 0.f) {
+                        sf::Vector2f knockback = m_player->velocity();
+                        knockback.x = (m_player->position().x < hBounds.left) ? -280.f : 280.f;
+                        knockback.y = -350.f;
+                        m_player->setVelocity(knockback);
+
+                        handlePlayerDamage();
+                    }
+                }
+            }
+        }
+    }
+
+    m_hammerProjectiles.erase(
+        std::remove_if(m_hammerProjectiles.begin(), m_hammerProjectiles.end(), [](const std::unique_ptr<HammerProjectile>& hp) {
+            return hp->IsDestroyed();
+        }),
+        m_hammerProjectiles.end()
+    );
+
     handleItemCollisions();
     if (handleEnemyCollisions()) {
         if (m_playerDamagePending) {
@@ -541,6 +590,12 @@ void PlayState::Render(sf::RenderWindow& window) {
     for (const auto& fireball : m_bossFireballs) {
         if (visibleWorld.intersects(fireball->GetBounds())) {
             fireball->Render(window);
+        }
+    }
+
+    for (const auto& hammer : m_hammerProjectiles) {
+        if (visibleWorld.intersects(hammer->GetBounds())) {
+            hammer->Render(window);
         }
     }
 
@@ -630,6 +685,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_items.clear();
     m_fireballs.clear();
     m_bossFireballs.clear();
+    m_hammerProjectiles.clear();
     createLevelObjects();
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
