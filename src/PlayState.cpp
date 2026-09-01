@@ -366,7 +366,7 @@ void PlayState::Update(sf::Time timePerFrame) {
     if (m_player && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
         if (m_player->onGround()) {
             const auto& data = m_tileMap.data();
-            sf::FloatRect bounds = m_player->GetBounds();
+            sf::FloatRect bounds(m_player->position().x, m_player->position().y, m_player->width(), m_player->height());
             
             float centerX = bounds.left + bounds.width / 2.0f;
             float bottomY = bounds.top + bounds.height + 2.0f; 
@@ -384,7 +384,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                     
                     m_player->isWarpingDown_ = true;
                     m_player->setVelocity({0.f, 25.f}); 
-                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                    AudioManager::getInstance().playEffect(SoundEffect::Pipe);
                 }
             }
         }
@@ -393,7 +393,7 @@ void PlayState::Update(sf::Time timePerFrame) {
     // Horizontal Warp Logic
     if (m_player && (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))) {
         const auto& data = m_tileMap.data();
-        sf::FloatRect bounds = m_player->GetBounds();
+        sf::FloatRect bounds(m_player->position().x, m_player->position().y, m_player->width(), m_player->height());
         
         float rightX = bounds.left + bounds.width + 2.0f;
         float leftX = bounds.left - 2.0f;
@@ -411,7 +411,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                     m_warpDestinationLevel = 1;
                     m_player->isWarpingDown_ = true; // Use same flag to disable physics
                     m_player->setVelocity({25.f, 0.f}); // Slide right
-                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                    AudioManager::getInstance().playEffect(SoundEffect::Pipe);
                 }
             } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && colL >= 0 && colL < data.rows[row].size()) {
                 if (data.rows[row][colL] == '[' || data.rows[row][colL] == ']') {
@@ -420,7 +420,7 @@ void PlayState::Update(sf::Time timePerFrame) {
                     m_warpDestinationLevel = 1;
                     m_player->isWarpingDown_ = true; 
                     m_player->setVelocity({-25.f, 0.f}); // Slide left
-                    AudioManager::getInstance().playEffect(SoundEffect::PipeWarp);
+                    AudioManager::getInstance().playEffect(SoundEffect::Pipe);
                 }
             }
         }

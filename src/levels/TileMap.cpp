@@ -106,7 +106,7 @@ void TileMap::renderForegroundPipes(sf::RenderWindow& window) const {
         for (int row = 0; row < m_data.rows.size(); ++row) {
             for (int col = 0; col < m_data.rows[row].size(); ++col) {
                 char c = m_data.rows[row][col];
-                if (c == 'W' || c == '|') {
+                if (c == 'W' || c == '|' || c == '[' || c == ']') {
                     m_renderer->buildSingleTile(pipeTiles, m_data, row, col, sf::Vector2f(0.f, 0.f));
                 }
             }
@@ -170,7 +170,6 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
         for (int row = firstRow; row <= lastRow; ++row) {
             for (int column = firstColumn; column <= lastColumn; ++column) {
                 char c = m_data.rows[row][column];
-                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
                 if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                     continue;
                 }
@@ -479,7 +478,7 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
     for (int row = firstRow; row <= lastRow; ++row) {
         for (int column = firstColumn; column <= lastColumn; ++column) {
             char c = m_data.rows[row][column];
-            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                 continue;
             }
 
