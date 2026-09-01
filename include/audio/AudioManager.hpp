@@ -14,7 +14,8 @@ enum class SoundEffect {
     Invincibility,
     SpeedBoost,
     EnemyDefeated,
-    GameOver
+    GameOver,
+    Pipe
 };
 
 class AudioManager {

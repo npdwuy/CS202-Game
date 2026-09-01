@@ -90,6 +90,9 @@ PlayState::PlayState(bool loadSavedGame)
 
     updateHud();
 
+    m_warpFadeOverlay.setSize(sf::Vector2f(1920.f, 1080.f));
+    m_warpFadeOverlay.setFillColor(sf::Color(0, 0, 0, 0));
+
     GameEventManager::GetInstance().AddListener(this);
 }
 
@@ -342,6 +345,37 @@ void PlayState::Update(sf::Time timePerFrame) {
         m_camera.view()
     );
     m_hud.update(timePerFrame);
+    
+    if (m_isWarping) {
+        m_warpTimer += timePerFrame.asSeconds();
+        float alpha = std::min(255.f, m_warpTimer * 255.f);
+        m_warpFadeOverlay.setFillColor(sf::Color(0, 0, 0, static_cast<sf::Uint8>(alpha)));
+        if (m_player) m_player->update(timePerFrame);
+        
+        if (m_warpTimer > 1.2f) {
+            m_isWarping = false;
+            m_warpTimer = 0.f;
+            if (m_player) m_player->isWarpingDown_ = false;
+            m_warpFadeOverlay.setFillColor(sf::Color(0, 0, 0, 0));
+            loadLevel(m_warpDestinationLevel, false);
+        }
+        return;
+    }
+
+    if (m_player && m_player->onGround() && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        sf::Vector2f bottomCenter = m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height());
+        int col = static_cast<int>(bottomCenter.x / m_tileMap.data().tileSize);
+        int row = static_cast<int>((bottomCenter.y + 2.f) / m_tileMap.data().tileSize);
+        if (row >= 0 && row < m_tileMap.data().rows.size() && col >= 0 && col < m_tileMap.data().rows[row].size()) {
+            if (m_tileMap.data().rows[row][col] == 'W') {
+                m_isWarping = true;
+                m_warpTimer = 0.f;
+                m_warpDestinationLevel = (m_saveData.currentLevel == 4) ? 1 : 4;
+                m_player->startWarpDown();
+                AudioManager::getInstance().playEffect(SoundEffect::Pipe);
+            }
+        }
+    }
     
     if (m_player) {
         m_player->update(timePerFrame);
@@ -663,6 +697,9 @@ void PlayState::Render(sf::RenderWindow& window) {
     if (m_menuButton) {
         m_menuButton->render(window);
     }
+    if (m_isWarping) {
+        window.draw(m_warpFadeOverlay);
+    }
 }
 
 void PlayState::handleLevelStart() {
@@ -674,8 +711,8 @@ void PlayState::handleLevelStart() {
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
-    if (levelNumber < 1 || levelNumber > 3) {
-        throw std::out_of_range("Level number must be between 1 and 3.");
+    if (levelNumber < 1 || levelNumber > 4) {
+        throw std::out_of_range("Level number must be between 1 and 4.");
     }
 
     handleLevelStart();

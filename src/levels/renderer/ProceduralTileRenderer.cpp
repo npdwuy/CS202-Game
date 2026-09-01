@@ -144,7 +144,8 @@ void ProceduralTileRenderer::buildGeometry(
 
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
-            if (data.rows[row][column] != '#') {
+            char c = data.rows[row][column];
+            if (c != '#' && c != 'W' && c != '|') {
                 continue;
             }
 
@@ -158,6 +159,9 @@ void ProceduralTileRenderer::buildGeometry(
             };
 
             sf::Color fillColor = row % 2U == 0U ? palette.lightFill : palette.darkFill;
+            if (c == 'W' || c == '|') {
+                fillColor = sf::Color(0, 160, 0); // Pipe Green
+            }
             appendQuad(
                 tileVertices,
                 {position.x, position.y, tileSize, tileSize},

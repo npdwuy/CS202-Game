@@ -173,6 +173,6 @@ LevelData LevelLoader::loadFromFile(const std::string& path) {
 }
 
 bool LevelLoader::isSupportedSymbol(char symbol) {
-    const std::string supportedSymbols = "#.PCMFGKEBZXLSV?!TD=Hh";
+    const std::string supportedSymbols = "#.PCMFGKEBZXLSV?!TD=HhW|";
     return supportedSymbols.find(symbol) != std::string::npos;
 }

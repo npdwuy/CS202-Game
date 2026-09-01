@@ -98,7 +98,7 @@ void TexturedTileRenderer::appendTexturedQuad(
 
 sf::Vector2i TexturedTileRenderer::getTileCoordFor(const LevelData& data, int row, int col) const {
     char c = data.rows[row][col];
-    auto isGround = [](char ch) { return ch == '#' || ch == '=' || ch == 'T' || ch == 'D'; };
+    auto isGround = [](char ch) { return ch == '#' || ch == '=' || ch == 'T' || ch == 'D' || ch == 'W' || ch == '|'; };
     const bool left = (col == 0) || isGround(data.rows[row][col - 1]);
     const bool right = (col + 1 >= static_cast<int>(data.rows[row].size())) || isGround(data.rows[row][col + 1]);
 
@@ -121,7 +121,7 @@ sf::Vector2i TexturedTileRenderer::getTileCoordFor(const LevelData& data, int ro
         else if (left && !right) tileCoord = m_layout.surfaceRight;
         else if (!left && !right) tileCoord = m_layout.surfaceIsolated;
         else tileCoord = m_layout.surfaceCenter;
-    } else if (c == '=') {
+    } else if (c == '=' || c == 'W' || c == '|') {
         if (!left && right) tileCoord = m_layout.dirtLeft;
         else if (left && !right) tileCoord = m_layout.dirtRight;
         else tileCoord = m_layout.dirtCenter;
@@ -184,7 +184,7 @@ void TexturedTileRenderer::buildGeometry(
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
             char c = data.rows[row][column];
-            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!') {
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
                 continue;
             }
 
@@ -210,10 +210,12 @@ void TexturedTileRenderer::buildGeometry(
             );
 
             sf::Color vertexColor = sf::Color::White;
-            if (data.rows[row][column] == '?') {
+            if (c == '?') {
                 vertexColor = sf::Color(255, 230, 100);
-            } else if (data.rows[row][column] == '!') {
+            } else if (c == '!') {
                 vertexColor = sf::Color(120, 100, 80);
+            } else if (c == 'W' || c == '|') {
+                vertexColor = sf::Color(0, 200, 0); // Green pipe color over dirt texture
             }
 
             appendTexturedQuad(

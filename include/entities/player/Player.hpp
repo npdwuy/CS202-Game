@@ -216,4 +216,11 @@ public:
     void setSpeedMultiplier(float multiplier);
     float speedMultiplier() const;
 
+    bool isWarpingDown_ = false;
+    void startWarpDown() {
+        isWarpingDown_ = true;
+        velocity_ = {0.f, 40.f}; // Move down slowly
+        inputEnabled_ = false;
+    }
+    bool isWarpingDown() const { return isWarpingDown_; }
 };

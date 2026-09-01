@@ -423,7 +423,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     }
 
     char c = m_data.rows[row][column];
-    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!';
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {

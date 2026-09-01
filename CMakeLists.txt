@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.15)
 project(CS202-Group5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -22,8 +22,8 @@ if(MSVC)
     add_compile_definitions(UNICODE _UNICODE)
     file(GLOB SFML_DLLS "SFML/bin/msvc/*.dll")
 elseif(MINGW)
-    target_link_directories(${PROJECT_NAME} PRIVATE SFML/lib/mingw)
-    target_link_libraries(${PROJECT_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio sfml-network)
+    target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw/libsfml-graphics.a ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw/libsfml-window.a ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw/libsfml-audio.a ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw/libsfml-network.a ${CMAKE_CURRENT_SOURCE_DIR}/SFML/lib/mingw/libsfml-system.a)
     file(GLOB SFML_DLLS "SFML/bin/mingw/*.dll")
     
     # Find and include GCC runtime DLLs
@@ -95,4 +95,5 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endif()
+
 

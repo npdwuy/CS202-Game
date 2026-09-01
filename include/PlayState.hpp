@@ -132,4 +132,9 @@ void updateBackgroundLayers(
 void renderBackgroundLayers(
     sf::RenderWindow& window
 );
+
+    bool m_isWarping = false;
+    float m_warpTimer = 0.f;
+    int m_warpDestinationLevel = 4;
+    sf::RectangleShape m_warpFadeOverlay;
 };

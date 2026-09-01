@@ -28,7 +28,8 @@ bool AudioManager::initialize() {
             {SoundEffect::Invincibility, "assets/audio/invincibility.wav"},
             {SoundEffect::SpeedBoost, "assets/audio/speed_boost.wav"},
             {SoundEffect::EnemyDefeated, "assets/audio/enemy_defeated.wav"},
-            {SoundEffect::GameOver, "assets/audio/game_over.wav"}
+            {SoundEffect::GameOver, "assets/audio/game_over.wav"},
+            {SoundEffect::Pipe, "assets/audio/pipe.wav"}
         };
 
         for (const auto& entry : effectPaths) {
