@@ -114,7 +114,8 @@ void TileMap::renderForegroundPipes(sf::RenderWindow& window) const {
         if (pipeTiles.getVertexCount() > 0) {
             sf::VertexArray emptyTri(sf::Triangles);
             sf::VertexArray emptyQuad(sf::Quads);
-            m_renderer->render(window, pipeTiles, emptyTri, emptyQuad);
+            // Pass pipeTiles as sceneryVertices to render it untextured
+            m_renderer->render(window, emptyQuad, pipeTiles, emptyQuad);
         }
     }
 }

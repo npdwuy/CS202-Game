@@ -25,6 +25,9 @@ private:
     float    m_scrollX = 0.f;
     static constexpr float ScrollSpeed = 50.f;  // px/s
 
+    std::shared_ptr<sf::Texture> m_bgTexture;
+    sf::Sprite m_bgSprite;
+
     // 4 menu buttons (PLAY, LOAD, OPTIONS, EXIT)
     std::unique_ptr<Button> m_playButton;
     std::unique_ptr<Button> m_loadButton;

@@ -78,7 +78,10 @@ void appendHill(
 } // namespace
 
 TexturedTileRenderer::TexturedTileRenderer(sf::Texture texture, TilesetLayout layout)
-    : m_texture(std::move(texture)), m_image(m_texture.copyToImage()), m_layout(layout) {}
+    : m_texture(std::move(texture)), m_layout(layout) {
+    m_image = m_texture.copyToImage();
+    m_pipeTexture.loadFromFile("assets/sprites/tilesets/WU_Field_castle.png");
+}
 
 void TexturedTileRenderer::appendTexturedQuad(
     sf::VertexArray& vertices,
@@ -215,7 +218,52 @@ void TexturedTileRenderer::buildGeometry(
             } else if (c == '!') {
                 vertexColor = sf::Color(120, 100, 80);
             } else if (c == 'W' || c == '|' || c == '[' || c == ']') {
-                vertexColor = sf::Color(0, 255, 0); // Green pipe color over dirt texture
+                bool isLeft = (column == 0) || (data.rows[row][column - 1] != c);
+                bool isTop = (row == 0) || (data.rows[row - 1][column] != c);
+                
+                // For horizontal pipes, 'isTop' means it's the upper block of the horizontal pipe.
+                if (c == '[' || c == ']') {
+                    isTop = (row == 0) || (data.rows[row - 1][column] != '[' && data.rows[row - 1][column] != ']');
+                }
+
+                // Base UVs for vertical pipe in WU_Field_castle.png
+                // Mouth: X=880 (left), X=952 (right), Y=4, 72x72
+                // Body: X=880 (left), X=952 (right), Y=76, 72x72
+                float texX = isLeft ? 880.f : 952.f;
+                float texY = 76.f; // Default body
+                if (c == 'W') texY = 4.f; // Mouth
+                
+                // For horizontal pipes, treat [ as mouth and ] as body?
+                // Actually, level4 uses [ as the whole pipe.
+                // We can treat [ as mouth if the left is not [.
+                if (c == '[' || c == ']') {
+                    bool isMouth = (column == 0) || (data.rows[row][column - 1] != c); // Left-facing mouth
+                    texX = isTop ? 880.f : 952.f;
+                    texY = isMouth ? 4.f : 76.f;
+                }
+
+                sf::FloatRect texCoords(texX, texY, 72.f, 72.f);
+                
+                // Append pipe quad to sceneryVertices so it uses m_pipeTexture
+                // If it's a horizontal pipe, we rotate the UVs 90 degrees CCW (mouth points left)
+                if (c == '[' || c == ']') {
+                    float u = texCoords.left;
+                    float v = texCoords.top;
+                    float w = texCoords.width;
+                    float h = texCoords.height;
+                    
+                    sceneryVertices.append({{position.x, position.y}, sf::Color::White, {u + w, v}});
+                    sceneryVertices.append({{position.x + tileSize, position.y}, sf::Color::White, {u + w, v + h}});
+                    sceneryVertices.append({{position.x + tileSize, position.y + tileSize}, sf::Color::White, {u, v + h}});
+                    sceneryVertices.append({{position.x, position.y + tileSize}, sf::Color::White, {u, v}});
+                } else {
+                    sceneryVertices.append({{position.x, position.y}, sf::Color::White, {texCoords.left, texCoords.top}});
+                    sceneryVertices.append({{position.x + tileSize, position.y}, sf::Color::White, {texCoords.left + texCoords.width, texCoords.top}});
+                    sceneryVertices.append({{position.x + tileSize, position.y + tileSize}, sf::Color::White, {texCoords.left + texCoords.width, texCoords.top + texCoords.height}});
+                    sceneryVertices.append({{position.x, position.y + tileSize}, sf::Color::White, {texCoords.left, texCoords.top + texCoords.height}});
+                }
+                
+                continue;
             }
 
             appendTexturedQuad(
@@ -238,6 +286,10 @@ void TexturedTileRenderer::render(
     sf::RenderStates states;
     states.texture = &m_texture;
     target.draw(tileVertices, states);
+    
+    sf::RenderStates pipeStates;
+    pipeStates.texture = &m_pipeTexture;
+    target.draw(sceneryVertices, pipeStates);
 }
 
 bool TexturedTileRenderer::getTileSprite(sf::Sprite& outSprite, int quadrant) const {
@@ -280,10 +332,52 @@ void TexturedTileRenderer::buildSingleTile(
         sourceTileSize
     );
 
+    sf::Color vertexColor = sf::Color::White;
+    char c = data.rows[row][col];
+    if (c == 'W' || c == '|' || c == '[' || c == ']') {
+        bool isLeft = (col == 0) || (data.rows[row][col - 1] != c);
+        bool isTop = (row == 0) || (data.rows[row - 1][col] != c);
+        
+        if (c == '[' || c == ']') {
+            isTop = (row == 0) || (data.rows[row - 1][col] != '[' && data.rows[row - 1][col] != ']');
+        }
+
+        float texX = isLeft ? 880.f : 952.f;
+        float texY = 76.f; 
+        if (c == 'W') texY = 4.f; 
+        
+        if (c == '[' || c == ']') {
+            bool isMouth = (col == 0) || (data.rows[row][col - 1] != c);
+            texX = isTop ? 880.f : 952.f;
+            texY = isMouth ? 4.f : 76.f;
+        }
+
+        sf::FloatRect texCoords(texX, texY, 72.f, 72.f);
+
+        if (c == '[' || c == ']') {
+            float u = texCoords.left;
+            float v = texCoords.top;
+            float w = texCoords.width;
+            float h = texCoords.height;
+            
+            vertices.append({{position.x, position.y}, sf::Color::White, {u + w, v}});
+            vertices.append({{position.x + tileSize, position.y}, sf::Color::White, {u + w, v + h}});
+            vertices.append({{position.x + tileSize, position.y + tileSize}, sf::Color::White, {u, v + h}});
+            vertices.append({{position.x, position.y + tileSize}, sf::Color::White, {u, v}});
+        } else {
+            vertices.append({{position.x, position.y}, sf::Color::White, {texCoords.left, texCoords.top}});
+            vertices.append({{position.x + tileSize, position.y}, sf::Color::White, {texCoords.left + texCoords.width, texCoords.top}});
+            vertices.append({{position.x + tileSize, position.y + tileSize}, sf::Color::White, {texCoords.left + texCoords.width, texCoords.top + texCoords.height}});
+            vertices.append({{position.x, position.y + tileSize}, sf::Color::White, {texCoords.left, texCoords.top + texCoords.height}});
+        }
+        return;
+    }
+
     appendTexturedQuad(
         vertices,
         {position.x, position.y, tileSize, tileSize},
-        texCoords
+        texCoords,
+        vertexColor
     );
 }
 

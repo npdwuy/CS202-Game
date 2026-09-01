@@ -71,6 +71,7 @@ private:
     ) const;
 
     sf::Texture m_texture;
+    sf::Texture m_pipeTexture;
     sf::Image m_image;
     TilesetLayout m_layout;
 };
