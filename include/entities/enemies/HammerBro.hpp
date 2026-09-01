@@ -1,7 +1,9 @@
 #pragma once
 
 #include "entities/Enemy.hpp"
+#include "entities/strategies/MovementStrategy.hpp"
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include <vector>
 
 enum class HammerBroState {
@@ -15,9 +17,8 @@ class HammerBro : public Enemy {
 public:
     HammerBro(
         sf::Vector2f position,
-        float minX,
-        float maxX,
-        float speed = 40.f,
+        float speed,
+        std::unique_ptr<MovementStrategy> movementStrategy,
         bool isBig = false
     );
 
@@ -41,23 +42,19 @@ private:
     void FireProjectile();
 
     sf::Sprite m_sprite;
-    sf::Vector2f m_position;
+    std::unique_ptr<MovementStrategy> m_movementStrategy;
     sf::Vector2f m_playerPos;
+    sf::Vector2f m_velocity;
 
-    float m_minX;
-    float m_maxX;
     float m_speed;
-
     bool m_isBig = false;
     HammerBroState m_state = HammerBroState::Walk;
     int m_health = 1;
     bool m_active = true;
     bool m_flung = false;
 
-    bool m_facingLeft = true;
-    float m_scale = 1.0f;
-
-    float m_stateTimer = 0.f;
+    float m_attackCooldown = 0.f;
+    float m_attackTimer = 0.f;
     float m_animationTimer = 0.f;
     int m_currentFrame = 0;
 };

@@ -26,7 +26,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     float minimumX = std::max(0.f, position.x - tileSize * 2.f);
     float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 2.f);
 
-    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h' || symbol == 'B') {
+    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h') {
         // Scan left and right to find exact platform bounds
         float leftScan = position.x;
         const float footY = position.y + tileSize + 2.f;
@@ -106,26 +106,27 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
 
         case 'H':
             return std::make_unique<HammerBro>(
-                sf::Vector2f(
-                    position.x + tileSize * 0.5f,
-                    position.y + tileSize
+                position,
+                50.f,
+                std::make_unique<ChaseStrategy>(
+                    minimumX,
+                    maximumX,
+                    280.f,  // aggro radius
+                    true    // HammerBro sprite faces LEFT by default
                 ),
-                minimumX,
-                maximumX,
-                40.f,
                 false // Small HammerBro
             );
 
         case 'h':
-        case 'B':
             return std::make_unique<HammerBro>(
-                sf::Vector2f(
-                    position.x + tileSize * 0.5f,
-                    position.y + tileSize
+                position,
+                50.f,
+                std::make_unique<ChaseStrategy>(
+                    minimumX,
+                    maximumX,
+                    280.f,  // aggro radius
+                    true    // HammerBro sprite faces LEFT by default
                 ),
-                minimumX,
-                maximumX,
-                40.f,
                 true // Big HammerBro
             );
 

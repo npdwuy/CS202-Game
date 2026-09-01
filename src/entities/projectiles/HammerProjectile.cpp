@@ -7,6 +7,17 @@ static const std::vector<sf::IntRect> framesHammer = {
     sf::IntRect(/* Frame 2 */ 0, 0, 0, 0)
 };
 
+static sf::IntRect getValidHammerRect(const std::vector<sf::IntRect>& frames, int frameIndex) {
+    if (frames.empty() || static_cast<size_t>(frameIndex) >= frames.size()) {
+        return sf::IntRect(0, 0, 24, 24);
+    }
+    sf::IntRect r = frames[frameIndex];
+    if (r.width <= 0 || r.height <= 0) {
+        return sf::IntRect(0, 0, 24, 24);
+    }
+    return r;
+}
+
 HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity)
     : m_velocity(velocity), m_position(position) {
 
@@ -17,11 +28,11 @@ HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity)
         texture = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/boss.png");
     }
     m_sprite.setTexture(*texture);
-    m_sprite.setTextureRect(framesHammer[0]);
-    float w = static_cast<float>(framesHammer[0].width > 0 ? framesHammer[0].width : 16);
-    float h = static_cast<float>(framesHammer[0].height > 0 ? framesHammer[0].height : 16);
-    m_sprite.setOrigin(w * 0.5f, h * 0.5f);
-    m_sprite.setScale(velocity.x < 0 ? sf::Vector2f(1.5f, 1.5f) : sf::Vector2f(-1.5f, 1.5f));
+
+    sf::IntRect rect = getValidHammerRect(framesHammer, 0);
+    m_sprite.setTextureRect(rect);
+    m_sprite.setOrigin(rect.width * 0.5f, rect.height * 0.5f);
+    m_sprite.setScale(1.2f, 1.2f);
     m_sprite.setPosition(m_position);
 }
 
@@ -36,12 +47,13 @@ void HammerProjectile::Update(sf::Time dt) {
     // Rotate hammer sprite in flight
     m_sprite.rotate(720.f * dtSec);
 
-    // Cycle through animation frames if non-empty
+    // Cycle through animation frames
     m_animationTimer += dtSec;
     if (m_animationTimer >= 0.1f) {
         m_animationTimer -= 0.1f;
-        m_currentFrame = (m_currentFrame + 1) % framesHammer.size();
-        m_sprite.setTextureRect(framesHammer[m_currentFrame]);
+        m_currentFrame = (m_currentFrame + 1) % 2;
+        sf::IntRect rect = getValidHammerRect(framesHammer, m_currentFrame);
+        m_sprite.setTextureRect(rect);
     }
 }
 
