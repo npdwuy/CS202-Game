@@ -462,6 +462,12 @@ handleMovingShellEnemyCollisions();
                 continue;
             }
 
+            // Tự hủy khi va chạm vào tường/khối đất/gạch của map
+            if (m_tileMap.intersectsSolid(fbBounds)) {
+                fireball->Destroy();
+                continue;
+            }
+
             if (m_player && !m_player->isDead() && !m_player->isTransforming()) {
                 if (playerBounds().intersects(fbBounds)) {
                     fireball->Destroy();
