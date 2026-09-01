@@ -65,7 +65,8 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                 std::make_unique<ChaseStrategy>(
                     minimumX,
                     maximumX,
-                    280.f   // aggro radius: 280 px ≈ ~5.8 tiles
+                    280.f,  // aggro radius: 280 px ≈ ~5.8 tiles
+                    true    // Goomba sprite sheet faces LEFT by default
                 )
             );
 
@@ -76,7 +77,8 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                 std::make_unique<ChaseStrategy>(
                     minimumX,
                     maximumX,
-                    320.f   // Koopa has slightly longer aggro range
+                    320.f,  // Koopa has slightly longer aggro range
+                    false   // Koopa sprite sheet faces RIGHT by default
                 )
             );
 

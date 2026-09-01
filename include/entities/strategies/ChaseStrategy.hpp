@@ -9,7 +9,7 @@ class ChaseStrategy : public MovementStrategy {
 public:
     // leftBound / rightBound : patrol range (world-space X)
     // aggroRadius            : distance in px to activate chase (default 280)
-    ChaseStrategy(float leftBound, float rightBound, float aggroRadius = 280.f);
+    ChaseStrategy(float leftBound, float rightBound, float aggroRadius = 280.f, bool baseFacingLeft = false);
 
     ~ChaseStrategy() override = default;
 
@@ -22,6 +22,7 @@ private:
     float m_leftBound;
     float m_rightBound;
     float m_aggroRadius;
+    bool  m_baseFacingLeft = false;
 
     sf::Vector2f m_playerPos;
     bool  m_hasPlayerPos = false;
