@@ -34,12 +34,13 @@ static void setFacing(sf::Sprite& sprite, float dir, bool baseFacingLeft) {
         // Flip
         sprite.setScale(newScale, sprite.getScale().y);
         
-        // Re-anchor to prevent position jumping
-        // If scale is negative, the sprite's origin (top-left) is now physically on the right side of the visual bounds.
-        if (newScale < 0.f) {
-            sprite.setPosition(currentLeft + sprite.getGlobalBounds().width, sprite.getPosition().y);
-        } else {
-            sprite.setPosition(currentLeft, sprite.getPosition().y);
+        // Re-anchor to prevent position jumping when origin is top-left (0, 0)
+        if (sprite.getOrigin().x == 0.f) {
+            if (newScale < 0.f) {
+                sprite.setPosition(currentLeft + sprite.getGlobalBounds().width, sprite.getPosition().y);
+            } else {
+                sprite.setPosition(currentLeft, sprite.getPosition().y);
+            }
         }
     }
 }

@@ -8,41 +8,45 @@
 
 // --- DẠNG NHỎ (SMALL) ---
 static const std::vector<sf::IntRect> framesWalkSmall = {
-    sf::IntRect(/* Small Walk Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Small Walk Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(0, 23, 48, 74),
+    sf::IntRect(48, 23, 48, 74)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackSmall = {
-    sf::IntRect(/* Small Prep Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Small Prep Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(96, 23, 48, 74),
+    sf::IntRect(144, 23, 48, 74)
 };
 static const std::vector<sf::IntRect> framesAttackSmall = {
-    sf::IntRect(/* Small Attack Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Small Attack Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(192, 23, 48, 74),
+    sf::IntRect(240, 23, 48, 74)
 };
 
 // --- DẠNG LỚN (BIG) ---
 static const std::vector<sf::IntRect> framesWalkBig = {
-    sf::IntRect(/* Big Walk Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Big Walk Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(288, 0, 48, 97),
+    sf::IntRect(336, 0, 48, 97)
 };
 static const std::vector<sf::IntRect> framesPrepareAttackBig = {
-    sf::IntRect(/* Big Prep Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Big Prep Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(384, 0, 48, 97),
+    sf::IntRect(432, 0, 48, 97)
 };
 static const std::vector<sf::IntRect> framesAttackBig = {
-    sf::IntRect(/* Big Attack Frame 1 */ 0, 0, 0, 0),
-    sf::IntRect(/* Big Attack Frame 2 */ 0, 0, 0, 0)
+    sf::IntRect(480, 0, 48, 97),
+    sf::IntRect(528, 0, 48, 97)
 };
 
 static sf::IntRect getValidRect(const std::vector<sf::IntRect>& frames, int frameIndex, bool isBig) {
-    if (frames.empty() || static_cast<size_t>(frameIndex) >= frames.size()) {
-        return sf::IntRect((frameIndex % 2) * 48, 0, 48, 48);
+    if (!frames.empty() && static_cast<size_t>(frameIndex) < frames.size()) {
+        sf::IntRect r = frames[frameIndex];
+        if (r.width > 0 && r.height > 0) {
+            return r;
+        }
     }
-    sf::IntRect r = frames[frameIndex];
-    if (r.width <= 0 || r.height <= 0) {
-        return sf::IntRect((frameIndex % 2) * 48, 0, 48, 48);
+    int idx = (frameIndex % 2);
+    if (isBig) {
+        return sf::IntRect((6 + idx) * 48, 0, 48, 97);
+    } else {
+        return sf::IntRect(idx * 48, 23, 48, 74);
     }
-    return r;
 }
 
 HammerBro::HammerBro(
@@ -62,21 +66,14 @@ HammerBro::HammerBro(
         throw std::invalid_argument("HammerBro requires a movement strategy.");
     }
 
-    const sf::Texture* tex = nullptr;
-    try {
-        tex = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/hammer_bro.png");
-    } catch (...) {
-        try {
-            tex = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/koopa_walk.png");
-        } catch (...) {
-            tex = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/boss.png");
-        }
-    }
-    m_sprite.setTexture(*tex);
+    const sf::Texture& tex = ResourceManager::getInstance().getTexture("assets/sprites/enemies/hammer_bro.png");
+    m_sprite.setTexture(tex);
 
     const auto& walkFrames = m_isBig ? framesWalkBig : framesWalkSmall;
-    m_sprite.setTextureRect(getValidRect(walkFrames, 0, m_isBig));
-    m_sprite.setScale(m_isBig ? 1.5f : 1.0f, m_isBig ? 1.5f : 1.0f);
+    sf::IntRect rect = getValidRect(walkFrames, 0, m_isBig);
+    m_sprite.setTextureRect(rect);
+    m_sprite.setOrigin(rect.width * 0.5f, static_cast<float>(rect.height));
+    m_sprite.setScale(1.0f, 1.0f);
     m_sprite.setPosition(position);
 }
 
@@ -109,7 +106,8 @@ void HammerBro::Update(sf::Time dt) {
     }
 
     const auto& walkFrames = m_isBig ? framesWalkBig : framesWalkSmall;
-    m_sprite.setTextureRect(getValidRect(walkFrames, m_currentFrame, m_isBig));
+    sf::IntRect rect = getValidRect(walkFrames, m_currentFrame, m_isBig);
+    m_sprite.setTextureRect(rect);
 
     // 2. Continuous Chase/Patrol Movement (like Goomba & Koopa)
     m_movementStrategy->Update(m_sprite, m_speed, dt);
@@ -137,13 +135,7 @@ sf::FloatRect HammerBro::GetBounds() const {
     if (m_state == HammerBroState::Dead || !m_active) {
         return sf::FloatRect(0.f, 0.f, 0.f, 0.f);
     }
-
-    sf::FloatRect bounds = m_sprite.getGlobalBounds();
-    bounds.left += 4.f;
-    bounds.width -= 8.f;
-    bounds.top += 4.f;
-    bounds.height -= 4.f;
-    return bounds;
+    return m_sprite.getGlobalBounds();
 }
 
 bool HammerBro::IsActive() const {
@@ -187,7 +179,7 @@ void HammerBro::FireProjectile() {
     bool facingLeft = (m_sprite.getScale().x > 0.f);
     sf::Vector2f spawnPos;
     spawnPos.x = facingLeft ? spriteLeft : (spriteLeft + spriteWidth);
-    spawnPos.y = spriteTop + 10.f;
+    spawnPos.y = spriteTop + 15.f;
 
     sf::Vector2f velocity(facingLeft ? -220.f : 220.f, -450.f);
 

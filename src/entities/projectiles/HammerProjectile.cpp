@@ -8,31 +8,26 @@ static const std::vector<sf::IntRect> framesHammer = {
 };
 
 static sf::IntRect getValidHammerRect(const std::vector<sf::IntRect>& frames, int frameIndex) {
-    if (frames.empty() || static_cast<size_t>(frameIndex) >= frames.size()) {
-        return sf::IntRect(0, 0, 24, 24);
+    if (!frames.empty() && static_cast<size_t>(frameIndex) < frames.size()) {
+        sf::IntRect r = frames[frameIndex];
+        if (r.width > 0 && r.height > 0) {
+            return r;
+        }
     }
-    sf::IntRect r = frames[frameIndex];
-    if (r.width <= 0 || r.height <= 0) {
-        return sf::IntRect(0, 0, 24, 24);
-    }
-    return r;
+    // Hammer frame in hammer_bro.png (672x98)
+    return sf::IntRect(624, 0, 48, 48);
 }
 
 HammerProjectile::HammerProjectile(sf::Vector2f position, sf::Vector2f velocity)
     : m_velocity(velocity), m_position(position) {
 
-    const sf::Texture* texture = nullptr;
-    try {
-        texture = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/hammer_bro.png");
-    } catch (...) {
-        texture = &ResourceManager::getInstance().getTexture("assets/sprites/enemies/boss.png");
-    }
-    m_sprite.setTexture(*texture);
+    const sf::Texture& texture = ResourceManager::getInstance().getTexture("assets/sprites/enemies/hammer_bro.png");
+    m_sprite.setTexture(texture);
 
     sf::IntRect rect = getValidHammerRect(framesHammer, 0);
     m_sprite.setTextureRect(rect);
     m_sprite.setOrigin(rect.width * 0.5f, rect.height * 0.5f);
-    m_sprite.setScale(1.2f, 1.2f);
+    m_sprite.setScale(0.75f, 0.75f);
     m_sprite.setPosition(m_position);
 }
 

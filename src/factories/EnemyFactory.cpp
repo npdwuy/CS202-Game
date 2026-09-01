@@ -106,7 +106,10 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
 
         case 'H':
             return std::make_unique<HammerBro>(
-                position,
+                sf::Vector2f(
+                    position.x + tileSize * 0.5f,
+                    position.y + tileSize
+                ),
                 50.f,
                 std::make_unique<ChaseStrategy>(
                     minimumX,
@@ -119,7 +122,10 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
 
         case 'h':
             return std::make_unique<HammerBro>(
-                position,
+                sf::Vector2f(
+                    position.x + tileSize * 0.5f,
+                    position.y + tileSize
+                ),
                 50.f,
                 std::make_unique<ChaseStrategy>(
                     minimumX,
