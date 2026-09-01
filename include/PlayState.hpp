@@ -42,6 +42,7 @@ private:
     void handleMovingShellEnemyCollisions();
     bool handlePlayerFall();
     void handleLevelExit();
+    void setupCastle();
     void finishLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
@@ -84,6 +85,9 @@ private:
     sf::Text m_flagScoreText;
     bool m_showFlagScore = false;
     float m_flagScoreTimer = 0.f;
+
+    sf::Texture m_castleTexture;
+    sf::Sprite m_castleSprite;
 
     std::unique_ptr<Button> m_menuButton;
     sf::Texture m_buttonTexture;

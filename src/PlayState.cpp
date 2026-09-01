@@ -38,6 +38,19 @@ PlayState::PlayState(bool loadSavedGame)
     if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
         throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
     }
+
+    if (!m_castleTexture.loadFromFile(
+        "assets/sprites/objects/castle.png"
+    ))
+{
+    throw std::runtime_error(
+        "Failed to load assets/sprites/objects/castle.png"
+    );
+}
+
+m_castleSprite.setTexture(
+    m_castleTexture
+);
     
     m_flagScoreText.setFont(hudFont);
     m_flagScoreText.setCharacterSize(16);
@@ -504,102 +517,302 @@ handleMovingShellEnemyCollisions();
     updateHud();
 }
 
-void PlayState::Render(sf::RenderWindow& window) {
-    const sf::View& screenView = GameManager::getInstance().getGameView();
+void PlayState::Render(sf::RenderWindow& window)
+{
+    const sf::View& screenView =
+        GameManager::getInstance().getGameView();
 
-    window.setView(m_camera.view());
+    // =========================================================
+    // WORLD VIEW
+    // =========================================================
+    window.setView(
+        m_camera.view()
+    );
 
-    renderBackgroundLayers(window);
+    // Background + parallax clouds
+    renderBackgroundLayers(
+        window
+    );
 
-    const sf::FloatRect visibleWorld = m_camera.visibleBounds(96.f);
+    const sf::FloatRect visibleWorld =
+        m_camera.visibleBounds(96.f);
 
-    m_tileMap.render(window);
+    // =========================================================
+    // TILE MAP
+    // =========================================================
+    m_tileMap.render(
+        window
+    );
 
-    for (const auto& enemy : m_enemies) {
-        if (visibleWorld.intersects(enemy->GetBounds())) {
-            enemy->Render(window);
+    // =========================================================
+    // CASTLE
+    // =========================================================
+    if (
+        visibleWorld.intersects(
+            m_castleSprite.getGlobalBounds()
+        )
+    )
+    {
+        window.draw(
+            m_castleSprite
+        );
+    }
+
+    // =========================================================
+    // ENEMIES
+    // =========================================================
+    for (const auto& enemy : m_enemies)
+    {
+        if (
+            visibleWorld.intersects(
+                enemy->GetBounds()
+            )
+        )
+        {
+            enemy->Render(
+                window
+            );
         }
     }
 
-    for (const auto& item : m_items) {
-        if (visibleWorld.intersects(item->GetBounds())) {
-            item->Render(window);
+    // =========================================================
+    // ITEMS
+    // =========================================================
+    for (const auto& item : m_items)
+    {
+        if (
+            visibleWorld.intersects(
+                item->GetBounds()
+            )
+        )
+        {
+            item->Render(
+                window
+            );
         }
     }
 
-    for (const auto& fb : m_fireballs) {
-        if (visibleWorld.intersects(fb->GetBounds())) {
-            fb->Render(window);
+    // =========================================================
+    // MARIO FIREBALLS
+    // =========================================================
+    for (const auto& fb : m_fireballs)
+    {
+        if (
+            visibleWorld.intersects(
+                fb->GetBounds()
+            )
+        )
+        {
+            fb->Render(
+                window
+            );
         }
     }
 
-    for (const auto& fireball : m_bossFireballs) {
-        if (visibleWorld.intersects(fireball->GetBounds())) {
-            fireball->Render(window);
+    // =========================================================
+    // BOSS FIREBALLS
+    // =========================================================
+    for (const auto& fireball : m_bossFireballs)
+    {
+        if (
+            visibleWorld.intersects(
+                fireball->GetBounds()
+            )
+        )
+        {
+            fireball->Render(
+                window
+            );
         }
     }
 
-    if (m_player) {
-        m_player->Render(window);
+    // =========================================================
+    // PLAYER
+    // =========================================================
+    if (m_player)
+    {
+        m_player->Render(
+            window
+        );
     }
 
-    if (m_showFlagScore) {
-        window.draw(m_flagScoreText);
+    // =========================================================
+    // FLAG SCORE
+    // =========================================================
+    if (m_showFlagScore)
+    {
+        window.draw(
+            m_flagScoreText
+        );
     }
 
-    if (m_levelStarting || m_exitSequence == ExitSequence::IrisWipe) {
+    // =========================================================
+    // IRIS OPEN / CLOSE EFFECT
+    // =========================================================
+    if (
+        m_levelStarting ||
+        m_exitSequence == ExitSequence::IrisWipe
+    )
+    {
         float rawProgress = 0.f;
-        if (m_levelStarting) {
-            rawProgress = std::clamp(m_startTimer / 1.0f, 0.0f, 1.0f); 
-            // Cubic Ease-In for opening (mirroring closing wipe)
-            rawProgress = std::pow(rawProgress, 3.0f);
-        } else {
-            rawProgress = std::clamp(1.0f - (m_exitTimer / 1.0f), 0.0f, 1.0f); 
+
+        if (m_levelStarting)
+        {
+            rawProgress =
+                std::clamp(
+                    m_startTimer / 1.0f,
+                    0.0f,
+                    1.0f
+                );
+
+            // Cubic Ease-In for opening
+            rawProgress =
+                std::pow(
+                    rawProgress,
+                    3.0f
+                );
+        }
+        else
+        {
+            rawProgress =
+                std::clamp(
+                    1.0f -
+                        (m_exitTimer / 1.0f),
+                    0.0f,
+                    1.0f
+                );
+
             // Cubic Ease-In for closing
-            rawProgress = std::pow(rawProgress, 3.0f);
+            rawProgress =
+                std::pow(
+                    rawProgress,
+                    3.0f
+                );
         }
-        
-        float radius = 1200.f * rawProgress;
-        
-        if (radius <= 0.5f) {
-            // Draw a completely black screen when radius is effectively 0
-            sf::RectangleShape blackScreen(sf::Vector2f(10000.f, 10000.f));
-            blackScreen.setFillColor(sf::Color::Black);
-            if (m_player) {
-                blackScreen.setPosition(m_player->position().x - 5000.f, m_player->position().y - 5000.f);
+
+        const float radius =
+            1200.f * rawProgress;
+
+        if (radius <= 0.5f)
+        {
+            // Completely black screen.
+            sf::RectangleShape blackScreen(
+                sf::Vector2f(
+                    10000.f,
+                    10000.f
+                )
+            );
+
+            blackScreen.setFillColor(
+                sf::Color::Black
+            );
+
+            if (m_player)
+            {
+                blackScreen.setPosition(
+                    m_player->position().x -
+                        5000.f,
+                    m_player->position().y -
+                        5000.f
+                );
             }
-            window.draw(blackScreen);
-        } else {
-            // Draw smooth high-resolution circle (150 points)
-            sf::CircleShape iris(radius, 150);
-            iris.setOrigin(radius, radius);
-            if (m_player) {
-                iris.setPosition(m_player->position().x + m_player->width()/2.f, m_player->position().y + m_player->height()/2.f);
+
+            window.draw(
+                blackScreen
+            );
+        }
+        else
+        {
+            // Circular iris effect.
+            sf::CircleShape iris(
+                radius,
+                150
+            );
+
+            iris.setOrigin(
+                radius,
+                radius
+            );
+
+            if (m_player)
+            {
+                iris.setPosition(
+                    m_player->position().x +
+                        m_player->width() /
+                            2.f,
+
+                    m_player->position().y +
+                        m_player->height() /
+                            2.f
+                );
             }
-            iris.setFillColor(sf::Color::Transparent);
-            iris.setOutlineColor(sf::Color::Black);
-            iris.setOutlineThickness(3000.f); // Massive outline to cover the screen
-            
-            window.draw(iris);
+
+            iris.setFillColor(
+                sf::Color::Transparent
+            );
+
+            iris.setOutlineColor(
+                sf::Color::Black
+            );
+
+            iris.setOutlineThickness(
+                3000.f
+            );
+
+            window.draw(
+                iris
+            );
         }
     }
 
-    window.setView(screenView);
+    // =========================================================
+    // SCREEN / UI VIEW
+    // =========================================================
+    window.setView(
+        screenView
+    );
 
-    // Position the menu button relative to the current game view's top-left corner
-    const sf::Vector2f viewSize = screenView.getSize();
-    const sf::Vector2f viewCenter = screenView.getCenter();
-    const float left = viewCenter.x - viewSize.x * 0.5f;
-    const float top = viewCenter.y - viewSize.y * 0.5f;
+    // Position menu button relative to screen view.
+    const sf::Vector2f viewSize =
+        screenView.getSize();
 
-    if (m_menuButton) {
-        m_menuButton->setPosition(sf::Vector2f(left + 24.f, top + 10.f));
+    const sf::Vector2f viewCenter =
+        screenView.getCenter();
+
+    const float left =
+        viewCenter.x -
+        viewSize.x * 0.5f;
+
+    const float top =
+        viewCenter.y -
+        viewSize.y * 0.5f;
+
+    if (m_menuButton)
+    {
+        m_menuButton->setPosition(
+            sf::Vector2f(
+                left + 24.f,
+                top + 10.f
+            )
+        );
     }
 
-    m_hud.layout(screenView);
-    m_hud.render(window);
-    if (m_menuButton) {
-        m_menuButton->render(window);
+    // =========================================================
+    // HUD
+    // =========================================================
+    m_hud.layout(
+        screenView
+    );
+
+    m_hud.render(
+        window
+    );
+
+    if (m_menuButton)
+    {
+        m_menuButton->render(
+            window
+        );
     }
 }
 
@@ -611,6 +824,63 @@ void PlayState::handleLevelStart() {
     }
 }
 
+void PlayState::setupCastle()
+{
+    m_castleSprite.setTexture(
+        m_castleTexture,
+        true
+    );
+
+    // Sprite gốc của bạn khoảng 158 x 176.
+    // Scale 1.5 -> khoảng 237 x 264 trong game.
+    constexpr float castleScale = 1.5f;
+
+    m_castleSprite.setScale(
+        castleScale,
+        castleScale
+    );
+
+    const sf::FloatRect localBounds =
+        m_castleSprite.getLocalBounds();
+
+    const float castleWidth =
+        localBounds.width * castleScale;
+
+    const float castleHeight =
+        localBounds.height * castleScale;
+
+    const sf::FloatRect worldBounds =
+        m_tileMap.worldBounds();
+
+    // Muốn castle nằm bên phải cột cờ.
+    const float desiredX =
+        m_tileMap.getPoleX() + 220.f;
+
+    // Không để sprite vượt quá cuối map.
+    const float maximumX =
+        worldBounds.left +
+        worldBounds.width -
+        castleWidth -
+        16.f;
+
+    const float castleX =
+        std::min(
+            desiredX,
+            maximumX
+        );
+
+    // Đáy castle nằm đúng tại mặt đất
+    // nơi chân cột cờ kết thúc.
+    const float castleY =
+        m_tileMap.getPoleBottomY() -
+        castleHeight;
+
+    m_castleSprite.setPosition(
+        castleX,
+        castleY
+    );
+}
+
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     if (levelNumber < 1 || levelNumber > 3) {
         throw std::out_of_range("Level number must be between 1 and 3.");
@@ -620,7 +890,14 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
 
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
+
+    // Load current level map first.
     m_tileMap.load(levelPath(levelNumber));
+
+    // Position the castle using this level's flag pole
+    // and world bounds.
+    setupCastle();
+
     m_enemies.clear();
     m_items.clear();
     m_fireballs.clear();
@@ -628,20 +905,28 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     createLevelObjects();
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
+
     if (restoreSavedPosition && m_saveData.hasPlayerPosition) {
         const sf::Vector2f savedPosition{
             m_saveData.playerX,
             m_saveData.playerY
         };
+
         const sf::FloatRect savedBounds(
             savedPosition.x,
             savedPosition.y,
             Player::CollisionWidth,
             Player::CollisionHeight
         );
-        const sf::FloatRect worldBounds = m_tileMap.worldBounds();
+
+        const sf::FloatRect worldBounds =
+            m_tileMap.worldBounds();
+
         if (
-            worldBounds.contains(savedBounds.left, savedBounds.top) &&
+            worldBounds.contains(
+                savedBounds.left,
+                savedBounds.top
+            ) &&
             worldBounds.contains(
                 savedBounds.left + savedBounds.width,
                 savedBounds.top + savedBounds.height
@@ -652,82 +937,226 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
         }
     }
 
-    m_player = std::make_unique<Mario>(spawnPosition);
+    m_player = std::make_unique<Mario>(
+        spawnPosition
+    );
+
     if (m_speedBoostTimeRemaining > 0.f) {
         m_player->setSpeedMultiplier(1.45f);
     }
+
     m_player->setCollisionResolver(
         [this](Character& character, sf::Time deltaTime) {
             if (m_exitSequence != ExitSequence::None) {
-                // Bypass all collisions during cutscenes so Mario can slide/walk off-screen freely
-                sf::Vector2f pos = character.position();
-                pos += character.velocity() * deltaTime.asSeconds();
+                // Bypass all collisions during cutscenes
+                // so Mario can slide/walk freely.
+                sf::Vector2f pos =
+                    character.position();
+
+                pos +=
+                    character.velocity() *
+                    deltaTime.asSeconds();
+
                 character.setPosition(pos);
+
                 return;
             }
 
-            m_tileMap.resolveCollision(character, deltaTime, [&](int row, int col) {
-                if (&character == m_player.get()) {
-                    if (row < m_tileMap.data().rows.size() - 2) {
-                        bool bumped = false;
+            m_tileMap.resolveCollision(
+                character,
+                deltaTime,
+                [&](int row, int col) {
+                    if (&character == m_player.get()) {
+                        if (
+                            row <
+                            m_tileMap.data().rows.size() - 2
+                        ) {
+                            bool bumped = false;
 
-                        if (m_tileMap.data().rows[row][col] == '?') {
-                            if (m_tileMap.hitQuestionBlock(row, col)) {
-                                bumped = true;
-                                AudioManager::getInstance().playEffect(SoundEffect::Jump); // Or another sound
-                                
-                                int randVal = std::rand() % 100;
-                                char itemSymbol = 'M';
-                                if (randVal < 1) itemSymbol = 'S';        // 1%
-                                else if (randVal < 10) itemSymbol = 'L';  // 9%
-                                else if (randVal < 30) itemSymbol = 'F';  // 20%
-                                else if (randVal < 60) itemSymbol = 'V';  // 30%
-                                
-                                sf::Vector2f itemPos(col * m_tileMap.data().tileSize, row * m_tileMap.data().tileSize);
-                                auto newItem = m_objectFactory.createItem(itemSymbol, itemPos);
-                                if (auto floatingItem = dynamic_cast<FloatingItem*>(newItem.get())) {
-                                    floatingItem->StartSpawning((row - 1) * m_tileMap.data().tileSize, 0.5f);
-                                }
-                                m_items.push_back(std::move(newItem));
-                            }
-                        } else if (m_tileMap.data().rows[row][col] == '#') {
-                            if (m_invincibilityTimeRemaining > 0.f) {
-                                m_tileMap.breakBlock(row, col);
-                                bumped = true;
-                                AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
-                            } else if (m_player->isSuper()) {
-                                bool destroyed = m_tileMap.hitBlock(row, col);
-                                bumped = true;
-                                if (destroyed) {
-                                    AudioManager::getInstance().playEffect(SoundEffect::EnemyDefeated);
-                                } else {
-                                    AudioManager::getInstance().playEffect(SoundEffect::Jump);
-                                }
-                            }
-                        }
+                            if (
+                                m_tileMap.data().rows[row][col]
+                                == '?'
+                            ) {
+                                if (
+                                    m_tileMap.hitQuestionBlock(
+                                        row,
+                                        col
+                                    )
+                                ) {
+                                    bumped = true;
 
-                        // Check for enemies standing on top of the bumped block
-                        if (bumped && (m_player->isSuper() || m_invincibilityTimeRemaining > 0.f)) {
-                            float tileSize = static_cast<float>(m_tileMap.data().tileSize);
-                            sf::FloatRect blockTopRect(col * tileSize, row * tileSize - 2.f, tileSize, 4.f);
-                            
-                            for (auto& enemy : m_enemies) {
-                                if (enemy->IsActive() && !enemy->IsFlung() && enemy->GetBounds().intersects(blockTopRect)) {
-                                    enemy->Fling();
-                                    GameEventManager::GetInstance().Notify({GameEventType::EnemyDefeated, 100, "Enemy defeated by block bump!"});
+                                    AudioManager::getInstance()
+                                        .playEffect(
+                                            SoundEffect::Jump
+                                        );
+
+                                    int randVal =
+                                        std::rand() % 100;
+
+                                    char itemSymbol = 'M';
+
+                                    if (randVal < 1)
+                                        itemSymbol = 'S';
+                                    else if (randVal < 10)
+                                        itemSymbol = 'L';
+                                    else if (randVal < 30)
+                                        itemSymbol = 'F';
+                                    else if (randVal < 60)
+                                        itemSymbol = 'V';
+
+                                    sf::Vector2f itemPos(
+                                        col *
+                                            m_tileMap.data()
+                                                .tileSize,
+                                        row *
+                                            m_tileMap.data()
+                                                .tileSize
+                                    );
+
+                                    auto newItem =
+                                        m_objectFactory
+                                            .createItem(
+                                                itemSymbol,
+                                                itemPos
+                                            );
+
+                                    if (
+                                        auto floatingItem =
+                                            dynamic_cast<
+                                                FloatingItem*
+                                            >(
+                                                newItem.get()
+                                            )
+                                    ) {
+                                        floatingItem
+                                            ->StartSpawning(
+                                                (row - 1) *
+                                                    m_tileMap
+                                                        .data()
+                                                        .tileSize,
+                                                0.5f
+                                            );
+                                    }
+
+                                    m_items.push_back(
+                                        std::move(newItem)
+                                    );
+                                }
+                            }
+                            else if (
+                                m_tileMap.data().rows[row][col]
+                                == '#'
+                            ) {
+                                if (
+                                    m_invincibilityTimeRemaining >
+                                    0.f
+                                ) {
+                                    m_tileMap.breakBlock(
+                                        row,
+                                        col
+                                    );
+
+                                    bumped = true;
+
+                                    AudioManager::getInstance()
+                                        .playEffect(
+                                            SoundEffect::
+                                                EnemyDefeated
+                                        );
+                                }
+                                else if (
+                                    m_player->isSuper()
+                                ) {
+                                    bool destroyed =
+                                        m_tileMap.hitBlock(
+                                            row,
+                                            col
+                                        );
+
+                                    bumped = true;
+
+                                    if (destroyed) {
+                                        AudioManager::
+                                            getInstance()
+                                                .playEffect(
+                                                    SoundEffect::
+                                                        EnemyDefeated
+                                                );
+                                    }
+                                    else {
+                                        AudioManager::
+                                            getInstance()
+                                                .playEffect(
+                                                    SoundEffect::
+                                                        Jump
+                                                );
+                                    }
+                                }
+                            }
+
+                            if (
+                                bumped &&
+                                (
+                                    m_player->isSuper() ||
+                                    m_invincibilityTimeRemaining >
+                                        0.f
+                                )
+                            ) {
+                                float tileSize =
+                                    static_cast<float>(
+                                        m_tileMap.data()
+                                            .tileSize
+                                    );
+
+                                sf::FloatRect blockTopRect(
+                                    col * tileSize,
+                                    row * tileSize - 2.f,
+                                    tileSize,
+                                    4.f
+                                );
+
+                                for (
+                                    auto& enemy :
+                                    m_enemies
+                                ) {
+                                    if (
+                                        enemy->IsActive() &&
+                                        !enemy->IsFlung() &&
+                                        enemy
+                                            ->GetBounds()
+                                            .intersects(
+                                                blockTopRect
+                                            )
+                                    ) {
+                                        enemy->Fling();
+
+                                        GameEventManager::
+                                            GetInstance()
+                                                .Notify(
+                                                    {
+                                                        GameEventType::
+                                                            EnemyDefeated,
+                                                        100,
+                                                        "Enemy defeated by block bump!"
+                                                    }
+                                                );
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            });
+            );
         }
     );
 
-    const sf::Vector2f playerCenter = spawnPosition + sf::Vector2f(
-        m_player->width() * 0.5f,
-        m_player->height() * 0.5f
-    );
+    const sf::Vector2f playerCenter =
+        spawnPosition +
+        sf::Vector2f(
+            m_player->width() * 0.5f,
+            m_player->height() * 0.5f
+        );
+
     m_camera.reset(
         playerCenter,
         m_tileMap.worldBounds(),
