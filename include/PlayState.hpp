@@ -141,6 +141,22 @@ void renderBackgroundLayers(
     sf::RenderWindow& window
 );
 
+struct SavedLevelState {
+    int levelNumber = 0;
+    std::vector<std::string> tileRows;
+    std::vector<std::unique_ptr<Enemy>> enemies;
+    std::vector<std::unique_ptr<Item>> items;
+    bool hasSavedState = false;
+
+    void clear() {
+        levelNumber = 0;
+        tileRows.clear();
+        enemies.clear();
+        items.clear();
+        hasSavedState = false;
+    }
+};
+
     bool m_isWarping = false;
     bool m_wasWarping = false;
     bool m_wasZPressed = false;
@@ -152,4 +168,5 @@ void renderBackgroundLayers(
     bool m_hasReturnPos = false;
     sf::RectangleShape m_warpFadeOverlay;
     std::map<std::string, std::string> m_pipeSubLevelCache;
+    SavedLevelState m_savedMainLevelState;
 };

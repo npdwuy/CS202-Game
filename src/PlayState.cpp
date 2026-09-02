@@ -401,6 +401,14 @@ void PlayState::Update(sf::Time timePerFrame) {
                         m_hasReturnPos = true;
                         m_warpDestinationLevel = 5;
 
+                        // Snapshot current main level state before entering sub-level
+                        m_savedMainLevelState.clear();
+                        m_savedMainLevelState.levelNumber = m_saveData.currentLevel;
+                        m_savedMainLevelState.tileRows = m_tileMap.data().rows;
+                        m_savedMainLevelState.enemies = std::move(m_enemies);
+                        m_savedMainLevelState.items = std::move(m_items);
+                        m_savedMainLevelState.hasSavedState = true;
+
                         std::string pipeKey = "L" + std::to_string(m_saveData.currentLevel) + "_" + std::to_string(row) + "_" + std::to_string(col);
                         if (m_pipeSubLevelCache.find(pipeKey) == m_pipeSubLevelCache.end()) {
                             // Dynamically generate a fresh random compact sub-level matching the active level difficulty/theme
@@ -817,15 +825,28 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
 
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
-    m_tileMap.load(levelPath(levelNumber));
-    loadBackgroundLayers();
     m_heldShell = nullptr;
-    m_enemies.clear();
-    m_items.clear();
     m_fireballs.clear();
     m_bossFireballs.clear();
     m_hammerProjectiles.clear();
-    createLevelObjects();
+
+    const bool isReturningToMainLevel = m_wasWarping && levelNumber != 5 && m_savedMainLevelState.hasSavedState && m_savedMainLevelState.levelNumber == levelNumber;
+
+    if (isReturningToMainLevel) {
+        m_tileMap.load(levelPath(levelNumber));
+        m_tileMap.restoreTileRows(m_savedMainLevelState.tileRows);
+        loadBackgroundLayers();
+        m_enemies = std::move(m_savedMainLevelState.enemies);
+        m_items = std::move(m_savedMainLevelState.items);
+        m_savedMainLevelState.clear();
+    } else {
+        m_tileMap.load(levelPath(levelNumber));
+        loadBackgroundLayers();
+        m_enemies.clear();
+        m_items.clear();
+        createLevelObjects();
+        m_savedMainLevelState.clear();
+    }
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
     

@@ -48,6 +48,32 @@ void TileMap::load(const std::string& path) {
     rebuildGeometry();
 }
 
+void TileMap::restoreTileRows(const std::vector<std::string>& tileRows) {
+    if (tileRows.empty()) return;
+    m_data.rows = tileRows;
+
+    m_crackedBlocks.clear();
+    m_crackedSet.clear();
+    m_questionBlocks.clear();
+
+    float tileSize = static_cast<float>(m_data.tileSize);
+    for (int r = 0; r < static_cast<int>(m_data.rows.size()); ++r) {
+        for (int c = 0; c < static_cast<int>(m_data.rows[r].size()); ++c) {
+            if (m_data.rows[r][c] == '?' || m_data.rows[r][c] == '!') {
+                sf::Vector2f pos(c * tileSize, r * tileSize);
+                QuestionBlock qb(r, c, pos, tileSize);
+                if (m_data.rows[r][c] == '!') {
+                    qb.Hit();
+                    qb.Update(sf::seconds(1.0f));
+                }
+                m_questionBlocks.push_back(qb);
+            }
+        }
+    }
+
+    rebuildGeometry();
+}
+
 void TileMap::render(sf::RenderWindow& window) const {
     if (m_renderer) {
         m_renderer->render(window, m_tileVertices, m_sceneryVertices, m_backgroundVertices);
