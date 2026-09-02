@@ -167,7 +167,7 @@ void Luigi::update(sf::Time timePerFrame) {
 
     float oldWidth  = width_;
     float oldHeight = height_;
-    width_  = 35.0f * scaleX * 0.90f;
+    width_  = CollisionWidth;
     float topPadding = 2.0f;
     height_ = (47.0f - topPadding) * scaleY;
     position_.x += (oldWidth - width_) / 2.0f;

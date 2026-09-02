@@ -264,8 +264,8 @@ void Mario::update(sf::Time timePerFrame) {
     float oldWidth = width_;
     float oldHeight = height_;
     
-    // Crop width by 5% on each side (total 10% reduction)
-    width_ = 35.0f * scaleAbs * 0.90f; 
+    // Keep horizontal collision width invariant to prevent floating over gaps when big
+    width_ = CollisionWidth; 
     
     float topPadding = 2.0f; // Transparent pixels at the top of the sprite frames
     height_ = (47.0f - topPadding) * scaleAbs;
