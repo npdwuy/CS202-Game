@@ -1,0 +1,119 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#f39c12"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#b7770d"
+    lineColor: "#555555"
+    secondaryColor: "#fffbf0"
+    tertiaryColor: "#fef8e8"
+---
+classDiagram
+    direction TB
+
+    class Item {
+        <<abstract>>
+        +Update(dt: sf::Time)* void
+        +Render(window)* void
+        +GetBounds() FloatRect*
+        +GetEffect() ItemEffect*
+        +IsCollected() bool*
+        +Collect() void*
+    }
+
+    class ItemEffect {
+        <<struct>>
+        +ItemEffectType type
+        +int amount
+    }
+
+    class ItemEffectType {
+        <<enumeration>>
+        AddScore
+        GrowPlayer
+        EnableFirePower
+        ExtraLife
+        Invincibility
+        SpeedBoost
+    }
+
+    class FloatingItem {
+        <<Template Method>>
+        -sf::Vector2f m_basePosition
+        -float m_floatingDistance
+        -float m_floatingSpeed
+        -bool m_collected
+        -bool m_isSpawning
+        +Update(dt) void$
+        +IsCollected() bool$
+        +Collect() void$
+        +StartSpawning(targetY, duration) void
+        #SetVisualPosition(pos)* void
+        #Animate(dt) void
+    }
+
+    class Coin {
+        -sf::Sprite m_sprite
+        -int m_value
+        +Coin(pos, value)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+        +GetValue() int
+    }
+
+    class Mushroom {
+        -sf::Sprite m_sprite
+        +Mushroom(pos)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+    }
+
+    class FireFlower {
+        -sf::Sprite m_sprite
+        +FireFlower(pos)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+    }
+
+    class OneUpMushroom {
+        -sf::Sprite m_sprite
+        +OneUpMushroom(pos)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+    }
+
+    class Star {
+        -sf::ConvexShape m_star
+        +Star(pos)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+        #Animate(dt) void
+    }
+
+    class SpeedBoost {
+        -sf::CircleShape m_badge
+        -sf::ConvexShape m_arrow
+        -float m_pulseTime
+        +SpeedBoost(pos)
+        +Render(window) void
+        +GetBounds() FloatRect
+        +GetEffect() ItemEffect
+        #Animate(dt) void
+    }
+
+    Item <|-- FloatingItem
+    FloatingItem <|-- Coin
+    FloatingItem <|-- Mushroom
+    FloatingItem <|-- FireFlower
+    FloatingItem <|-- OneUpMushroom
+    FloatingItem <|-- Star
+    FloatingItem <|-- SpeedBoost
+
+    Item ..> ItemEffect : returns
+    ItemEffect *-- ItemEffectType

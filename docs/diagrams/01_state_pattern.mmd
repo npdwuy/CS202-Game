@@ -1,0 +1,122 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#4a90d9"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#2c5f8a"
+    lineColor: "#555555"
+    secondaryColor: "#f0f4f8"
+    tertiaryColor: "#e8f0fe"
+---
+classDiagram
+    direction TB
+
+    class GameState {
+        <<abstract>>
+        +Input(event: sf::Event)*
+        +Update(dt: sf::Time)*
+        +Render(window: sf::RenderWindow)*
+    }
+
+    class GameManager {
+        -stack~unique_ptr~GameState~~ m_stateStack
+        -sf::RenderWindow m_window
+        -bool m_running
+        +getInstance() GameManager&
+        +pushState(state)
+        +popState()
+        +run()
+        +quit()
+    }
+
+    class MenuState {
+        -vector~Button~ m_buttons
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class LevelSelectState {
+        -vector~Button~ m_buttons
+        -int m_highestUnlocked
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class CharacterSelectState {
+        -Button m_marioBtn
+        -Button m_luigiBtn
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class OptionsState {
+        -Slider m_bgmSlider
+        -Slider m_sfxSlider
+        -SettingsManager m_settings
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class PlayState {
+        -unique_ptr~Player~ m_player
+        -TileMap m_tileMap
+        -vector~Enemy*~ m_enemies
+        -vector~Item*~ m_items
+        -GameHud m_hud
+        -PlayerCamera m_camera
+        -ParallaxBackground m_bg
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+        +OnGameEvent(event)
+    }
+
+    class PauseState {
+        -vector~Button~ m_buttons
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class GameOverState {
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class LevelCompleteState {
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class GenerateLevelState {
+        -MapGenerator m_generator
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    class AboutState {
+        +Input(event)
+        +Update(dt)
+        +Render(window)
+    }
+
+    GameState <|-- MenuState
+    GameState <|-- LevelSelectState
+    GameState <|-- CharacterSelectState
+    GameState <|-- OptionsState
+    GameState <|-- PlayState
+    GameState <|-- PauseState
+    GameState <|-- GameOverState
+    GameState <|-- LevelCompleteState
+    GameState <|-- GenerateLevelState
+    GameState <|-- AboutState
+
+    GameManager o-- GameState : manages stack

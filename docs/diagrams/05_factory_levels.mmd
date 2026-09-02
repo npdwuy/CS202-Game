@@ -1,0 +1,106 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#8e44ad"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#6c3483"
+    lineColor: "#555555"
+    secondaryColor: "#f9f0ff"
+    tertiaryColor: "#f3e8ff"
+---
+classDiagram
+    direction TB
+
+    class EnemyFactory {
+        +Create(symbol, pos, tileSize, levelWidth, tileMap)$ unique_ptr~Enemy~
+    }
+
+    class ItemFactory {
+        +Create(symbol, pos)$ unique_ptr~Item~
+    }
+
+    class LevelObjectFactory {
+        +createEnemy(symbol, pos, tileSize, levelWidth, tileMap) unique_ptr~Enemy~
+        +createItem(symbol, pos) unique_ptr~Item~
+        +isEnemySymbol(symbol)$ bool
+        +isItemSymbol(symbol)$ bool
+    }
+
+    class LevelLoader {
+        +loadFromFile(path)$ LevelData
+        +isSupportedSymbol(symbol)$ bool
+    }
+
+    class LevelData {
+        <<DTO>>
+        +string name
+        +string difficulty
+        +unsigned tileSize
+        +vector~string~ rows
+        +vector~LevelSpawnRequest~ spawnRequests
+        +sf::Vector2f playerStart
+        +sf::Vector2f exitPosition
+    }
+
+    class LevelSpawnRequest {
+        <<DTO>>
+        +char symbol
+        +sf::Vector2f position
+    }
+
+    class TileMap {
+        -LevelData m_data
+        -unique_ptr~TileRenderer~ m_renderer
+        -vector~QuestionBlock~ m_questionBlocks
+        +load(path) void
+        +render(window) void
+        +resolveCollision(character, dt) void
+        +isSolidAt(pos) bool
+        +hitQuestionBlock(row, col) bool
+        +exitBounds() FloatRect
+        +update(dt) void
+    }
+
+    class TileRenderer {
+        <<abstract>>
+        +buildGeometry(...)* void
+        +buildSingleTile(...)* void
+        +isTransparent(...)* bool
+        +render(...)* void
+        +getTileColor(data) Color
+    }
+
+    class TexturedTileRenderer {
+        -sf::Texture m_texture
+        -TilesetLayout m_layout
+        +buildGeometry(...) void
+        +buildSingleTile(...) void
+        +render(...) void
+    }
+
+    class ProceduralTileRenderer {
+        -bool m_drawSky
+        -bool m_drawHills
+        -paletteFor(difficulty) TilePalette
+        +buildGeometry(...) void
+        +buildSingleTile(...) void
+        +render(...) void
+        +getTileColor(data) Color
+    }
+
+    class MapGenerator {
+        +generateMap(level, outputPath)$ void
+        +generateSubLevel(outputPath)$ void
+    }
+
+    LevelObjectFactory --> EnemyFactory : delegates
+    LevelObjectFactory --> ItemFactory : delegates
+    TileMap --> LevelLoader : uses
+    LevelLoader ..> LevelData : produces
+    LevelData *-- LevelSpawnRequest
+    TileMap *-- LevelData
+    TileMap *-- TileRenderer
+    TileRenderer <|-- TexturedTileRenderer
+    TileRenderer <|-- ProceduralTileRenderer
+    MapGenerator ..> LevelData : generates
