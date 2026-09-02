@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
-#include <chrono>
 
 const int WIDTH = 160;
 const int HEIGHT = 20;
@@ -37,11 +36,6 @@ struct GameMap {
 };
 
 void MapGenerator::generateMap(int level, const std::string& outputPath) {
-    unsigned int seed = static_cast<unsigned int>(
-        std::chrono::high_resolution_clock::now().time_since_epoch().count()
-    );
-    std::srand(seed);
-
     GameMap m;
 
     const int SAFE_START_COL = 20;
