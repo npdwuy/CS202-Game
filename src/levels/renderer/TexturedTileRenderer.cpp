@@ -24,16 +24,16 @@ void TexturedTileRenderer::appendTexturedQuad(
 
 sf::Vector2i TexturedTileRenderer::getTileCoordFor(const LevelData& data, int row, int col) const {
     char c = data.rows[row][col];
-    auto isGround = [](char ch) { return ch == '#' || ch == '=' || ch == 'T' || ch == 'D' || ch == 'W' || ch == '|'; };
+    auto isGround = [](char ch) { return ch == '#' || ch == '=' || ch == 'T' || ch == 'D' || ch == 'W' || ch == '|' || ch == '[' || ch == ']'; };
     const bool left = (col == 0) || isGround(data.rows[row][col - 1]);
     const bool right = (col + 1 >= static_cast<int>(data.rows[row].size())) || isGround(data.rows[row][col + 1]);
 
     sf::Vector2i tileCoord = m_layout.dirtCenter;
 
-    if (c == 'W' || c == '|') {
-        // Vertical pipe: column 14 (left half) & 15 (right half), row 0 (top mouth), row 1 (body extending into ground)
-        bool isLeft = (col == 0) || (data.rows[row][col - 1] != 'W' && data.rows[row][col - 1] != '|');
-        if (c == 'W') {
+    if (c == 'W' || c == '|' || c == '[' || c == ']') {
+        // Vertical / Horizontal pipe: column 14 (left half) & 15 (right half), row 0 (top mouth), row 1 (body extending into ground)
+        bool isLeft = (col == 0) || (data.rows[row][col - 1] != 'W' && data.rows[row][col - 1] != '|' && data.rows[row][col - 1] != '[' && data.rows[row][col - 1] != ']');
+        if (c == 'W' || c == '[') {
             tileCoord = isLeft ? m_layout.pipeVerticalTopLeft : m_layout.pipeVerticalTopRight;
         } else {
             // Phần thân kéo dài vô đất: luôn dùng tile thân (row 1)
@@ -81,7 +81,7 @@ void TexturedTileRenderer::buildGeometry(
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
             char c = data.rows[row][column];
-            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|') {
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                 continue;
             }
 

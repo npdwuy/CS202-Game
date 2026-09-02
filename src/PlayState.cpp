@@ -949,7 +949,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
                         }
 
                         // Check for enemies standing on top of the bumped block
-                        if (bumped && (m_player->isSuper() || m_invincibilityTimeRemaining > 0.f)) {
+                        if (bumped) {
                             float tileSize = static_cast<float>(m_tileMap.data().tileSize);
                             sf::FloatRect blockTopRect(col * tileSize, row * tileSize - 2.f, tileSize, 4.f);
                             

@@ -236,8 +236,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
             position.y = tile.top + tile.height;
             character.setHitRoof(true);
             if (onHitRoof) {
-                int col = static_cast<int>(tile.left / m_data.tileSize);
-                int row = static_cast<int>(tile.top / m_data.tileSize);
+                int col = static_cast<int>(std::round(tile.left / static_cast<float>(m_data.tileSize)));
+                int row = static_cast<int>(std::round(tile.top / static_cast<float>(m_data.tileSize)));
                 onHitRoof(row, col);
             }
         }
@@ -448,7 +448,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     }
 
     char c = m_data.rows[row][column];
-    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|' || c == '[' || c == ']';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
