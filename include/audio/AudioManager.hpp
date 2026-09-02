@@ -15,7 +15,8 @@ enum class SoundEffect {
     SpeedBoost,
     EnemyDefeated,
     GameOver,
-    Pipe
+    Pipe,
+    Fireball
 };
 
 class AudioManager {

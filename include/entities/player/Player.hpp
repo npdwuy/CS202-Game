@@ -63,6 +63,7 @@ protected:
     static constexpr float BigJumpBonus = 207.5f;
 
     float throwTimer_ = 0.0f;
+    bool isCarrying_ = false;
 
     // Boss knockback timer
     float bossKnockbackTimer_ = 0.0f;
@@ -72,6 +73,9 @@ protected:
     void performJump();
 
 public:
+    void setCarrying(bool carrying) { isCarrying_ = carrying; }
+    bool isCarrying() const { return isCarrying_; }
+
     void triggerThrow() {
         throwTimer_ = 0.15f;
     }

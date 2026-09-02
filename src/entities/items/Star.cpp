@@ -40,7 +40,7 @@ sf::FloatRect Star::GetBounds() const {
 }
 
 ItemEffect Star::GetEffect() const {
-    return {ItemEffectType::Invincibility, 5};
+    return {ItemEffectType::Invincibility, 8};
 }
 
 void Star::SetVisualPosition(sf::Vector2f position) {

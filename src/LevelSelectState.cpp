@@ -148,6 +148,15 @@ LevelSelectState::LevelSelectState() {
 }
 
 void LevelSelectState::selectLevel(int level) {
+    int highestUnlockedLevel = 1;
+    const std::optional<SaveData> loadedData = LoadManager::load();
+    if (loadedData) {
+        highestUnlockedLevel = loadedData->highestUnlockedLevel;
+    }
+    if (level > highestUnlockedLevel) {
+        return;
+    }
+
     GameManager::getInstance().getSettings().setSelectedLevel(level);
     GameManager::getInstance().changeState(std::make_unique<PlayState>(false));
 }

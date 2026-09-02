@@ -445,34 +445,49 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_fireballCooldown -= timePerFrame.asSeconds();
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
-            if (m_heldShell && m_fireballCooldown <= 0.f) {
+        bool zPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
+        bool zJustPressed = zPressed && !m_wasZPressed;
+        bool zJustReleased = !zPressed && m_wasZPressed;
+        m_wasZPressed = zPressed;
+
+        if (m_heldShell) {
+            // Throw shell when releasing Z
+            if (zJustReleased) {
                 m_heldShell->Throw(m_player->facing());
                 m_heldShell = nullptr;
                 m_player->triggerThrow();
                 m_fireballCooldown = 0.35f; 
-            } else if (!m_heldShell && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
+            }
+        } else {
+            // Throw fireball when pressing Z
+            if (zJustPressed && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
                 if (m_fireballs.size() < 20) { 
                     auto fb = std::make_unique<Fireball>(
-                        m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                        m_player->position() + sf::Vector2f(m_player->facing() == 1 ? m_player->width() : -10.f, m_player->height() / 2.f),
                         m_player->facing()
                     );
-                    fb->setCollisionResolver([this](Character& c, sf::Time dt) {
-                        m_tileMap.resolveCollision(c, dt);
-                    });
                     m_fireballs.push_back(std::move(fb));
+                    
                     m_player->triggerThrow();
-                    m_fireballCooldown = 0.35f; 
+                    m_fireballCooldown = 0.35f;
+                    AudioManager::getInstance().playEffect(SoundEffect::Fireball);
                 }
             }
         }
     }
 
     if (m_heldShell && m_player) {
+        m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
-        pos.x += m_player->facing() == 1 ? m_player->width() : -m_player->width();
+        if (m_player->facing() == 1) {
+            pos.x += m_player->width();
+        } else {
+            pos.x -= 48.f;
+        }
         pos.y += m_player->height() / 2.f - 24.f; 
         m_heldShell->SetPosition(pos); 
+    } else if (m_player) {
+        m_player->setCarrying(false);
     }
     
     m_tileMap.update(timePerFrame);
@@ -526,6 +541,7 @@ handleMovingShellEnemyCollisions();
     for (auto& fb : m_fireballs) {
         if (fb->IsDestroyed()) continue;
         for (auto& enemy : m_enemies) {
+            if (enemy.get() == m_heldShell) continue;
             if (enemy->IsActive() && fb->GetBounds().intersects(enemy->GetBounds())) {
                 fb->Destroy();
                 // Boss overrides TakeDamage to respect multi-hit HP, others just deactivate
@@ -1128,6 +1144,11 @@ bool PlayState::handleEnemyCollisions()
 
     for (auto& enemy : m_enemies)
     {
+        if (enemy.get() == m_heldShell)
+        {
+            continue;
+        }
+
         if (
             !enemy->IsActive() ||
             enemy->IsFlung() ||
@@ -1340,8 +1361,15 @@ bool PlayState::handleEnemyCollisions()
 
             if (!m_heldShell)
             {
-                m_heldShell = koopa;
-                koopa->PickUp();
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
+                    m_heldShell = koopa;
+                    koopa->PickUp();
+                } else {
+                    const float playerCenter = playerBounds().left + playerBounds().width * 0.5f;
+                    const float koopaCenter = koopa->GetBounds().left + koopa->GetBounds().width * 0.5f;
+                    const int direction = (playerCenter < koopaCenter) ? 1 : -1;
+                    koopa->KickShell(direction);
+                }
             }
 
             continue;

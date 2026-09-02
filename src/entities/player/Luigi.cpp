@@ -88,6 +88,26 @@ void Luigi::update(sf::Time timePerFrame) {
         sf::IntRect(24, 15, 35, 47), sf::IntRect(67, 15, 35, 47),
         sf::IntRect(108, 12, 35, 50)
     };
+    
+    // Cầm rùa đứng yên
+    static const std::vector<sf::IntRect> framesHold = {
+        sf::IntRect(54, 295, 40, 50)
+    };
+    
+    // Cầm rùa chạy
+    static const std::vector<sf::IntRect> framesHoldWalk = {
+        sf::IntRect(13  , 365, 40, 50),
+        sf::IntRect(302 , 365, 40, 50),
+        sf::IntRect(54  , 365, 40, 50),
+        sf::IntRect(93  , 365, 40, 50),
+        sf::IntRect(137 , 365, 40, 50),
+        sf::IntRect(178 , 365, 40, 50),
+        sf::IntRect(302 , 365, 40, 50),
+        sf::IntRect(219 , 365, 40, 50),
+        sf::IntRect(259 , 365, 40, 50),
+        sf::IntRect(302 , 365, 40, 50)
+    };
+
     static const std::vector<sf::IntRect> framesPoleSlide      = { sf::IntRect(22, 155, 40, 52) };
     static const std::vector<sf::IntRect> framesDead           = {
         sf::IntRect(561, 85, 40, 50), sf::IntRect(603, 85, 40, 50),
@@ -102,6 +122,14 @@ void Luigi::update(sf::Time timePerFrame) {
     else if (currentState == State::HitRoof)                                currentAnim = &framesHitRoof;
     else if (currentState == State::TransitionStand)                        currentAnim = &framesTransitionStand;
     else if (currentState == State::PoleSlide)                              currentAnim = &framesPoleSlide;
+
+    if (isCarrying() && currentState != State::Dead) {
+        if (currentState == State::Walk || currentState == State::AutoWalk) {
+            currentAnim = &framesHoldWalk;
+        } else {
+            currentAnim = &framesHold;
+        }
+    }
 
     const float frameDuration = (currentState == State::Dead) ? 0.07f : 0.10f;
 

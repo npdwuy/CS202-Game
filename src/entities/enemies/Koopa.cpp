@@ -535,7 +535,7 @@ bool Koopa::CanKickShell() const
 
 bool Koopa::IsSafeFromPlayer() const
 {
-    return m_shellKickDelay > 0.f;
+    return m_state == State::Held || m_shellKickDelay > 0.f;
 }
 
 // =============================================================

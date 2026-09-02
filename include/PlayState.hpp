@@ -143,6 +143,7 @@ void renderBackgroundLayers(
 
     bool m_isWarping = false;
     bool m_wasWarping = false;
+    bool m_wasZPressed = false;
     float m_warpTimer = 0.f;
     float m_warpCooldown = 0.f;
     int m_warpDestinationLevel = 5;
