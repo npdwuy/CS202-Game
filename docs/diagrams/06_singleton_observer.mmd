@@ -1,0 +1,135 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#16a085"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#0e6655"
+    lineColor: "#555555"
+    secondaryColor: "#f0fffe"
+    tertiaryColor: "#e8fef8"
+---
+classDiagram
+    direction TB
+
+    class GameEventManager {
+        <<Singleton>>
+        -vector~GameEventListener*~ m_listeners
+        +getInstance()$ GameEventManager&
+        +AddListener(listener) void
+        +RemoveListener(listener) void
+        +Notify(event: GameEvent) void
+    }
+
+    class GameEventListener {
+        <<interface>>
+        +OnGameEvent(event: GameEvent)* void
+    }
+
+    class GameEvent {
+        <<struct>>
+        +GameEventType type
+        +int value
+        +string data
+    }
+
+    class GameEventType {
+        <<enumeration>>
+        CoinCollected
+        PowerUpCollected
+        ExtraLifeCollected
+        InvincibilityCollected
+        SpeedBoostCollected
+        EnemyDefeated
+        PlayerDamaged
+        PlayerFell
+        LevelCompleted
+        TimeExpired
+        EnemyFiredProjectile
+    }
+
+    class ResourceManager {
+        <<Singleton>>
+        -unordered_map~string, Texture~ m_textures
+        -unordered_map~string, Font~ m_fonts
+        -unordered_map~string, SoundBuffer~ m_soundBuffers
+        +getInstance()$ ResourceManager&
+        +getTexture(path) Texture&
+        +getFont(path) Font&
+        +getSoundBuffer(path) SoundBuffer&
+        +clear() void
+    }
+
+    class AudioManager {
+        <<Singleton>>
+        -sf::Music m_backgroundMusic
+        -map~SoundEffect, SoundPool~ m_soundPools
+        -float m_musicVolume
+        -float m_effectsVolume
+        +getInstance()$ AudioManager&
+        +initialize() bool
+        +playMusic() void
+        +stopMusic() void
+        +playEffect(effect: SoundEffect) void
+        +setMusicVolume(vol) void
+        +setEffectsVolume(vol) void
+    }
+
+    class SoundEffect {
+        <<enumeration>>
+        Jump
+        Coin
+        PowerUp
+        OneUp
+        Invincibility
+        SpeedBoost
+        EnemyDefeated
+        GameOver
+        Pipe
+        Fireball
+    }
+
+    class SaveData {
+        <<DTO>>
+        +int version
+        +int currentLevel
+        +int highestUnlockedLevel
+        +int score
+        +int remainingLives
+        +string selectedCharacter
+        +bool hasPlayerPosition
+        +float playerX
+        +float playerY
+        +string powerUpState
+        +float remainingTime
+        +int coins
+    }
+
+    class SaveManager {
+        +save(data, path)$ bool
+    }
+
+    class LoadManager {
+        +load(path)$ optional~SaveData~
+    }
+
+    class SettingsManager {
+        -Difficulty m_difficulty
+        -float m_sfxVolume
+        -float m_bgmVolume
+        -map~string,Key~ m_keyBindings
+        +getDifficulty() Difficulty
+        +getSFXVolume() float
+        +getBGMVolume() float
+        +getKeyBinding(action) Key
+        +saveToFile(path) void
+        +loadFromFile(path) void
+    }
+
+    GameEventManager o-- GameEventListener : notifies
+    GameEvent *-- GameEventType
+    GameEventManager ..> GameEvent : broadcasts
+    AudioManager --> ResourceManager : uses
+    SaveManager ..> SaveData : serializes
+    LoadManager ..> SaveData : deserializes
+    AudioManager *-- SoundEffect

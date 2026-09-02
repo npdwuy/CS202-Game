@@ -1,4 +1,5 @@
 #include "entities/player/Luigi.hpp"
+#include "entities/player/PlayerSpriteLoader.hpp"
 #include <cmath>
 
 namespace {
@@ -32,19 +33,7 @@ sf::Color hsvToRgb(float h, float s, float v) {
 Luigi::Luigi(sf::Vector2f position)
     : Player(position, "Luigi", 200.0f, 1040.75f)
 {
-    sf::Image image;
-
-    // Prefer a dedicated Luigi sheet; fall back to Mario sheet tinted green.
-    bool loaded = image.loadFromFile("assets/sprites/player/luigi.png");
-    bool dedicatedLoaded = loaded;
-    if (!loaded) {
-        loaded = image.loadFromFile("assets/sprites/player/mario.png");
-    }
-    if (!loaded) {
-        throw std::runtime_error("Failed to load Luigi (or fallback Mario) sprite sheet.");
-    }
-
-    image.createMaskFromColor(sf::Color::White);
+    sf::Image image = PlayerSpriteLoader::loadCompositedSpriteSheet(PlayerSpriteLoader::CharacterType::Luigi);
 
     if (!texture_.loadFromImage(image)) {
         throw std::runtime_error("Failed to create Luigi texture from image.");
@@ -55,11 +44,6 @@ Luigi::Luigi(sf::Vector2f position)
     sprite_.setOrigin(17.5f, 47.f);
     sprite_.setScale(1.2f, 1.65f); // ốm đi 20% (1.5 * 0.8), cao hơn 10% (1.5 * 1.10)
     sprite_.setPosition(position.x + width() / 2.0f, position.y + height());
-
-    // Tint green only if using Mario fallback sheet
-    if (!dedicatedLoaded) {
-        sprite_.setColor(sf::Color(140, 230, 140));
-    }
 }
 
 void Luigi::update(sf::Time timePerFrame) {
@@ -91,21 +75,19 @@ void Luigi::update(sf::Time timePerFrame) {
     
     // Cầm rùa đứng yên
     static const std::vector<sf::IntRect> framesHold = {
-        sf::IntRect(54, 295, 40, 50)
+        sf::IntRect(18, 295, 32, 57)
     };
     
     // Cầm rùa chạy
     static const std::vector<sf::IntRect> framesHoldWalk = {
-        sf::IntRect(13  , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50),
-        sf::IntRect(54  , 365, 40, 50),
-        sf::IntRect(93  , 365, 40, 50),
-        sf::IntRect(137 , 365, 40, 50),
-        sf::IntRect(178 , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50),
-        sf::IntRect(219 , 365, 40, 50),
-        sf::IntRect(259 , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50)
+        sf::IntRect(6,   365, 33, 53),
+        sf::IntRect(47,  365, 41, 48),
+        sf::IntRect(95,  365, 38, 49),
+        sf::IntRect(145, 365, 34, 52),
+        sf::IntRect(193, 365, 32, 53),
+        sf::IntRect(234, 365, 43, 48),
+        sf::IntRect(282, 365, 40, 48),
+        sf::IntRect(332, 365, 34, 52)
     };
 
     static const std::vector<sf::IntRect> framesPoleSlide      = { sf::IntRect(22, 155, 40, 52) };

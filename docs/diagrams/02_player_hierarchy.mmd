@@ -1,0 +1,101 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#27ae60"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#1a7a42"
+    lineColor: "#555555"
+    secondaryColor: "#f0fff4"
+    tertiaryColor: "#e8fef0"
+---
+classDiagram
+    direction TB
+
+    class Entity {
+        <<abstract>>
+        #sf::Vector2f position_
+        #float width_
+        #float height_
+        #sf::Vector2f velocity_
+        +Render(window: sf::RenderWindow)* void
+        +update(dt: sf::Time)* void
+        +position() sf::Vector2f
+        +velocity() sf::Vector2f
+        +setPosition(pos) void
+        +setVelocity(vel) void
+    }
+
+    class Character {
+        #bool onGround_
+        #int facing_
+        #CollisionResolver resolver_
+        +onGround() bool
+        +setOnGround(v) void
+        +facing() int
+        +setFacing(v) void
+        +moveCharacter(dt: sf::Time) void
+    }
+
+    class Player {
+        <<abstract>>
+        +PowerUpState: enum
+        +State: enum
+        #PowerUpState powerUp_
+        #State currentState
+        #float speed_
+        #float jumpPower_
+        #float speedMultiplier_
+        #bool invincible_
+        #bool isDead_
+        #bool isCarrying_
+        +moveLeft() void
+        +moveRight() void
+        +jump() void
+        +getMushroom() void
+        +up2Fire() void
+        +shrinkPlayer() void
+        +die() void
+        +setPowerUpState(state) void
+        +triggerBossKnockback(dir, dur) void
+        +setCarrying(v) void
+        +startWarpDown() void
+    }
+
+    class Mario {
+        -sf::Texture texture_
+        -sf::Sprite sprite_
+        -int baseImage_
+        +Mario(position)
+        +Render(window) void
+        +update(dt) void
+    }
+
+    class Luigi {
+        -sf::Texture texture_
+        -sf::Sprite sprite_
+        -int baseImage_
+        +Luigi(position)
+        +Render(window) void
+        +update(dt) void
+    }
+
+    class Fireball {
+        +FireballRadius: float$
+        +FireballSpeed: float$
+        +BounceSpeed: float$
+        +FireballGravity: float$
+        -bool m_destroyed
+        -sf::CircleShape m_shape
+        +Fireball(position, direction)
+        +IsDestroyed() bool
+        +Destroy() void
+        +update(dt) void
+        +Render(window) void
+    }
+
+    Entity <|-- Character
+    Character <|-- Player
+    Player <|-- Mario
+    Player <|-- Luigi
+    Character <|-- Fireball

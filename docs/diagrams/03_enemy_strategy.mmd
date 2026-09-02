@@ -1,0 +1,148 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#e74c3c"
+    primaryTextColor: "#ffffff"
+    primaryBorderColor: "#a93226"
+    lineColor: "#555555"
+    secondaryColor: "#fff0f0"
+    tertiaryColor: "#fee8e8"
+---
+classDiagram
+    direction TB
+
+    class Enemy {
+        <<abstract>>
+        +Update(dt: sf::Time)* void
+        +Render(window)* void
+        +GetBounds() FloatRect*
+        +IsActive() bool*
+        +Deactivate() void*
+        +Fling() void
+        +IsFlung() bool
+        +TakeDamage() void
+        +IsHurt() bool
+        +IsBoss() bool
+        +SetPlayerPosition(pos) void
+    }
+
+    class MovementStrategy {
+        <<interface>>
+        +Update(sprite, speed, dt)* void
+        +setPlayerPosition(pos) void
+    }
+
+    class PatrolStrategy {
+        -float m_leftBoundary
+        -float m_rightBoundary
+        -int m_direction
+        +PatrolStrategy(left, right)
+        +Update(sprite, speed, dt) void
+    }
+
+    class FlyingStrategy {
+        -float m_topBoundary
+        -float m_bottomBoundary
+        -int m_direction
+        +FlyingStrategy(top, bottom)
+        +Update(sprite, speed, dt) void
+    }
+
+    class ChaseStrategy {
+        -float m_leftBound
+        -float m_rightBound
+        -float m_aggroRadius
+        -sf::Vector2f m_playerPos
+        -int m_direction
+        +ChaseStrategy(left, right, aggro)
+        +Update(sprite, speed, dt) void
+        +setPlayerPosition(pos) void
+    }
+
+    class BossChaseStrategy {
+        -float m_leftBound
+        -float m_rightBound
+        -sf::Vector2f m_playerPos
+        -bool m_facingLeft
+        +BossChaseStrategy(left, right)
+        +Update(sprite, speed, dt) void
+        +setPlayerPosition(pos) void
+    }
+
+    class Goomba {
+        -sf::Sprite m_sprite
+        -unique_ptr~MovementStrategy~ m_movementStrategy
+        -float m_speed
+        -bool m_active
+        -bool m_flung
+        +Goomba(pos, speed, strategy)
+        +Update(dt) void
+        +Render(window) void
+        +Fling() void
+    }
+
+    class Koopa {
+        <<State: Walking/ShellIdle/ShellMoving/Held>>
+        -sf::Sprite m_sprite
+        -unique_ptr~MovementStrategy~ m_strategy
+        -State m_state
+        -float m_shellSpeed
+        -int m_shellDirection
+        +Koopa(pos, speed, strategy)
+        +EnterShell() void
+        +KickShell(direction) void
+        +PickUp() void
+        +Throw(direction) void
+        +UpdateShellPhysics(dt, tileMap) void
+    }
+
+    class FlyingEnemy {
+        -sf::Sprite m_sprite
+        -unique_ptr~MovementStrategy~ m_strategy
+        -bool m_flung
+        +FlyingEnemy(pos, speed, strategy)
+        +Update(dt) void
+        +Render(window) void
+    }
+
+    class HammerBro {
+        <<State: Walk/PrepareAttack/Attack/Dead>>
+        -sf::Sprite m_sprite
+        -unique_ptr~MovementStrategy~ m_strategy
+        -HammerBroState m_state
+        -int m_health
+        -bool m_isBig
+        +HammerBro(pos, speed, strategy, isBig)
+        +FireProjectile() void
+        +TakeDamage() void
+    }
+
+    class BossEnemy {
+        <<State: Walk/PrepareAttack/Attack/Hurt/Dead>>
+        -sf::Sprite m_sprite
+        -unique_ptr~MovementStrategy~ m_strategy
+        -BossState m_state
+        -int m_health
+        +BossEnemy(pos, speed, strategy)
+        +TakeDamage() void
+        +FireProjectile() void
+        +SetPlayerPosition(pos) void
+    }
+
+    MovementStrategy <|.. PatrolStrategy
+    MovementStrategy <|.. FlyingStrategy
+    MovementStrategy <|.. ChaseStrategy
+    MovementStrategy <|.. BossChaseStrategy
+
+    Enemy <|-- Goomba
+    Enemy <|-- Koopa
+    Enemy <|-- FlyingEnemy
+    Enemy <|-- HammerBro
+    Enemy <|-- BossEnemy
+
+    Goomba *-- MovementStrategy
+    Koopa *-- MovementStrategy
+    FlyingEnemy *-- MovementStrategy
+    HammerBro *-- MovementStrategy
+    BossEnemy *-- MovementStrategy

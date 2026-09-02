@@ -466,6 +466,9 @@ void PlayState::Update(sf::Time timePerFrame) {
                         m_player->position() + sf::Vector2f(m_player->facing() == 1 ? m_player->width() : -10.f, m_player->height() / 2.f),
                         m_player->facing()
                     );
+                    fb->setCollisionResolver([this](Character& character, sf::Time dt) {
+                        m_tileMap.resolveCollision(character, dt);
+                    });
                     m_fireballs.push_back(std::move(fb));
                     
                     m_player->triggerThrow();
