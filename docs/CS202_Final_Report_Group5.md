@@ -8,6 +8,7 @@
 | **Language** | C++17 |
 | **Library** | SFML 2 (Simple and Fast Multimedia Library) |
 | **Build System** | CMake |
+| **GitHub Repo** | https://github.com/npdwuy/CS202-Game |
 
 ### Team Members
 
