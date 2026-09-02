@@ -192,17 +192,24 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
         }
 
         if (velocity.x > 0.f) {
-            // Move Mario just left of the tile with a small skin to avoid immediate re‑collision
-            // Apply a larger skin to ensure separation from the tile
-            position.x = tile.left - width - 0.1f;
+            float myCenter = horizontalBounds.left + width * 0.5f;
+            float tileCenter = tile.left + tile.width * 0.5f;
+            if (myCenter < tileCenter) {
+                // Move Mario just left of the tile with a small skin to avoid immediate re-collision
+                position.x = tile.left - width - 0.1f;
+                velocity.x = 0.f;
+                horizontalBounds.left = position.x;
+            }
         } else if (velocity.x < 0.f) {
-            // Move Mario just right of the tile with a small skin
-            // Apply a larger skin to ensure separation from the tile
-            position.x = tile.left + tile.width + 0.1f;
+            float myCenter = horizontalBounds.left + width * 0.5f;
+            float tileCenter = tile.left + tile.width * 0.5f;
+            if (myCenter > tileCenter) {
+                // Move Mario just right of the tile with a small skin
+                position.x = tile.left + tile.width + 0.1f;
+                velocity.x = 0.f;
+                horizontalBounds.left = position.x;
+            }
         }
-
-        velocity.x = 0.f;
-        horizontalBounds.left = position.x;
     });
 
     const float maximumX = std::max(0.f, m_data.worldSize().x - width);
