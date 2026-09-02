@@ -8,7 +8,7 @@
 #include "commands/MenuCommands.hpp"
 
 #include "audio/AudioManager.hpp"
-#include "entities/enemies/BossEnemy.hpp"
+// BossEnemy header removed, handled polymorphically
 #include "entities/player/Mario.hpp"
 #include "entities/player/Luigi.hpp"
 #include "entities/player/Entity.hpp"
@@ -457,14 +457,9 @@ void PlayState::Update(sf::Time timePerFrame) {
 
     for (auto& enemy : m_enemies) {
         // Broadcast player position to every enemy.
-        // BossEnemy has its own SetPlayerPosition override; Goomba/Koopa
-        // forward it to their ChaseStrategy. Other enemies ignore it (no-op).
+        // Goomba/Koopa/Boss forward it to their ChaseStrategy. Other enemies ignore it (no-op).
         if (m_player) {
             enemy->SetPlayerPosition(m_player->position());
-        }
-        // Keep legacy BossEnemy::SetPlayerPosition call for safety
-        if (auto* boss = dynamic_cast<BossEnemy*>(enemy.get())) {
-            boss->SetPlayerPosition(m_player->position());
         }
         enemy->Update(timePerFrame);
         if (auto* koopa =
@@ -491,12 +486,8 @@ handleMovingShellEnemyCollisions();
         for (auto& enemy : m_enemies) {
             if (enemy->IsActive() && fb->GetBounds().intersects(enemy->GetBounds())) {
                 fb->Destroy();
-                // Boss uses TakeDamage() to respect multi-hit HP
-                if (auto* boss = dynamic_cast<BossEnemy*>(enemy.get())) {
-                    boss->TakeDamage();
-                } else {
-                    enemy->Deactivate();
-                }
+                // Boss overrides TakeDamage to respect multi-hit HP, others just deactivate
+                enemy->TakeDamage();
                 break;
             }
         }
@@ -1106,8 +1097,7 @@ bool PlayState::handleEnemyCollisions()
                 enemyBounds.top +
                 enemyBounds.height * 0.65f;
 
-        auto* boss =
-            dynamic_cast<BossEnemy*>(enemy.get());
+        const bool isBoss = enemy->IsBoss();
 
         auto* koopa =
             dynamic_cast<Koopa*>(enemy.get());
@@ -1115,7 +1105,7 @@ bool PlayState::handleEnemyCollisions()
         // =========================================================
         // BOSS HURT STATE
         // =========================================================
-        if (boss && boss->IsHurt())
+        if (isBoss && enemy->IsHurt())
         {
             continue;
         }
@@ -1125,11 +1115,11 @@ bool PlayState::handleEnemyCollisions()
         // =========================================================
         if (m_invincibilityTimeRemaining > 0.f)
         {
-            if (boss)
+            if (isBoss)
             {
-                boss->TakeDamage();
+                enemy->TakeDamage();
 
-                if (!boss->IsActive())
+                if (!enemy->IsActive())
                 {
                     GameEventManager::GetInstance().Notify(
                         {
@@ -1167,15 +1157,15 @@ bool PlayState::handleEnemyCollisions()
             // -----------------------------------------------------
             // BOSS
             // -----------------------------------------------------
-            if (boss)
+            if (isBoss)
             {
-                boss->TakeDamage();
+                enemy->TakeDamage();
 
                 m_damageCooldown = 1.5f;
 
                 const float bossCenterX =
-                    boss->GetBounds().left +
-                    boss->GetBounds().width * 0.5f;
+                    enemy->GetBounds().left +
+                    enemy->GetBounds().width * 0.5f;
 
                 const float pushDirection =
                     m_player->position().x < bossCenterX
@@ -1187,7 +1177,7 @@ bool PlayState::handleEnemyCollisions()
                     0.7f
                 );
 
-                if (!boss->IsActive())
+                if (!enemy->IsActive())
                 {
                     GameEventManager::GetInstance().Notify(
                         {
@@ -1401,18 +1391,15 @@ void PlayState::handleMovingShellEnemyCollisions()
             // =====================================================
             // BOSS
             // =====================================================
-            if (auto* boss =
-                    dynamic_cast<BossEnemy*>(
-                        targetEnemy.get()
-                    ))
+            if (targetEnemy->IsBoss())
             {
                 // Boss already has its own temporary hurt state,
                 // so the shell cannot damage it every frame.
-                if (!boss->IsHurt())
+                if (!targetEnemy->IsHurt())
                 {
-                    boss->TakeDamage();
+                    targetEnemy->TakeDamage();
 
-                    if (!boss->IsActive())
+                    if (!targetEnemy->IsActive())
                     {
                         GameEventManager::GetInstance().Notify(
                             {
@@ -1720,7 +1707,7 @@ bool PlayState::hasActiveBoss() const {
         [](const std::unique_ptr<Enemy>& enemy) {
             return (
                 enemy->IsActive() &&
-                dynamic_cast<const BossEnemy*>(enemy.get()) != nullptr
+                enemy->IsBoss()
             );
         }
     );
