@@ -1,4 +1,5 @@
 #include "entities/enemies/HammerBro.hpp"
+#include "entities/SpriteAnimation.hpp"
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
 #include <algorithm>
@@ -36,28 +37,7 @@ static bool isValidRect(const sf::IntRect& r) {
     return r.width > 0 && r.height > 0;
 }
 
-// Helper: giống advanceAnimation của BossEnemy
-static void advanceAnimation(
-    const std::vector<sf::IntRect>& frames,
-    int& currentFrame,
-    float& timer,
-    float frameDuration,
-    bool loop,
-    bool& reachedLast)
-{
-    if (timer >= frameDuration) {
-        timer -= frameDuration;
-        ++currentFrame;
-        if (static_cast<std::size_t>(currentFrame) >= frames.size()) {
-            if (loop) {
-                currentFrame = 0;
-            } else {
-                currentFrame = static_cast<int>(frames.size()) - 1;
-                reachedLast = true;
-            }
-        }
-    }
-}
+
 
 HammerBro::HammerBro(
     sf::Vector2f position,
@@ -136,7 +116,7 @@ void HammerBro::Update(sf::Time dt) {
             m_movementStrategy->Update(m_sprite, m_speed, dt);
 
             // Animation đi bộ (loop)
-            advanceAnimation(walkFrames, m_currentFrame, m_animationTimer,
+            SpriteAnimation::Advance(walkFrames, m_currentFrame, m_animationTimer,
                              walkInterval, true, animationEnded);
             {
                 const sf::IntRect& fr = walkFrames[m_currentFrame];
@@ -169,7 +149,7 @@ void HammerBro::Update(sf::Time dt) {
             m_sprite.setScale(faceLeft ? absScale : -absScale, absScale);
 
             // Animation prepare (một lần, không loop)
-            advanceAnimation(prepFrames, m_currentFrame, m_animationTimer,
+            SpriteAnimation::Advance(prepFrames, m_currentFrame, m_animationTimer,
                              prepInterval, false, animationEnded);
             {
                 const sf::IntRect& fr = prepFrames[m_currentFrame];
@@ -190,7 +170,7 @@ void HammerBro::Update(sf::Time dt) {
         // ── ATTACK ───────────────────────────────────────────────────────────
         case HammerBroState::Attack: {
             // Animation attack (một lần, không loop)
-            advanceAnimation(attackFrames, m_currentFrame, m_animationTimer,
+            SpriteAnimation::Advance(attackFrames, m_currentFrame, m_animationTimer,
                              attackInterval, false, animationEnded);
             {
                 const sf::IntRect& fr = attackFrames[m_currentFrame];

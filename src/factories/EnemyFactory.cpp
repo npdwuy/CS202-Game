@@ -7,6 +7,7 @@
 #include "entities/enemies/Koopa.hpp"
 #include "levels/TileMap.hpp"
 
+#include "entities/strategies/BossChaseStrategy.hpp"
 #include "entities/strategies/ChaseStrategy.hpp"
 #include "entities/strategies/FlyingStrategy.hpp"
 #include "entities/strategies/PatrolStrategy.hpp"
@@ -25,7 +26,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
 {
     float enemyWidth = tileSize;
     float enemyHeight = tileSize;
-    if (symbol == 'Z') {
+    if (symbol == 'B') {
         enemyWidth = 85.f * 1.6f;
         enemyHeight = 65.f * 1.6f;
     } else if (symbol == 'H') {
@@ -39,7 +40,7 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     float minimumX = std::max(0.f, position.x - tileSize * 5.f);
     float maximumX = std::min(std::max(0.f, levelWidth - enemyWidth), position.x + enemyWidth + tileSize * 5.f);
 
-    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h' || symbol == 'Z') {
+    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h' || symbol == 'B') {
         // Multi-point vertical scan: foot (ground probe), bottom body, middle body, and head
         const float footY = position.y + tileSize + 2.f;
         const float bottomBodyY = position.y + tileSize - 4.f;
@@ -116,15 +117,17 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
                 )
             );
 
-        case 'Z':
+        case 'B':
             return std::make_unique<BossEnemy>(
                 sf::Vector2f(
-                    position.x + tileSize * 0.5f, 
-                    position.y + tileSize         
+                    position.x + tileSize * 0.5f,
+                    position.y + tileSize
                 ),
-                minimumX, 
-                maximumX, 
-                25.f      
+                25.f,
+                std::make_unique<BossChaseStrategy>(
+                    minimumX,
+                    maximumX
+                )
             );
 
         case 'H':

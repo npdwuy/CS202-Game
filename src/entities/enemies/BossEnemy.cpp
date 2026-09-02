@@ -1,87 +1,63 @@
 #include "entities/enemies/BossEnemy.hpp"
+#include "entities/SpriteAnimation.hpp"
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
+
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
+#include <utility>
 
-/* --------------------------------------------------------------
-   Animation frames from boss.png sprite sheet.
-   Frame size: width = 85 px, height = 65 px.
-   -------------------------------------------------------------- */
-static const std::vector<sf::IntRect> framesWalk = {
-    sf::IntRect(12, 42, 85, 65),
-    sf::IntRect(116, 42, 85, 65),
-    sf::IntRect(217, 42, 85, 65),
-    sf::IntRect(317, 42, 85, 65),
-    sf::IntRect(417, 42, 85, 65)
-};
-static const std::vector<sf::IntRect> framesTurn = {
-    sf::IntRect(524, 42, 85, 65),
-    sf::IntRect(624, 42, 85, 65),
-    sf::IntRect(724, 42, 85, 65)
-};
-static const std::vector<sf::IntRect> framesPrepareAttack = {
-    sf::IntRect(12,   137, 85, 65),
-    sf::IntRect(112,  137, 85, 65),
-    sf::IntRect(212,  137, 85, 65),
-    sf::IntRect(312,  137, 85, 65),
-    sf::IntRect(412,  137, 85, 65)
-};
-static const std::vector<sf::IntRect> framesAttack = {
-    sf::IntRect(519,  139, 85, 65),
-    sf::IntRect(619,  139, 85, 65)
-};
-static const std::vector<sf::IntRect> framesHurt = {
-    sf::IntRect(724,  139, 85, 65),
-    sf::IntRect(824,  139, 85, 65)
+static const std::vector<sf::IntRect> WALK_FRAMES = {
+    {12, 42, 85, 65},
+    {116, 42, 85, 65},
+    {217, 42, 85, 65},
+    {317, 42, 85, 65},
+    {417, 42, 85, 65}
 };
 
-static void advanceAnimation(const std::vector<sf::IntRect>& frames,
-                             int& currentFrame,
-                             float& timer,
-                             float frameDuration,
-                             bool loop,
-                             bool& reachedLast)
-{
-    if (timer >= frameDuration) {
-        timer -= frameDuration;
-        ++currentFrame;
-        if (static_cast<std::size_t>(currentFrame) >= frames.size()) {
-            if (loop) {
-                currentFrame = 0;
-            } else {
-                currentFrame = static_cast<int>(frames.size()) - 1;
-                reachedLast = true;
-            }
-        }
-    }
-}
+static const std::vector<sf::IntRect> PREPARE_ATTACK_FRAMES = {
+    {12, 137, 85, 65},
+    {112, 137, 85, 65},
+    {212, 137, 85, 65},
+    {312, 137, 85, 65},
+    {412, 137, 85, 65}
+};
+
+static const std::vector<sf::IntRect> ATTACK_FRAMES = {
+    {519, 139, 85, 65},
+    {619, 139, 85, 65}
+};
+
+static const std::vector<sf::IntRect> HURT_FRAMES = {
+    {724, 139, 85, 65},
+    {824, 139, 85, 65}
+};
 
 BossEnemy::BossEnemy(
     sf::Vector2f position,
-    float minX,
-    float maxX,
-    float speed
-)
-    : m_position(position),
-      m_playerPos(position),
-      m_minX(std::min(minX, maxX)),
-      m_maxX(std::max(minX, maxX)),
-      m_speed(speed),
-      m_state(BossState::Walk),
-      m_health(5)
+    float speed,
+    std::unique_ptr<MovementStrategy> movementStrategy)
+    : m_movementStrategy(std::move(movementStrategy)),
+      m_speed(speed)
 {
-    const sf::Texture& tex = ResourceManager::getInstance().getTexture(
+    if (!m_movementStrategy) {
+        throw std::invalid_argument("BossEnemy requires a movement strategy.");
+    }
+
+    const sf::Texture& texture = ResourceManager::getInstance().getTexture(
         "assets/sprites/enemies/boss.png");
-    m_sprite.setTexture(tex);
-    m_sprite.setTextureRect(framesWalk[0]);
-    m_sprite.setOrigin(42.5f, 65.f); // Origin nằm ở dưới cùng ở giữa
-    m_sprite.setScale(m_scale, m_scale);
-    m_sprite.setPosition(m_position);
+    m_sprite.setTexture(texture);
+    m_sprite.setTextureRect(WALK_FRAMES[0]);
+    m_sprite.setOrigin(FRAME_WIDTH * 0.5f, FRAME_HEIGHT);
+    m_sprite.setScale(m_spriteScale, m_spriteScale);
+    m_sprite.setPosition(position);
+    m_playerPos = position;
 }
 
 void BossEnemy::SetPlayerPosition(sf::Vector2f playerPos) {
     m_playerPos = playerPos;
+    m_movementStrategy->setPlayerPosition(playerPos);
 }
 
 void BossEnemy::Update(sf::Time dt) {
@@ -94,140 +70,116 @@ void BossEnemy::Update(sf::Time dt) {
 
     switch (m_state) {
         case BossState::Walk: {
-            // 1. Logic đi theo Mario (Chasing)
-            float distToPlayer = m_playerPos.x - m_position.x;
-            float moveDistance = m_speed * delta;
+            m_movementStrategy->Update(m_sprite, m_speed, dt);
 
-            // Khoảng cách an toàn (deadzone) để Boss không bị giật lag khi đứng quá gần
-            if (distToPlayer > 5.f) { 
-                // Mario ở bên phải -> Đi sang phải
-                m_position.x += moveDistance;
-                if (m_facingLeft) {
-                    m_facingLeft = false;
-                    m_sprite.setScale(-m_scale, m_scale);
-                }
-            } else if (distToPlayer < -5.f) { 
-                // Mario ở bên trái -> Đi sang trái
-                m_position.x -= moveDistance;
-                if (!m_facingLeft) {
-                    m_facingLeft = true;
-                    m_sprite.setScale(m_scale, m_scale);
-                }
-            }
+            SpriteAnimation::Advance(
+                WALK_FRAMES, m_currentFrame, m_animationTimer,
+                0.15f, true, animationEnded);
+            m_sprite.setTextureRect(WALK_FRAMES[m_currentFrame]);
 
-            // 2. Chặn Boss không đi lố giới hạn của map
-            sf::FloatRect bounds = m_sprite.getGlobalBounds();
-            if (bounds.left < m_minX) {
-                m_position.x += (m_minX - bounds.left);
-            } else if (bounds.left + bounds.width > m_maxX) {
-                m_position.x -= ((bounds.left + bounds.width) - m_maxX);
-            }
-            advanceAnimation(framesWalk, m_currentFrame, m_animationTimer,
-                             0.15f, true, animationEnded);
-            m_sprite.setTextureRect(framesWalk[m_currentFrame]);
+            float spriteCenterX = m_sprite.getPosition().x;
+            float distX = std::abs(m_playerPos.x - spriteCenterX);
+            float distY = std::abs(m_playerPos.y - m_sprite.getPosition().y);
 
-            // 4. Chuyển sang chuẩn bị tấn công khi Mario nằm trong phạm vi
-            float distX = std::abs(m_playerPos.x - m_position.x);
-            float distY = std::abs(m_playerPos.y - m_position.y);
-            constexpr float ATTACK_RANGE_X = 450.f;
-            constexpr float ATTACK_RANGE_Y = 250.f;
-
-            if (m_stateTimer >= 2.5f) {
+            if (m_stateTimer >= WALK_COOLDOWN) {
                 if (distX <= ATTACK_RANGE_X && distY <= ATTACK_RANGE_Y) {
-                    m_facingLeft = (m_playerPos.x < m_position.x);
-                    m_sprite.setScale(m_facingLeft ? m_scale : -m_scale, m_scale);
+                    bool faceLeft = (m_playerPos.x < spriteCenterX);
+                    float absScale = std::abs(m_sprite.getScale().x);
+                    m_sprite.setScale(faceLeft ? absScale : -absScale, absScale);
 
                     m_state = BossState::PrepareAttack;
                     m_stateTimer = 0.f;
                     m_currentFrame = 0;
                     m_animationTimer = 0.f;
                 } else {
-                    m_stateTimer = 1.5f;
+                    m_stateTimer = WALK_RESET;
                 }
             }
             break;
         }
-        case BossState::PrepareAttack: {
-            m_facingLeft = (m_playerPos.x < m_position.x);
-            m_sprite.setScale(m_facingLeft ? m_scale : -m_scale, m_scale);
 
-            advanceAnimation(framesPrepareAttack, m_currentFrame,
-                             m_animationTimer, 0.12f, false, animationEnded);
-            m_sprite.setTextureRect(framesPrepareAttack[m_currentFrame]);
+        case BossState::PrepareAttack: {
+            bool faceLeft = (m_playerPos.x < m_sprite.getPosition().x);
+            float absScale = std::abs(m_sprite.getScale().x);
+            m_sprite.setScale(faceLeft ? absScale : -absScale, absScale);
+
+            SpriteAnimation::Advance(
+                PREPARE_ATTACK_FRAMES, m_currentFrame, m_animationTimer,
+                0.12f, false, animationEnded);
+            m_sprite.setTextureRect(PREPARE_ATTACK_FRAMES[m_currentFrame]);
 
             if (animationEnded) {
                 FireProjectile();
                 m_state = BossState::Attack;
                 m_currentFrame = 0;
                 m_animationTimer = 0.f;
-                animationEnded = false;
             }
             break;
         }
+
         case BossState::Attack: {
-            advanceAnimation(framesAttack, m_currentFrame, m_animationTimer,
-                             0.15f, false, animationEnded);
-            m_sprite.setTextureRect(framesAttack[m_currentFrame]);
+            SpriteAnimation::Advance(
+                ATTACK_FRAMES, m_currentFrame, m_animationTimer,
+                0.15f, false, animationEnded);
+            m_sprite.setTextureRect(ATTACK_FRAMES[m_currentFrame]);
 
             if (animationEnded) {
                 m_state = BossState::Walk;
                 m_stateTimer = 0.f;
                 m_currentFrame = 0;
                 m_animationTimer = 0.f;
-                animationEnded = false;
             }
             break;
         }
-        case BossState::Hurt: {
-            advanceAnimation(framesHurt, m_currentFrame, m_animationTimer,
-                             0.15f, false, animationEnded);
-            m_sprite.setTextureRect(framesHurt[m_currentFrame]);
-            
-            // Hiệu ứng nhấp nháy đỏ khi bị tấn công
-            if (static_cast<int>(m_stateTimer / 0.08f) % 2 == 0) {
-                m_sprite.setColor(sf::Color(255, 60, 60));
-            } else {
-                m_sprite.setColor(sf::Color::White);
-            }
 
-            if (m_stateTimer >= 0.8f) {
+        case BossState::Hurt: {
+            SpriteAnimation::Advance(
+                HURT_FRAMES, m_currentFrame, m_animationTimer,
+                0.15f, false, animationEnded);
+            m_sprite.setTextureRect(HURT_FRAMES[m_currentFrame]);
+
+            bool flashRed = static_cast<int>(m_stateTimer / HURT_FLASH_INTERVAL) % 2 == 0;
+            m_sprite.setColor(flashRed ? sf::Color(255, 60, 60) : sf::Color::White);
+
+            if (m_stateTimer >= HURT_DURATION) {
                 m_state = BossState::Walk;
                 m_stateTimer = 0.f;
                 m_currentFrame = 0;
                 m_animationTimer = 0.f;
                 m_sprite.setColor(sf::Color::White);
-                animationEnded = false;
             }
             break;
         }
+
         default:
             break;
     }
-
-    // Cập nhật tọa độ thực tế lên màn hình
-    m_sprite.setPosition(m_position);
 }
 
-
 void BossEnemy::Render(sf::RenderWindow& window) const {
-    if (m_active) window.draw(m_sprite);
+    if (m_active) {
+        window.draw(m_sprite);
+    }
 }
 
 sf::FloatRect BossEnemy::GetBounds() const {
     if (m_state == BossState::Dead) {
-        return sf::FloatRect(0.f, 0.f, 0.f, 0.f);
+        return {0.f, 0.f, 0.f, 0.f};
     }
 
-    float w = 85.f * m_scale;
-    float h = 65.f * m_scale;
-    float left = m_position.x - w / 2.f;
-    float top  = m_position.y - h;
-    return sf::FloatRect(left, top, w, h);
+    float w = FRAME_WIDTH * m_spriteScale;
+    float h = FRAME_HEIGHT * m_spriteScale;
+    float left = m_sprite.getPosition().x - w * 0.5f;
+    float top = m_sprite.getPosition().y - h;
+    return {left, top, w, h};
 }
 
 bool BossEnemy::IsActive() const { return m_active; }
 
-void BossEnemy::Deactivate() { m_active = false; }
+void BossEnemy::Deactivate() {
+    m_active = false;
+    m_state = BossState::Dead;
+}
 
 void BossEnemy::TakeDamage() {
     if (m_state == BossState::Hurt || m_state == BossState::Dead) return;
@@ -237,7 +189,7 @@ void BossEnemy::TakeDamage() {
         m_state = BossState::Dead;
         m_active = false;
         GameEventManager::GetInstance().Notify({
-            GameEventType::EnemyDefeated, 500, "Boss Defeated" });
+            GameEventType::EnemyDefeated, DEFEAT_SCORE, "Boss Defeated"});
     } else {
         m_state = BossState::Hurt;
         m_stateTimer = 0.f;
@@ -247,15 +199,32 @@ void BossEnemy::TakeDamage() {
     }
 }
 
+bool BossEnemy::IsHurt() const {
+    return m_state == BossState::Hurt;
+}
+
+bool BossEnemy::IsBoss() const {
+    return true;
+}
+
+void BossEnemy::Fling() {
+    m_flung = true;
+}
+
+bool BossEnemy::IsFlung() const {
+    return m_flung;
+}
+
 void BossEnemy::FireProjectile() {
-    m_facingLeft = (m_playerPos.x < m_position.x);
-    m_sprite.setScale(m_facingLeft ? m_scale : -m_scale, m_scale);
+    bool faceLeft = (m_playerPos.x < m_sprite.getPosition().x);
+    float absScale = std::abs(m_sprite.getScale().x);
+    m_sprite.setScale(faceLeft ? absScale : -absScale, absScale);
 
-    sf::Vector2f spawnPos = m_position;
-    spawnPos.y -= 35.f * m_scale;
-    spawnPos.x += m_facingLeft ? -45.f * m_scale : 45.f * m_scale;
+    sf::Vector2f spawnPos = m_sprite.getPosition();
+    spawnPos.y -= 35.f * m_spriteScale;
+    spawnPos.x += faceLeft ? -45.f * m_spriteScale : 45.f * m_spriteScale;
 
-    sf::Vector2f velocity = sf::Vector2f(m_facingLeft ? -320.f : 320.f, 0.f);
+    sf::Vector2f velocity(faceLeft ? -320.f : 320.f, 0.f);
 
     std::string eventData = std::to_string(spawnPos.x) + "," +
                             std::to_string(spawnPos.y) + "," +
@@ -264,5 +233,5 @@ void BossEnemy::FireProjectile() {
 
     GameEventManager::GetInstance().Notify({
         GameEventType::EnemyFiredProjectile, 0,
-        "BossFiredProjectile:" + eventData });
+        "BossFiredProjectile:" + eventData});
 }
