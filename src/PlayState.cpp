@@ -435,15 +435,14 @@ void PlayState::Update(sf::Time timePerFrame) {
             if (zJustPressed && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
                 if (m_fireballs.size() < 20) { 
                     auto fb = std::make_unique<Fireball>(
-                        m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                        m_player->position() + sf::Vector2f(m_player->facing() == 1 ? m_player->width() : -10.f, m_player->height() / 2.f),
                         m_player->facing()
                     );
-                    fb->setCollisionResolver([this](Character& c, sf::Time dt) {
-                        m_tileMap.resolveCollision(c, dt);
-                    });
                     m_fireballs.push_back(std::move(fb));
+                    
                     m_player->triggerThrow();
-                    m_fireballCooldown = 0.35f; 
+                    m_fireballCooldown = 0.35f;
+                    AudioManager::getInstance().playEffect(SoundEffect::Fireball);
                 }
             }
         }
@@ -452,7 +451,11 @@ void PlayState::Update(sf::Time timePerFrame) {
     if (m_heldShell && m_player) {
         m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
-        pos.x += m_player->facing() == 1 ? m_player->width() : -m_player->width();
+        if (m_player->facing() == 1) {
+            pos.x += m_player->width();
+        } else {
+            pos.x -= 48.f;
+        }
         pos.y += m_player->height() / 2.f - 24.f; 
         m_heldShell->SetPosition(pos); 
     } else if (m_player) {
@@ -510,6 +513,7 @@ handleMovingShellEnemyCollisions();
     for (auto& fb : m_fireballs) {
         if (fb->IsDestroyed()) continue;
         for (auto& enemy : m_enemies) {
+            if (enemy.get() == m_heldShell) continue;
             if (enemy->IsActive() && fb->GetBounds().intersects(enemy->GetBounds())) {
                 fb->Destroy();
                 // Boss overrides TakeDamage to respect multi-hit HP, others just deactivate
@@ -1112,6 +1116,11 @@ bool PlayState::handleEnemyCollisions()
 
     for (auto& enemy : m_enemies)
     {
+        if (enemy.get() == m_heldShell)
+        {
+            continue;
+        }
+
         if (
             !enemy->IsActive() ||
             enemy->IsFlung() ||

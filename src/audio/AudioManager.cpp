@@ -29,7 +29,8 @@ bool AudioManager::initialize() {
             {SoundEffect::SpeedBoost, "assets/audio/speed_boost.wav"},
             {SoundEffect::EnemyDefeated, "assets/audio/enemy_defeated.wav"},
             {SoundEffect::GameOver, "assets/audio/game_over.wav"},
-            {SoundEffect::Pipe, "assets/audio/pipe.wav"}
+            {SoundEffect::Pipe, "assets/audio/pipe.wav"},
+            {SoundEffect::Fireball, "assets/audio/mario-fireball.wav"}
         };
 
         for (const auto& entry : effectPaths) {
