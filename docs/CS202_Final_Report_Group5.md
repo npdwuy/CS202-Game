@@ -38,9 +38,9 @@ The core Object-Oriented architecture — including all design pattern integrati
 
 | Content | Link |
 |---|---|
-| Full Gameplay Demo (All 3 manual levels + Level 4 procedural) | `[Insert YouTube Link]` |
-| Feature Showcase (Power-ups, Boss, Pipes, Shell mechanics) | `[Insert YouTube Link]` |
-| Build & Run Walkthrough | `[Insert YouTube Link]` |
+| Full Gameplay Demo (All 3 manual levels + Level 4 procedural) | `https://youtu.be/EXjN6fgQRZw?si=Lmf81SBxOXa-5IpL` |
+| Feature Showcase (Power-ups, Boss, Pipes, Shell mechanics) | `https://youtu.be/EXjN6fgQRZw?si=Lmf81SBxOXa-5IpL` |
+| Build & Run Walkthrough | `https://youtu.be/EXjN6fgQRZw?si=Lmf81SBxOXa-5IpL` |
 
 ---
 
