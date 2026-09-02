@@ -43,17 +43,19 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
     std::srand(seed);
     std::mt19937 rng(seed);
 
+    int effectiveLevel = (level < 1 || level > 3) ? randInt(1, 3) : level;
+
     GameMap m;
 
     const int SAFE_START_COL = 20;
 
-    int minPits = (level == 1) ? 2 : (level == 2 ? 4 : 6);
-    int maxPits = (level == 1) ? 3 : (level == 2 ? 6 : 9);
-    float terrainProb = (level == 1) ? 0.3f : (level == 2 ? 0.5f : 0.6f);
-    float brickProb = (level == 1) ? 0.4f : (level == 2 ? 0.5f : 0.6f);
+    int minPits = (effectiveLevel == 1) ? 2 : (effectiveLevel == 2 ? 4 : 6);
+    int maxPits = (effectiveLevel == 1) ? 3 : (effectiveLevel == 2 ? 6 : 9);
+    float terrainProb = (effectiveLevel == 1) ? 0.3f : (effectiveLevel == 2 ? 0.5f : 0.6f);
+    float brickProb = (effectiveLevel == 1) ? 0.4f : (effectiveLevel == 2 ? 0.5f : 0.6f);
     float coinProb = 0.4f;
-    std::vector<char> gndEnemies = (level == 1) ? std::vector<char>{'G'} : (level == 2 ? std::vector<char>{'G', 'K'} : std::vector<char>{'G', 'K', 'K'});
-    std::vector<char> snipers = (level == 1) ? std::vector<char>{'H'} : std::vector<char>{'H', 'h'};
+    std::vector<char> gndEnemies = (effectiveLevel == 1) ? std::vector<char>{'G'} : (effectiveLevel == 2 ? std::vector<char>{'G', 'K'} : std::vector<char>{'G', 'K', 'K'});
+    std::vector<char> snipers = (effectiveLevel == 1) ? std::vector<char>{'H'} : std::vector<char>{'H', 'h'};
 
     // 1. Pits
     int numPits = randInt(minPits, maxPits);
@@ -63,7 +65,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
     std::vector<int> pitCols;
     for (int i = 0; i < std::min(numPits, (int)possiblePits.size()); ++i) {
         int pitCol = possiblePits[i];
-        int pitWidth = randInt(2, (level == 1 ? 3 : (level == 2 ? 4 : 5)));
+        int pitWidth = randInt(2, (effectiveLevel == 1 ? 3 : (effectiveLevel == 2 ? 4 : 5)));
         for (int c = pitCol; c < pitCol + pitWidth; ++c) {
             if (c < WIDTH) { m.heightMap[c] = HEIGHT; pitCols.push_back(c); }
         }
@@ -102,7 +104,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 m.buildTerrain(col+1, GROUND_ROW-2); m.buildTerrain(col+5, GROUND_ROW-2);
                 m.buildTerrain(col+2, GROUND_ROW-3); m.buildTerrain(col+3, GROUND_ROW-3); m.buildTerrain(col+4, GROUND_ROW-3);
                 // Sniper
-                if (col + 3 >= SAFE_START_COL && randFloat() < (level * 0.3f)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
+                if (col + 3 >= SAFE_START_COL && randFloat() < (effectiveLevel * 0.3f)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
                 col += 8;
             } else if (pat == 3 && checkFlat(col, 6)) { // Staircase
                 int h = 1;
@@ -147,7 +149,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
             for (int k = 1; k <= 4; ++k) {
                 if (m.heightMap[i+k] != m.heightMap[i+1]) wideEnough = false;
             }
-            if (wideEnough && randFloat() < (level * 0.3f) && m.isEmpty(m.heightMap[i+1]-1, i+1)) {
+            if (wideEnough && randFloat() < (effectiveLevel * 0.3f) && m.isEmpty(m.heightMap[i+1]-1, i+1)) {
                 m.grid[m.heightMap[i+1]-1][i+1] = 'K';
             }
         }
@@ -212,7 +214,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+1] = 'B'; 
                     m.grid[baseR][col+2] = '?'; m.grid[baseR][col+3] = 'B'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top if level >= 2
-                    if (col + 2 >= SAFE_START_COL && level >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2)) {
                         m.grid[baseR-1][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -231,7 +233,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR-3][col] = 'B'; m.grid[baseR-3][col+1] = 'B'; m.grid[baseR-3][col+2] = 'B'; m.grid[baseR-3][col+3] = 'B'; m.grid[baseR-3][col+4] = 'B';
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+2] = '?'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top
-                    if (col + 2 >= SAFE_START_COL && level >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2)) {
                         m.grid[baseR-4][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -314,8 +316,8 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
         start = end;
     }
     // Air Strike
-    if (level >= 2) {
-        for (int i=0; i < (level == 2 ? 2 : 4); ++i) {
+    if (effectiveLevel >= 2) {
+        for (int i=0; i < (effectiveLevel == 2 ? 2 : 4); ++i) {
             int ec = randInt(40, WIDTH-30);
             int er = randInt(5, 12);
             if (m.isEmpty(er, ec)) m.grid[er][ec] = 'E';
@@ -324,7 +326,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
 
     m.grid[GROUND_ROW-1][1] = 'P';
     m.grid[GROUND_ROW-1][WIDTH-4] = 'X';
-    if (level == 3) m.grid[GROUND_ROW-1][WIDTH-8] = 'Z';
+    if (effectiveLevel == 3) m.grid[GROUND_ROW-1][WIDTH-8] = 'Z';
 
     std::vector<std::string> pathsToSave = { outputPath };
     if (outputPath.find("level4.txt") != std::string::npos) {
@@ -337,9 +339,9 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
         std::ofstream out(path);
         if (!out) continue;
         
-        out << "@name=Level " << level << "\n";
-        if (level == 1) out << "@difficulty=Easy\n";
-        else if (level == 2) out << "@difficulty=Medium\n";
+        out << "@name=Random Level (" << (effectiveLevel == 1 ? "Easy" : (effectiveLevel == 2 ? "Medium" : "Hard")) << ")\n";
+        if (effectiveLevel == 1) out << "@difficulty=Easy\n";
+        else if (effectiveLevel == 2) out << "@difficulty=Medium\n";
         else out << "@difficulty=Hard\n";
         out << "@tile_size=48\n@map\n";
 
