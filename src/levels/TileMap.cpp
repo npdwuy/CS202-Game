@@ -48,6 +48,32 @@ void TileMap::load(const std::string& path) {
     rebuildGeometry();
 }
 
+void TileMap::restoreTileRows(const std::vector<std::string>& tileRows) {
+    if (tileRows.empty()) return;
+    m_data.rows = tileRows;
+
+    m_crackedBlocks.clear();
+    m_crackedSet.clear();
+    m_questionBlocks.clear();
+
+    float tileSize = static_cast<float>(m_data.tileSize);
+    for (int r = 0; r < static_cast<int>(m_data.rows.size()); ++r) {
+        for (int c = 0; c < static_cast<int>(m_data.rows[r].size()); ++c) {
+            if (m_data.rows[r][c] == '?' || m_data.rows[r][c] == '!') {
+                sf::Vector2f pos(c * tileSize, r * tileSize);
+                QuestionBlock qb(r, c, pos, tileSize);
+                if (m_data.rows[r][c] == '!') {
+                    qb.Hit();
+                    qb.Update(sf::seconds(1.0f));
+                }
+                m_questionBlocks.push_back(qb);
+            }
+        }
+    }
+
+    rebuildGeometry();
+}
+
 void TileMap::render(sf::RenderWindow& window) const {
     if (m_renderer) {
         m_renderer->render(window, m_tileVertices, m_sceneryVertices, m_backgroundVertices);
@@ -236,8 +262,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
             position.y = tile.top + tile.height;
             character.setHitRoof(true);
             if (onHitRoof) {
-                int col = static_cast<int>(tile.left / m_data.tileSize);
-                int row = static_cast<int>(tile.top / m_data.tileSize);
+                int col = static_cast<int>(std::round(tile.left / static_cast<float>(m_data.tileSize)));
+                int row = static_cast<int>(std::round(tile.top / static_cast<float>(m_data.tileSize)));
                 onHitRoof(row, col);
             }
         }
@@ -448,7 +474,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     }
 
     char c = m_data.rows[row][column];
-    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|' || c == '[' || c == ']';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {

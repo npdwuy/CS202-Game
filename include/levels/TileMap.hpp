@@ -43,6 +43,7 @@ struct CrackedBlock {
 class TileMap {
 public:
     void load(const std::string& path);
+    void restoreTileRows(const std::vector<std::string>& tileRows);
     void render(sf::RenderWindow& window) const;
     void renderForegroundPipes(sf::RenderWindow& window) const;
     

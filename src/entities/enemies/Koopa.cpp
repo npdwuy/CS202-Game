@@ -203,6 +203,28 @@ void Koopa::UpdateShellPhysics(
 
         if (hitsWorldEdge || hitsWall)
         {
+            if (hitsWall)
+            {
+                float checkX = (m_shellDirection > 0) ? (nextHorizontal.left + nextHorizontal.width + 4.f) : (nextHorizontal.left - 4.f);
+                float checkY = nextHorizontal.top + nextHorizontal.height * 0.5f;
+                const auto& data = tileMap.data();
+                if (data.tileSize > 0U) {
+                    int col = static_cast<int>(std::floor(checkX / static_cast<float>(data.tileSize)));
+                    int row = static_cast<int>(std::floor(checkY / static_cast<float>(data.tileSize)));
+                    if (row >= 0 && row < static_cast<int>(data.rows.size()) && col >= 0 && col < static_cast<int>(data.rows[row].size())) {
+                        const_cast<TileMap&>(tileMap).hitQuestionBlock(row, col);
+                        const_cast<TileMap&>(tileMap).hitBlock(row, col);
+
+                        float tileEdgeX = static_cast<float>(col * data.tileSize);
+                        if (m_shellDirection > 0) {
+                            m_sprite.setPosition(tileEdgeX - 48.f + 4.f, m_sprite.getPosition().y);
+                        } else {
+                            m_sprite.setPosition(tileEdgeX + static_cast<float>(data.tileSize) - 4.f, m_sprite.getPosition().y);
+                        }
+                    }
+                }
+            }
+
             m_shellDirection *= -1;
         }
         else

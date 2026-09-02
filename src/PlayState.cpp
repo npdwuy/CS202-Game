@@ -401,6 +401,14 @@ void PlayState::Update(sf::Time timePerFrame) {
                         m_hasReturnPos = true;
                         m_warpDestinationLevel = 5;
 
+                        // Snapshot current main level state before entering sub-level
+                        m_savedMainLevelState.clear();
+                        m_savedMainLevelState.levelNumber = m_saveData.currentLevel;
+                        m_savedMainLevelState.tileRows = m_tileMap.data().rows;
+                        m_savedMainLevelState.enemies = std::move(m_enemies);
+                        m_savedMainLevelState.items = std::move(m_items);
+                        m_savedMainLevelState.hasSavedState = true;
+
                         std::string pipeKey = "L" + std::to_string(m_saveData.currentLevel) + "_" + std::to_string(row) + "_" + std::to_string(col);
                         if (m_pipeSubLevelCache.find(pipeKey) == m_pipeSubLevelCache.end()) {
                             // Dynamically generate a fresh random compact sub-level matching the active level difficulty/theme
@@ -483,11 +491,21 @@ void PlayState::Update(sf::Time timePerFrame) {
         m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
         if (m_player->facing() == 1) {
-            pos.x += m_player->width();
+            pos.x += 16.f;
         } else {
-            pos.x -= 48.f;
+            pos.x -= 32.f;
         }
-        pos.y += m_player->height() / 2.f - 24.f; 
+        pos.y += m_player->height() - 36.f; 
+
+        // Clamp held shell position if it would penetrate a solid wall tile
+        sf::FloatRect testBounds(pos.x + 8.f, pos.y + 20.f, 32.f, 28.f);
+        if (m_tileMap.intersectsSolid(testBounds)) {
+            if (m_player->facing() == 1) {
+                pos.x = m_player->position().x + m_player->width() - 8.f;
+            } else {
+                pos.x = m_player->position().x - 24.f;
+            }
+        }
         m_heldShell->SetPosition(pos); 
     } else if (m_player) {
         m_player->setCarrying(false);
@@ -817,15 +835,30 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
 
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
-    m_tileMap.load(levelPath(levelNumber));
-    loadBackgroundLayers();
     m_heldShell = nullptr;
-    m_enemies.clear();
-    m_items.clear();
     m_fireballs.clear();
     m_bossFireballs.clear();
     m_hammerProjectiles.clear();
-    createLevelObjects();
+
+    const bool isReturningToMainLevel = m_wasWarping && levelNumber != 5 && m_savedMainLevelState.hasSavedState && m_savedMainLevelState.levelNumber == levelNumber;
+
+    if (isReturningToMainLevel) {
+        m_tileMap.load(levelPath(levelNumber));
+        m_tileMap.restoreTileRows(m_savedMainLevelState.tileRows);
+        loadBackgroundLayers();
+        m_enemies = std::move(m_savedMainLevelState.enemies);
+        m_items = std::move(m_savedMainLevelState.items);
+        m_savedMainLevelState.clear();
+    } else {
+        m_tileMap.load(levelPath(levelNumber));
+        loadBackgroundLayers();
+        m_enemies.clear();
+        m_items.clear();
+        createLevelObjects();
+        if (!m_wasWarping) {
+            m_savedMainLevelState.clear();
+        }
+    }
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
     
@@ -949,7 +982,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
                         }
 
                         // Check for enemies standing on top of the bumped block
-                        if (bumped && (m_player->isSuper() || m_invincibilityTimeRemaining > 0.f)) {
+                        if (bumped) {
                             float tileSize = static_cast<float>(m_tileMap.data().tileSize);
                             sf::FloatRect blockTopRect(col * tileSize, row * tileSize - 2.f, tileSize, 4.f);
                             
@@ -1526,6 +1559,11 @@ bool PlayState::handlePlayerFall()
 void PlayState::handlePlayerDamage() {
     if (m_damageCooldown > 0.f || m_invincibilityTimeRemaining > 0.f) {
         return;
+    }
+
+    if (m_heldShell) {
+        m_heldShell->Throw(m_player ? m_player->facing() : 1);
+        m_heldShell = nullptr;
     }
 
     if (m_player && m_player->powerUpState() != Player::PowerUpState::Small) {
