@@ -3,9 +3,10 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include <cstdlib>
-#include <ctime>
 #include <algorithm>
+#include <chrono>
+#include <random>
+#include <filesystem>
 
 const int WIDTH = 160;
 const int HEIGHT = 20;
@@ -36,6 +37,12 @@ struct GameMap {
 };
 
 void MapGenerator::generateMap(int level, const std::string& outputPath) {
+    unsigned int seed = static_cast<unsigned int>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count()
+    );
+    std::srand(seed);
+    std::mt19937 rng(seed);
+
     GameMap m;
 
     const int SAFE_START_COL = 20;
@@ -52,7 +59,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
     int numPits = randInt(minPits, maxPits);
     std::vector<int> possiblePits;
     for (int i = 15; i < WIDTH - 20; i += 10) possiblePits.push_back(i);
-    std::random_shuffle(possiblePits.begin(), possiblePits.end());
+    std::shuffle(possiblePits.begin(), possiblePits.end(), rng);
     std::vector<int> pitCols;
     for (int i = 0; i < std::min(numPits, (int)possiblePits.size()); ++i) {
         int pitCol = possiblePits[i];
@@ -319,19 +326,28 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
     m.grid[GROUND_ROW-1][WIDTH-4] = 'X';
     if (level == 3) m.grid[GROUND_ROW-1][WIDTH-8] = 'Z';
 
-    std::ofstream out(outputPath);
-    if (!out) return;
-    
-    out << "@name=Level " << level << "\n";
-    if (level == 1) out << "@difficulty=Easy\n";
-    else if (level == 2) out << "@difficulty=Medium\n";
-    else out << "@difficulty=Hard\n";
-    out << "@tile_size=48\n@map\n";
-
-    for (int r = 0; r < HEIGHT; ++r) {
-        out << m.grid[r] << "\n";
+    std::vector<std::string> pathsToSave = { outputPath };
+    if (outputPath.find("level4.txt") != std::string::npos) {
+        pathsToSave.push_back("levels/level4.txt");
+        pathsToSave.push_back("build/levels/level4.txt");
+        pathsToSave.push_back("../levels/level4.txt");
     }
-    out.close();
+
+    for (const auto& path : pathsToSave) {
+        std::ofstream out(path);
+        if (!out) continue;
+        
+        out << "@name=Level " << level << "\n";
+        if (level == 1) out << "@difficulty=Easy\n";
+        else if (level == 2) out << "@difficulty=Medium\n";
+        else out << "@difficulty=Hard\n";
+        out << "@tile_size=48\n@map\n";
+
+        for (int r = 0; r < HEIGHT; ++r) {
+            out << m.grid[r] << "\n";
+        }
+        out.close();
+    }
 }
 
 void MapGenerator::generateSubLevel(const std::string& outputPath) {
