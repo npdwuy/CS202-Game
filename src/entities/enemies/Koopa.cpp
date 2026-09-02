@@ -229,8 +229,8 @@ void Koopa::UpdateShellPhysics(
 
         if (hitsWorldEdge || hitsWall)
         {
-            // Shell hits a wall -> reverse direction.
-            m_shellDirection *= -1;
+            Deactivate();
+            return;
         }
         else
         {
