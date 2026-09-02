@@ -275,53 +275,189 @@ void PlayState::Input(const sf::Event& event) {
 }
 
 void PlayState::Update(sf::Time timePerFrame) {
-    if (m_exitSequence != ExitSequence::None) {
-        if (m_exitSequence == ExitSequence::Sliding) {
-            // player is sliding down
+    if (m_exitSequence != ExitSequence::None)
+    {
+        const float dt = timePerFrame.asSeconds();
+
+        // =========================================================
+        // SLIDE DOWN FLAG POLE
+        // =========================================================
+        if (m_exitSequence == ExitSequence::Sliding)
+        {
             bool playerAtBottom = false;
-            if (m_player->position().y + m_player->height() >= m_tileMap.getPoleBottomY() - 1.f) {
-                m_player->setPosition({m_player->position().x, m_tileMap.getPoleBottomY() - m_player->height()});
+
+            const float groundY =
+                m_tileMap.getPoleBottomY();
+
+            if (
+                m_player->position().y +
+                    m_player->height() >=
+                groundY - 1.f
+            )
+            {
+                m_player->setPosition(
+                    {
+                        m_player->position().x,
+                        groundY - m_player->height()
+                    }
+                );
+
                 playerAtBottom = true;
-            } else {
-                sf::Vector2f pos = m_player->position();
-                pos.y += 250.f * timePerFrame.asSeconds();
+            }
+            else
+            {
+                sf::Vector2f pos =
+                    m_player->position();
+
+                pos.y += 250.f * dt;
+
                 m_player->setPosition(pos);
             }
-            
-            bool flagAtBottom = m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
-            
-            if (playerAtBottom && flagAtBottom) {
-                m_player->forceState(Player::State::AutoWalk);
+
+            const bool flagAtBottom =
+                m_tileMap.updateFlagAnimation(
+                    timePerFrame,
+                    200.f
+                );
+
+            if (playerAtBottom && flagAtBottom)
+            {
+                m_player->forceState(
+                    Player::State::AutoWalk
+                );
+
                 m_player->setFacing(1);
-                m_exitSequence = ExitSequence::WalkingRight;
-            }
-        } else if (m_exitSequence == ExitSequence::WalkingRight) {
-            m_player->setVelocity({180.f, 0.f}); 
-            m_exitTimer += timePerFrame.asSeconds();
-            if (m_exitTimer >= 1.0f) {
-                m_exitSequence = ExitSequence::IrisWipe; 
+                m_player->setVelocity(
+                    {180.f, 0.f}
+                );
+
                 m_exitTimer = 0.f;
-            }
-        } else if (m_exitSequence == ExitSequence::IrisWipe) {
-            m_player->setVelocity({180.f, 0.f}); // keep walking out
-            m_exitTimer += timePerFrame.asSeconds();
-            if (m_exitTimer >= 1.0f) {
-                finishLevelExit();
-                m_exitSequence = ExitSequence::None;
+                m_exitSequence =
+                    ExitSequence::WalkingToCastle;
             }
         }
-        
-        m_player->update(timePerFrame);
-        updateCamera(timePerFrame);
-        updateBackgroundLayers(timePerFrame, m_camera.view());
-        m_hud.update(timePerFrame);
-        if (m_showFlagScore) {
-            m_flagScoreTimer += timePerFrame.asSeconds();
-            m_flagScoreText.move(0.f, -50.f * timePerFrame.asSeconds());
-            if (m_flagScoreTimer > 2.0f) {
+
+        // =========================================================
+        // WALK FROM FLAG TO CASTLE DOOR
+        // =========================================================
+        else if (
+            m_exitSequence ==
+            ExitSequence::WalkingToCastle
+        )
+        {
+            m_player->forceState(
+                Player::State::AutoWalk
+            );
+
+            m_player->setFacing(1);
+            m_player->setVelocity(
+                {180.f, 0.f}
+            );
+
+            const float playerCenterX =
+                m_player->position().x +
+                m_player->width() * 0.5f;
+
+            if (playerCenterX >= m_castleDoorX)
+            {
+                m_player->setPosition(
+                    {
+                        m_castleDoorX -
+                            m_player->width() * 0.5f,
+                        m_tileMap.getPoleBottomY() -
+                            m_player->height()
+                    }
+                );
+
+                m_player->setVelocity(
+                    {0.f, 0.f}
+                );
+
+                m_playerInsideCastle = true;
+                m_exitTimer = 0.f;
+                m_exitSequence =
+                    ExitSequence::EnteringCastle;
+            }
+        }
+
+        // =========================================================
+        // PLAYER ENTERED CASTLE
+        // =========================================================
+        else if (
+            m_exitSequence ==
+            ExitSequence::EnteringCastle
+        )
+        {
+            m_player->setVelocity(
+                {0.f, 0.f}
+            );
+
+            m_exitTimer += dt;
+
+            if (m_exitTimer >= 0.35f)
+            {
+                m_exitTimer = 0.f;
+                m_exitSequence =
+                    ExitSequence::IrisWipe;
+            }
+        }
+
+        // =========================================================
+        // IRIS CLOSE
+        // =========================================================
+        else if (
+            m_exitSequence ==
+            ExitSequence::IrisWipe
+        )
+        {
+            m_player->setVelocity(
+                {0.f, 0.f}
+            );
+
+            m_exitTimer += dt;
+
+            if (m_exitTimer >= 1.f)
+            {
+                m_exitSequence =
+                    ExitSequence::None;
+
+                finishLevelExit();
+                return;
+            }
+        }
+
+        m_player->update(
+            timePerFrame
+        );
+
+        updateCamera(
+            timePerFrame
+        );
+
+        updateBackgroundLayers(
+            timePerFrame,
+            m_camera.view()
+        );
+
+        m_hud.update(
+            timePerFrame
+        );
+
+        if (m_showFlagScore)
+        {
+            m_flagScoreTimer += dt;
+
+            m_flagScoreText.move(
+                0.f,
+                -50.f * dt
+            );
+
+            if (m_flagScoreTimer > 2.f)
+            {
                 m_showFlagScore = false;
             }
         }
+
         return;
     }
 
@@ -629,7 +765,10 @@ void PlayState::Render(sf::RenderWindow& window)
     // =========================================================
     // PLAYER
     // =========================================================
-    if (m_player)
+    if (
+        m_player &&
+        !m_playerInsideCastle
+    )
     {
         m_player->Render(
             window
@@ -826,65 +965,77 @@ void PlayState::handleLevelStart() {
 
 void PlayState::setupCastle()
 {
+    m_playerInsideCastle = false;
+    m_castleDoorX = 0.f;
+
     m_castleSprite.setTexture(
         m_castleTexture,
         true
     );
 
-    // Sprite gốc của bạn khoảng 158 x 176.
-    // Scale 1.5 -> khoảng 237 x 264 trong game.
-    constexpr float castleScale = 1.5f;
+    const sf::Vector2u textureSize =
+        m_castleTexture.getSize();
 
-    m_castleSprite.setScale(
-        castleScale,
-        castleScale
-    );
+    if (
+        textureSize.x == 0 ||
+        textureSize.y == 0
+    )
+    {
+        return;
+    }
 
-    const sf::FloatRect localBounds =
-        m_castleSprite.getLocalBounds();
-
-    const float castleWidth =
-        localBounds.width * castleScale;
-
-    const float castleHeight =
-        localBounds.height * castleScale;
-
-    const sf::FloatRect worldBounds =
-        m_tileMap.worldBounds();
-
-    // Muốn castle nằm bên phải cột cờ.
-    const float desiredX =
-        m_tileMap.getPoleX() + 220.f;
-
-    // Không để sprite vượt quá cuối map.
-    const float maximumX =
-        worldBounds.left +
-        worldBounds.width -
-        castleWidth -
-        16.f;
-
-    const float castleX =
-        std::min(
-            desiredX,
-            maximumX
+    const float tileSize =
+        static_cast<float>(
+            m_tileMap.data().tileSize
         );
 
-    // Đáy castle nằm đúng tại mặt đất
-    // nơi chân cột cờ kết thúc.
+    // Keep the castle aligned with the 48 px tile grid.
+    // Five tiles gives a clear end-of-level landmark.
+    const float targetHeight =
+        tileSize * 5.f;
+
+    const float scale =
+        targetHeight /
+        static_cast<float>(
+            textureSize.y
+        );
+
+    m_castleSprite.setScale(
+        scale,
+        scale
+    );
+
+    // The map has already been extended after the flag pole,
+    // so the castle can remain entirely to the right of it.
+    const float castleX =
+        m_tileMap.getPoleX() +
+        tileSize * 2.f;
+
     const float castleY =
         m_tileMap.getPoleBottomY() -
-        castleHeight;
+        targetHeight;
 
     m_castleSprite.setPosition(
         castleX,
         castleY
     );
+
+    // First doorway on the lower floor.
+    // The source image is about 158 x 176 px and this doorway
+    // is centered at roughly x = 47 px in the source sprite.
+    m_castleDoorX =
+        castleX +
+        47.f * scale;
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     if (levelNumber < 1 || levelNumber > 3) {
         throw std::out_of_range("Level number must be between 1 and 3.");
     }
+
+    m_exitSequence = ExitSequence::None;
+    m_exitTimer = 0.f;
+    m_playerInsideCastle = false;
 
     handleLevelStart();
 
@@ -1794,6 +1945,8 @@ void PlayState::handleLevelExit() {
     }
 
     m_exitSequence = ExitSequence::Sliding;
+    m_exitTimer = 0.f;
+    m_playerInsideCastle = false;
     m_player->setInputEnabled(false);
     
     // Snap to pole
@@ -1901,14 +2054,46 @@ void PlayState::updateCamera(sf::Time timePerFrame) {
         return;
     }
 
-    const sf::Vector2f playerCenter = m_player->position() + sf::Vector2f(
-        m_player->width() * 0.5f,
-        m_player->height() * 0.5f
-    );
+    const sf::Vector2f playerCenter =
+        m_player->position() +
+        sf::Vector2f(
+            m_player->width() * 0.5f,
+            m_player->height() * 0.5f
+        );
+
+    // Keep the actual level map unchanged, but allow the camera to pan
+    // beyond the normal right edge far enough to show the exit castle.
+    sf::FloatRect cameraWorldBounds =
+        m_tileMap.worldBounds();
+
+    const sf::FloatRect castleBounds =
+        m_castleSprite.getGlobalBounds();
+
+    const float tileSize =
+        static_cast<float>(
+            m_tileMap.data().tileSize
+        );
+
+    const float requiredRight =
+        castleBounds.left +
+        castleBounds.width +
+        tileSize;
+
+    const float currentRight =
+        cameraWorldBounds.left +
+        cameraWorldBounds.width;
+
+    if (requiredRight > currentRight)
+    {
+        cameraWorldBounds.width +=
+            requiredRight -
+            currentRight;
+    }
+
     m_camera.update(
         playerCenter,
         m_player->velocity(),
-        m_tileMap.worldBounds(),
+        cameraWorldBounds,
         GameManager::getInstance().getGameView(),
         timePerFrame
     );
