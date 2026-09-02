@@ -19,6 +19,7 @@
 #include "entities/projectiles/Fireball.hpp"
 #include "entities/projectiles/BossFireball.hpp"
 #include "entities/projectiles/HammerProjectile.hpp"
+#include "entities/enemies/Koopa.hpp"
 
 class PlayState
     : public GameState,
@@ -70,6 +71,7 @@ private:
     std::vector<std::unique_ptr<BossFireball>> m_bossFireballs;
     std::vector<std::unique_ptr<HammerProjectile>> m_hammerProjectiles;
     std::unique_ptr<Player> m_player;
+    Koopa* m_heldShell = nullptr;
 
     SaveData m_saveData;
     GameHud m_hud;

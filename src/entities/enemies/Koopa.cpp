@@ -81,7 +81,7 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    if (m_state == State::ShellIdle)
+    if (m_state == State::ShellIdle || m_state == State::Held)
     {
         return;
     }
@@ -150,7 +150,8 @@ void Koopa::UpdateShellPhysics(
         m_flung ||
         (
             m_state != State::ShellIdle &&
-            m_state != State::ShellMoving
+            m_state != State::ShellMoving &&
+            m_state != State::Held
         )
     )
     {
@@ -159,7 +160,7 @@ void Koopa::UpdateShellPhysics(
 
     const float dt = timePerFrame.asSeconds();
 
-    if (dt <= 0.f)
+    if (dt <= 0.f || m_state == State::Held)
     {
         return;
     }
@@ -499,6 +500,32 @@ bool Koopa::IsShellIdle() const
 bool Koopa::IsShellMoving() const
 {
     return m_state == State::ShellMoving;
+}
+
+bool Koopa::IsHeld() const
+{
+    return m_state == State::Held;
+}
+
+void Koopa::PickUp()
+{
+    if (m_state == State::ShellIdle)
+    {
+        m_state = State::Held;
+    }
+}
+
+void Koopa::Throw(int direction)
+{
+    if (m_state == State::Held)
+    {
+        KickShell(direction);
+    }
+}
+
+void Koopa::SetPosition(sf::Vector2f pos)
+{
+    m_sprite.setPosition(pos);
 }
 
 bool Koopa::CanKickShell() const

@@ -417,20 +417,34 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_fireballCooldown -= timePerFrame.asSeconds();
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
-            if (m_fireballs.size() < 20) { // Tăng giới hạn lên 20 để không bị khựng khi đạn chưa biến mất
-                auto fb = std::make_unique<Fireball>(
-                    m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
-                    m_player->facing()
-                );
-                fb->setCollisionResolver([this](Character& c, sf::Time dt) {
-                    m_tileMap.resolveCollision(c, dt);
-                });
-                m_fireballs.push_back(std::move(fb));
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
+            if (m_heldShell && m_fireballCooldown <= 0.f) {
+                m_heldShell->Throw(m_player->facing());
+                m_heldShell = nullptr;
                 m_player->triggerThrow();
-                m_fireballCooldown = 0.35f; // Cooldown 0.35s
+                m_fireballCooldown = 0.35f; 
+            } else if (!m_heldShell && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
+                if (m_fireballs.size() < 20) { 
+                    auto fb = std::make_unique<Fireball>(
+                        m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
+                        m_player->facing()
+                    );
+                    fb->setCollisionResolver([this](Character& c, sf::Time dt) {
+                        m_tileMap.resolveCollision(c, dt);
+                    });
+                    m_fireballs.push_back(std::move(fb));
+                    m_player->triggerThrow();
+                    m_fireballCooldown = 0.35f; 
+                }
             }
         }
+    }
+
+    if (m_heldShell && m_player) {
+        sf::Vector2f pos = m_player->position();
+        pos.x += m_player->facing() == 1 ? m_player->width() : -m_player->width();
+        pos.y += m_player->height() / 2.f - 24.f; 
+        m_heldShell->SetPosition(pos); 
     }
     
     m_tileMap.update(timePerFrame);
@@ -603,8 +617,14 @@ handleMovingShellEnemyCollisions();
         std::remove_if(
             m_enemies.begin(),
             m_enemies.end(),
-            [](const std::unique_ptr<Enemy>& enemy) {
-                return !enemy->IsActive();
+            [this](const std::unique_ptr<Enemy>& enemy) {
+                if (!enemy->IsActive()) {
+                    if (enemy.get() == m_heldShell) {
+                        m_heldShell = nullptr;
+                    }
+                    return true;
+                }
+                return false;
             }
         ),
         m_enemies.end()
@@ -752,6 +772,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
     loadBackgroundLayers();
+    m_heldShell = nullptr;
     m_enemies.clear();
     m_items.clear();
     m_fireballs.clear();
@@ -1283,29 +1304,17 @@ bool PlayState::handleEnemyCollisions()
         {
             // Mario may still overlap the shell immediately
             // after the first stomp.
-            //
             // Ignore this overlap until the kick delay expires.
             if (!koopa->CanKickShell())
             {
                 continue;
             }
 
-            const float playerCenter =
-                bounds.left +
-                bounds.width * 0.5f;
-
-            const float koopaCenter =
-                enemyBounds.left +
-                enemyBounds.width * 0.5f;
-
-            const int direction =
-                playerCenter < koopaCenter
-                    ? 1
-                    : -1;
-
-            koopa->KickShell(
-                direction
-            );
+            if (!m_heldShell)
+            {
+                m_heldShell = koopa;
+                koopa->PickUp();
+            }
 
             continue;
         }
@@ -1510,8 +1519,13 @@ void PlayState::updateTimedPowerUps(sf::Time timePerFrame) {
 void PlayState::resetTransientEffects() {
     m_invincibilityTimeRemaining = 0.f;
     m_speedBoostTimeRemaining = 0.f;
-    m_damageCooldown = 0.f;
+    m_timeRemaining = 400.f;
     m_playerDamagePending = false;
+    m_exitSequence = ExitSequence::None;
+    m_heldShell = nullptr;
+
+    m_enemies.clear();
+    m_damageCooldown = 0.f;
 
     if (m_player) {
         m_player->setSpeedMultiplier(1.f);

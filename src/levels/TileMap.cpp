@@ -215,7 +215,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
     }
 
     position.y += velocity.y * deltaTime;
-    sf::FloatRect verticalBounds(position.x, position.y, width, height);
+    // Shrink horizontal footprint for vertical collisions so player can fall into gaps
+    sf::FloatRect verticalBounds(position.x + 4.f, position.y, width - 8.f, height);
 
     forEachNearbySolid(verticalBounds, [&](const sf::FloatRect& tile) {
         if (!verticalBounds.intersects(tile)) {

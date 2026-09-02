@@ -13,7 +13,8 @@ public:
     {
         Walking,
         ShellIdle,
-        ShellMoving
+        ShellMoving,
+        Held
     };
 
     Koopa(
@@ -42,12 +43,16 @@ public:
     // =========================================================
     void EnterShell();
     void KickShell(int direction);
+    void PickUp();
+    void Throw(int direction);
+    void SetPosition(sf::Vector2f pos);
 
     State GetState() const;
 
     bool IsWalking() const;
     bool IsShellIdle() const;
     bool IsShellMoving() const;
+    bool IsHeld() const;
 
     bool CanKickShell() const;
     bool IsSafeFromPlayer() const;
