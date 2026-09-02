@@ -1,32 +1,29 @@
 # Super Mario Flashback
 
-Super Mario Flashback is Group 5's CS202 object-oriented programming project.
-It is a C++17 and SFML platform game built around state, strategy, factory, and
-resource-management patterns.
+Super Mario Flashback is Group 5's CS202 object-oriented programming project. It is a C++17 and SFML platform game built around state, strategy, factory, observer, and resource-management patterns.
 
 ## Team
 
-| No. | Student ID | Full name | Group |
-|---:|:---:|---|:---:|
-| 8 | 25125015 | Nguyen Pham Duc Huy | 5 |
-| 9 | 25125018 | Nguyen Minh Khang | 5 |
-| 16 | 25125034 | Tran Quyet Thang | 5 |
-| 22 | 25125052 | Vo Thanh Dat | 5 |
+| No. | Student ID | Full name | Group | Role |
+|---:|:---:|---|:---:|---|
+| 8 | 25125015 | Nguyen Pham Duc Huy | 5 | Core Systems, Architecture, Persistence, Procedural Generation |
+| 9 | 25125018 | Nguyen Minh Khang | 5 | Level Design, Castle Sequence, Physics Edge Cases |
+| 16 | 25125034 | Tran Quyet Thang | 5 | Enemy AI, Boss System, Tile Collision, Audio |
+| 22 | 25125052 | Vo Thanh Dat | 5 | Koopa Shell Mechanics, Menu UI, Enemy Refactoring |
 
-## Current features
+## Current Features
 
-- Menu, options, about, pause, gameplay, game-over, and victory flows
-- Mario movement, jumping, animation, tile collision, and pit detection
-- Goomba, Koopa, flying enemy, boss, and six collectable item types
-- Three external text-file levels with increasing difficulty
-- Map-driven spawning through `LevelObjectFactory`
-- Batched, level-themed terrain with surface shading and atmospheric backdrops
-- Score, lives, level progression, power-up state, and boss-gated final exit
-- Background music and jump, coin, power-up, enemy, and game-over effects
-- Cached textures, fonts, and sound buffers through `ResourceManager`
-- Versioned save/load files with optional position and power-up persistence
+- **Game Flow**: Menu, options, character select, about, pause, gameplay, game-over, and victory states.
+- **Player Mechanics**: Mario & Luigi with Coyote time, jump buffering, variable jump height, and pipe-warping.
+- **Power-ups**: 3-state system (Small -> Big -> Fire) with animations and Fireball projectiles.
+- **Enemies**: Goomba, Koopa (with kickable shell mechanics), Flying Enemy, HammerBro, and Bowser (Boss).
+- **Levels**: Three handcrafted text-file levels + one procedurally generated Level 4 + hidden pipe sub-levels.
+- **Engine**: AABB Two-pass tile collision, smooth clamped camera, and procedural colored terrain rendering.
+- **Audio & Visuals**: Parallax backgrounds, batched vertex arrays, and custom synthesized chiptune SFX.
+- **Architecture**: Decoupled systems using State, Strategy, Factory, Observer, Command, and Singleton patterns.
+- **Persistence**: Safe atomic-write versioned save/load files, persisting position, score, and power-up state.
 
-## Build and run
+## Build and Run
 
 The repository includes SFML 2 binaries for Visual Studio and MinGW on Windows.
 
@@ -46,103 +43,62 @@ cmake --build build
 .\build\CS202-Group5.exe
 ```
 
-CMake copies `assets/`, `levels/`, and the required SFML runtime DLLs beside the
-executable after a successful build. Run the executable from that directory so
-relative resource paths resolve correctly.
+CMake copies `assets/`, `levels/`, and the required SFML runtime DLLs beside the executable after a successful build. Run the executable from that directory so relative resource paths resolve correctly.
 
 ## Controls
 
 | Input | Action |
 |---|---|
-| A/D (rebindable) | Move left/right |
-| W or Space (rebindable) | Jump |
-| Escape | Pause |
+| A / D (rebindable) | Move left / right |
+| W or Space (rebindable)| Jump / Throw Fireball |
+| Down Arrow | Enter pipe |
+| Escape | Pause game |
 | F5 | Save the current game |
 | F9 | Load `savegame.txt` |
 | R | Restart after game over or victory |
-| Enter | Return to menu after victory |
+| Enter | Return to menu |
 
-The main menu also provides separate **Play** and **Load** buttons.
+## Levels and Procedural Generation
 
-## External level format
+| Level | Difficulty | Theme & Content |
+|---|---|---|
+| Level 1: Green Hill Start | Easy | Flat ground, safe platforms, Goombas. Teaches movement. |
+| Level 2: Broken Bridge Run | Medium | Pits, tighter platforms, Koopas, and Flying enemies. |
+| Level 3: Bowser's Last Stand | Hard | Castle theme, alternating pits, HammerBros, Boss-gated exit. |
+| Level 4: Procedural Mode | Random | Dynamically generated platforms, colors, and enemy density. |
+| Pipe Sub-levels | N/A | Underground coin-rooms generated on the fly when entering pipes. |
 
-Each file in `levels/` contains metadata followed by a rectangular `@map`.
+## External Map Format & Factories
 
-```text
-@name=Example Level
-@difficulty=Easy
-@tile_size=48
-@map
-........................................
-.P...C....G.........................X...
-########################################
-```
+Levels are loaded via text files in `levels/`. `LevelLoader` strictly validates the map structure and delegates construction to `LevelObjectFactory`.
 
-`LevelLoader` rejects missing starts/exits, inconsistent row widths, invalid
-metadata, and unsupported symbols.
-
-| Symbol | Meaning | Factory result |
+| Symbol | Object Created | Factory System |
 |:---:|---|---|
-| `#` | Solid ground/block | Tile collision and rendering |
-| `.` | Empty space | None |
-| `P` | Player start | Mario spawn point |
-| `C` | Coin | `Coin` |
-| `M` | Mushroom shield | `Mushroom` |
-| `F` | FireFlower shield | `FireFlower` |
-| `G` | Goomba | `Goomba` |
-| `K` | Koopa | `Koopa` |
-| `E` | Flying enemy | `FlyingEnemy` |
-| `B` | Boss | `BossEnemy` |
-| `L` | Extra life | `OneUpMushroom` |
-| `S` | Temporary invincibility | `Star` |
-| `V` | Temporary speed boost | `SpeedBoost` |
-| `X` | Level exit | Finish trigger |
+| `#` / `.`| Solid Ground / Empty Space | `TileMap` |
+| `P` / `X`| Player Start / Level Exit | `PlayState` |
+| `G` | Goomba | `EnemyFactory` |
+| `K` | Koopa (with shell mechanics) | `EnemyFactory` |
+| `E` | Flying Enemy | `EnemyFactory` |
+| `H` | HammerBro (throws projectiles) | `EnemyFactory` |
+| `B` | Boss (Bowser, 5 HP) | `EnemyFactory` |
+| `C` | Coin (+200 score) | `ItemFactory` |
+| `M` / `F`| Mushroom / FireFlower | `ItemFactory` |
+| `L` | 1-Up Mushroom (+1 Life) | `ItemFactory` |
+| `S` | Star (8s Invincibility) | `ItemFactory` |
+| `V` | SpeedBoost (8s 2x Speed) | `ItemFactory` |
 
-The loader produces `LevelSpawnRequest` values and never constructs gameplay
-classes directly. `LevelObjectFactory` delegates concrete construction to the
-specialized enemy and item factories, so gameplay depends on the `Enemy` and
-`Item` abstractions rather than concrete map objects.
+## Core Design Patterns
 
-## Levels
+- **State Pattern**: `GameManager` uses a state stack to seamlessly overlay `PauseState` over `PlayState`.
+- **Strategy Pattern**: Enemies use `MovementStrategy` (`PatrolStrategy`, `FlyingStrategy`, `ChaseStrategy`, `BossChaseStrategy`) allowing dynamic behavior switching.
+- **Factory Pattern**: Separates map parsing (`LevelLoader`) from object instantiation (`EnemyFactory`, `ItemFactory`).
+- **Observer Pattern**: `GameEventManager` broadcasts events (`CoinCollected`, `EnemyDefeated`) to decouple game logic from audio and UI updates.
+- **Template Method**: `FloatingItem` implements shared spawning animations for all power-ups.
+- **Command Pattern**: UI buttons use `ICommand` to trigger actions dynamically without hardcoding logic.
 
-| Level | Difficulty | Main content | Goal |
-|---|---|---|---|
-| Green Hill Start | Easy | Flat ground, safe platforms, many coins | Teach movement and jumping |
-| Broken Bridge Run | Medium | Three pits, tighter platforms, more enemies | Test collision and enemy interaction |
-| Bowser's Last Stand | Hard | Alternating pits, elevated rewards, boss-gated exit | Final challenge and showcase |
+## Validation & Testing
 
-## Save format
-
-`SaveManager` writes `savegame.txt` through a temporary file, and `LoadManager`
-validates every required field before accepting it:
-
-- format version
-- current level
-- score
-- remaining lives
-- selected character (`Mario` or `Luigi`)
-- optional player position
-- power-up state
-
-Invalid or incompatible saves are rejected without replacing the current
-session.
-
-## Validation
-
-The data test verifies all three maps and save/load round trips:
-
-```bash
-g++ -std=c++17 -Iinclude -ISFML/include \
-    tests/member4_data_tests.cpp \
-    src/levels/LevelLoader.cpp \
-    src/persistence/SaveManager.cpp \
-    src/persistence/LoadManager.cpp \
-    -o member4_data_tests
-./member4_data_tests
-```
-
-With a configured Windows CMake toolchain, the same test is available through
-CTest:
+An automated CTest suite validates all levels and save/load integrity:
 
 ```powershell
 cmake -S . -B build -DBUILD_TESTING=ON
@@ -152,100 +108,5 @@ ctest --test-dir build -C Release --output-on-failure
 
 ## Documentation
 
-- [Member 4 design documentation](docs/member4-design.md)
-- [Member 4 class diagram](docs/class-diagrams/member4-systems.md)
-- [Enemy and item diagram](docs/class-diagrams/enemy-item-system.md)
-- [Player diagram](docs/class-diagrams/player.md)
-- [Demo video outline](docs/demo-video-outline.md)
-- [Final report materials](docs/final-report-materials.md)
-
-The included WAV files are original synthesized chiptune assets generated by
-`tools/generate_audio_assets.py`; they do not reproduce commercial Mario audio.
-
-## Member 3 - Enemy, Item, AI, and Factory Systems
-
-### Enemy System
-
-The project currently supports the following enemy types:
-
-- `Goomba`: horizontal patrol movement.
-- `Koopa`: slower horizontal patrol movement.
-- `FlyingEnemy`: vertical flying movement.
-- `BossEnemy`: stronger enemy used in the final level.
-
-All enemies are managed polymorphically through the `Enemy` abstraction.
-
-### Strategy Pattern
-
-Enemy movement is separated from concrete enemy classes through
-`MovementStrategy`.
-
-Implemented strategies:
-
-- `PatrolStrategy`
-- `FlyingStrategy`
-
-This allows movement behavior to be reused and extended without rewriting
-enemy classes.
-
-### Item and Power-Up System
-
-The project currently supports:
-
-- `Coin`: increases score.
-- `Mushroom`: grants a one-hit damage shield.
-- `FireFlower`: grants a one-hit damage shield and fire power state.
-- `OneUpMushroom`: adds one life, capped at 99.
-- `Star`: grants eight seconds of contact invincibility.
-- `SpeedBoost`: increases movement speed for eight seconds.
-
-All items expose their effects polymorphically through `ItemEffect`. Floating
-collectables share animation and collection behavior through the `FloatingItem`
-template-method base class.
-
-### Factory Pattern
-
-The following factories create objects from level-map symbols:
-
-- `EnemyFactory`
-- `ItemFactory`
-
-Supported symbols:
-
-| Symbol | Created object |
-|---|---|
-| `G` | Goomba |
-| `K` | Koopa |
-| `E` | FlyingEnemy |
-| `B` | BossEnemy |
-| `C` | Coin |
-| `M` | Mushroom |
-| `F` | FireFlower |
-| `L` | OneUpMushroom |
-| `S` | Star |
-| `V` | SpeedBoost |
-
-`LevelObjectFactory` delegates enemy and item creation to these specialized
-factories.
-
-### Observer Pattern
-
-Gameplay actions are published through `GameEventManager`.
-
-Supported events include:
-
-- Coin collection.
-- Power-up collection.
-- Enemy defeat.
-- Player damage.
-- Level completion.
-
-`PlayState` listens for these events and updates score, lives, power-up state,
-sound effects, status messages, and the HUD.
-
-### Member 3 Design Documentation
-
-- [`Enemy and Item System`](docs/class-diagrams/enemy-item-system.md)
-- [`Enemy Factory`](docs/design-patterns/enemy-factory.md)
-- [`Item Factory and Power-Ups`](docs/design-patterns/item-factory.md)
-- [`Observer Pattern`](docs/design-patterns/observer-pattern.md)
+- [CS202 Final Report](docs/CS202_Final_Report_Group5.md) - The complete documentation of features and patterns.
+- `docs/diagrams/` - Contains PNG Mermaid class diagrams for all core architectures.
