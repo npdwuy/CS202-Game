@@ -355,9 +355,19 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_isWarping = false;
             m_wasWarping = true;
             m_warpTimer = 0.f;
-            if (m_player) m_player->isWarpingDown_ = false;
+            if (m_player) {
+                m_player->isWarpingDown_ = false;
+                if (m_player->isFireMario()) {
+                    m_saveData.powerUpState = "FireFlower";
+                } else if (m_player->isBig()) {
+                    m_saveData.powerUpState = "Mushroom";
+                } else {
+                    m_saveData.powerUpState = "None";
+                }
+            }
             m_warpFadeOverlay.setFillColor(sf::Color(0, 0, 0, 0));
             loadLevel(m_warpDestinationLevel, false);
+            updateHud();
         }
         return;
     }
@@ -812,6 +822,18 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
         m_player = std::make_unique<Luigi>(spawnPosition);
     } else {
         m_player = std::make_unique<Mario>(spawnPosition);
+    }
+
+    if (m_saveData.powerUpState == "FireFlower" || m_saveData.powerUpState == "Fire") {
+        m_player->setPowerUpState(Player::PowerUpState::Fire);
+    } else if (m_saveData.powerUpState == "Mushroom" || m_saveData.powerUpState == "Big" || m_saveData.powerUpState == "Super") {
+        m_player->setPowerUpState(Player::PowerUpState::Big);
+    } else {
+        m_player->setPowerUpState(Player::PowerUpState::Small);
+    }
+
+    if (m_invincibilityTimeRemaining > 0.f) {
+        m_player->setInvincible(true);
     }
     if (m_speedBoostTimeRemaining > 0.f) {
         m_player->setSpeedMultiplier(1.45f);
@@ -1586,11 +1608,21 @@ void PlayState::finishLevelExit() {
         );
     }
     m_saveData.hasPlayerPosition = false;
+    if (m_player) {
+        if (m_player->isFireMario()) {
+            m_saveData.powerUpState = "FireFlower";
+        } else if (m_player->isBig()) {
+            m_saveData.powerUpState = "Mushroom";
+        } else {
+            m_saveData.powerUpState = "None";
+        }
+    }
 
     if (m_saveData.currentLevel < 3) {
         const int nextLevel = m_saveData.currentLevel + 1;
         loadLevel(nextLevel, false);
         SaveManager::save(m_saveData);
+        updateHud();
         showStatus(
             "Level " + std::to_string(nextLevel) + " - " +
             m_tileMap.data().name,

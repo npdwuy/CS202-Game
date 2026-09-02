@@ -121,6 +121,16 @@ public:
         jumpPower_ = baseJumpPower_ + (powerUp_ != PowerUpState::Small ? BigJumpBonus : 0.f);
     }
 
+    void setPowerUpState(PowerUpState state) {
+        powerUp_ = state;
+        recalcJumpPower();
+        isGrowing_ = false;
+        isShrinking_ = false;
+        isColorChanging_ = false;
+        isDamageTransforming_ = false;
+        isPendingTransformation_ = false;
+    }
+
     void up2Fire() {
         if (powerUp_ == PowerUpState::Small) {
             pendingPowerUpState_ = PowerUpState::Fire;

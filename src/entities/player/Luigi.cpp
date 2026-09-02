@@ -1,6 +1,31 @@
 #include "entities/player/Luigi.hpp"
 #include <cmath>
 
+namespace {
+sf::Color hsvToRgb(float h, float s, float v) {
+    h = std::fmod(h, 360.f);
+    if (h < 0.f) h += 360.f;
+    
+    float c = v * s;
+    float x = c * (1.f - std::fabs(std::fmod(h / 60.f, 2.f) - 1.f));
+    float m = v - c;
+    
+    float r = 0.f, g = 0.f, b = 0.f;
+    if (h < 60.f)       { r = c; g = x; b = 0.f; }
+    else if (h < 120.f) { r = x; g = c; b = 0.f; }
+    else if (h < 180.f) { r = 0.f; g = c; b = x; }
+    else if (h < 240.f) { r = 0.f; g = x; b = c; }
+    else if (h < 300.f) { r = x; g = 0.f; b = c; }
+    else                { r = c; g = 0.f; b = x; }
+    
+    return sf::Color(
+        static_cast<sf::Uint8>((r + m) * 255.f),
+        static_cast<sf::Uint8>((g + m) * 255.f),
+        static_cast<sf::Uint8>((b + m) * 255.f)
+    );
+}
+} // anonymous namespace
+
 // Luigi stats:
 //   Mario:  speed=292, jumpPower=830
 //   Luigi:  speed=200 (slower -20%), jumpPower=1040.75 (jumps +15% higher)
@@ -147,5 +172,14 @@ void Luigi::update(sf::Time timePerFrame) {
 }
 
 void Luigi::Render(sf::RenderWindow& window) const {
-    window.draw(sprite_);
+    if (invincible_) {
+        // Rainbow color cycling effect - 720 degrees per second (2 full cycles/sec)
+        float hue = std::fmod(animationTime_ * 720.f, 360.f);
+        sf::Color rainbow = hsvToRgb(hue, 0.85f, 1.0f);
+        const_cast<sf::Sprite&>(sprite_).setColor(rainbow);
+        window.draw(sprite_);
+        const_cast<sf::Sprite&>(sprite_).setColor(sf::Color::White);
+    } else {
+        window.draw(sprite_);
+    }
 }
