@@ -49,6 +49,7 @@ public:
             collisionResolver_(*this, dt);
             return;
         }
+        position_ += velocity_ * dt.asSeconds();
     }
 
 };

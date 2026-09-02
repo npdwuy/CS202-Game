@@ -1,4 +1,5 @@
 #include "entities/player/Mario.hpp"
+#include "entities/player/PlayerSpriteLoader.hpp"
 #include <cmath> 
 
 namespace {
@@ -29,13 +30,7 @@ sf::Color hsvToRgb(float h, float s, float v) {
 } // anonymous namespace
 
 Mario::Mario(sf::Vector2f position): Player(position, "Mario", 292.0f, 830.0f){
-    sf::Image image;
-    if (!image.loadFromFile("assets/sprites/player/mario.png")) {
-        throw std::runtime_error("Failed to load mario image.");
-    }
-    
-    image.createMaskFromColor(sf::Color::White);
-
+    sf::Image image = PlayerSpriteLoader::loadCompositedSpriteSheet(PlayerSpriteLoader::CharacterType::Mario);
 
     if (!texture_.loadFromImage(image)) {
         throw std::runtime_error("Failed to load texture from image.");
@@ -102,21 +97,19 @@ void Mario::update(sf::Time timePerFrame) {
     
     // 7. Cầm rùa đứng yên
     static const std::vector<sf::IntRect> framesHold = {
-        sf::IntRect(54, 295, 40, 50)
+        sf::IntRect(21, 295, 32, 53)
     };
     
     // 8. Cầm rùa chạy
     static const std::vector<sf::IntRect> framesHoldWalk = {
-        sf::IntRect(13  , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50),
-        sf::IntRect(54  , 365, 40, 50),
-        sf::IntRect(93  , 365, 40, 50),
-        sf::IntRect(137 , 365, 40, 50),
-        sf::IntRect(178 , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50),
-        sf::IntRect(219 , 365, 40, 50),
-        sf::IntRect(259 , 365, 40, 50),
-        sf::IntRect(302 , 365, 40, 50)
+        sf::IntRect(0,   365, 32, 53),
+        sf::IntRect(40,  365, 41, 48),
+        sf::IntRect(88,  365, 38, 49),
+        sf::IntRect(138, 365, 34, 52),
+        sf::IntRect(186, 365, 32, 53),
+        sf::IntRect(227, 365, 43, 48),
+        sf::IntRect(275, 365, 40, 48),
+        sf::IntRect(325, 365, 34, 52)
     };
 
     static const std::vector<sf::IntRect> framesPoleSlide = {
