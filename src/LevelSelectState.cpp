@@ -41,18 +41,18 @@ LevelSelectState::LevelSelectState() {
     // ── Title ────────────────────────────────────────────────────────────────
     m_titleText.setFont(m_font);
     m_titleText.setString("SELECT LEVEL");
-    m_titleText.setCharacterSize(70);
+    m_titleText.setCharacterSize(64);
     m_titleText.setFillColor(sf::Color::White);
     m_titleText.setOutlineColor(sf::Color::Black);
     m_titleText.setOutlineThickness(3.f);
     {
         sf::FloatRect b = m_titleText.getLocalBounds();
         m_titleText.setOrigin(b.width / 2.f, b.height / 2.f);
-        m_titleText.setPosition(gameView.getSize().x / 2.f, 160.f);
+        m_titleText.setPosition(gameView.getSize().x / 2.f, 130.f);
     }
 
-    // ── 3 Level buttons ──────────────────────────────────────────────────────
-    const sf::Vector2f btnSize(350.f, 100.f);
+    // ── 3 Level buttons + Generate Level button ──────────────────────────────
+    const sf::Vector2f btnSize(420.f, 85.f);
     const float cornerR = btnSize.y / 2.f;
     const float cx = gameView.getSize().x / 2.f;
 
@@ -66,14 +66,14 @@ LevelSelectState::LevelSelectState() {
 
     const sf::Color normalColors[3] = { normalBlue, normalGreen, normalRed };
     const sf::Color hoverColors[3]  = { hoverBlue,  hoverGreen,  hoverRed };
-    const float yPositions [3] = { 360.f, 520.f, 680.f };
+    const float yPositions [3] = { 245.f, 390.f, 535.f };
 
     for (int i = 0; i < 3; ++i) {
         // Button label: "LEVEL N"
         std::string label = kLevelInfo[i].name;
         auto btn = std::make_unique<Button>(label, m_font,
                                             sf::Vector2f(cx, yPositions[i]),
-                                            btnSize, 34);
+                                            btnSize, 32);
         btn->setColors(normalColors[i], hoverColors[i], white);
         btn->setShapeCornerRadius(cornerR);
 
@@ -93,30 +93,30 @@ LevelSelectState::LevelSelectState() {
         m_difficultyText[i].setString(
             std::string("Difficulty: ") + kLevelInfo[i].difficulty
         );
-        m_difficultyText[i].setCharacterSize(22);
+        m_difficultyText[i].setCharacterSize(20);
         m_difficultyText[i].setFillColor(sf::Color(255, 255, 200));
         {
             sf::FloatRect b = m_difficultyText[i].getLocalBounds();
             m_difficultyText[i].setOrigin(b.width / 2.f, 0.f);
-            m_difficultyText[i].setPosition(cx, yPositions[i] + btnSize.y / 2.f + 8.f);
+            m_difficultyText[i].setPosition(cx, yPositions[i] + btnSize.y / 2.f + 5.f);
         }
     }
 
-    // Generate Level button
+    // Generate Level button (Identical size & capsule styling as level buttons)
     m_generateButton = std::make_unique<Button>("GENERATE LEVEL", m_font,
-                                            sf::Vector2f(cx, 790.f),
-                                            sf::Vector2f(350.f, 60.f), 26);
-    m_generateButton->setColors(sf::Color(120, 40, 150, 215),
-                                sf::Color(180, 80, 220, 255), white);
-    m_generateButton->setShapeCornerRadius(30.f);
+                                            sf::Vector2f(cx, 680.f),
+                                            btnSize, 30);
+    m_generateButton->setColors(sf::Color(120, 40, 160, 215),
+                                sf::Color(180, 80, 230, 255), white);
+    m_generateButton->setShapeCornerRadius(cornerR);
     m_generateButton->setCommand(std::make_unique<LambdaCommand>([]() {
         GameManager::getInstance().changeState(std::make_unique<GenerateLevelState>());
     }));
 
     // Back button
     m_backButton = std::make_unique<Button>("BACK", m_font,
-                                            sf::Vector2f(cx, 870.f),
-                                            sf::Vector2f(240.f, 60.f), 26);
+                                            sf::Vector2f(cx, 835.f),
+                                            sf::Vector2f(260.f, 60.f), 26);
     m_backButton->setColors(sf::Color(80, 80, 80, 200),
                             sf::Color(140, 140, 140, 255), white);
     m_backButton->setShapeCornerRadius(30.f);
