@@ -225,7 +225,8 @@ void Koopa::UpdateShellPhysics(
                 }
             }
 
-            m_shellDirection *= -1;
+            Deactivate();
+            return;
         }
         else
         {
