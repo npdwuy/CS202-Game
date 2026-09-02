@@ -38,6 +38,8 @@ struct GameMap {
 void MapGenerator::generateMap(int level, const std::string& outputPath) {
     GameMap m;
 
+    const int SAFE_START_COL = 20;
+
     int minPits = (level == 1) ? 2 : (level == 2 ? 4 : 6);
     int maxPits = (level == 1) ? 3 : (level == 2 ? 6 : 9);
     float terrainProb = (level == 1) ? 0.3f : (level == 2 ? 0.5f : 0.6f);
@@ -93,7 +95,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 m.buildTerrain(col+1, GROUND_ROW-2); m.buildTerrain(col+5, GROUND_ROW-2);
                 m.buildTerrain(col+2, GROUND_ROW-3); m.buildTerrain(col+3, GROUND_ROW-3); m.buildTerrain(col+4, GROUND_ROW-3);
                 // Sniper
-                if (randFloat() < (level * 0.3f)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
+                if (col + 3 >= SAFE_START_COL && randFloat() < (level * 0.3f)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
                 col += 8;
             } else if (pat == 3 && checkFlat(col, 6)) { // Staircase
                 int h = 1;
@@ -203,7 +205,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+1] = 'B'; 
                     m.grid[baseR][col+2] = '?'; m.grid[baseR][col+3] = 'B'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top if level >= 2
-                    if (level >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && level >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2)) {
                         m.grid[baseR-1][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -214,7 +216,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 } else if (pat == 3 && checkClear(col, 8, baseR - 1)) { // Canopy
                     for(int c=col; c<col+8; ++c) m.grid[baseR-1][c] = 'B';
                     // Spawn enemy on Canopy
-                    if (randFloat() < 0.6f && m.isEmpty(baseR-2, col+4)) {
+                    if (col + 4 >= SAFE_START_COL && randFloat() < 0.6f && m.isEmpty(baseR-2, col+4)) {
                         m.grid[baseR-2][col+4] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 10;
@@ -222,7 +224,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR-3][col] = 'B'; m.grid[baseR-3][col+1] = 'B'; m.grid[baseR-3][col+2] = 'B'; m.grid[baseR-3][col+3] = 'B'; m.grid[baseR-3][col+4] = 'B';
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+2] = '?'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top
-                    if (level >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && level >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2)) {
                         m.grid[baseR-4][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -290,14 +292,16 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
             if (randFloat() < 0.5f) {
                 int r = m.heightMap[start] - 1;
                 int c = start + len/2;
-                if (m.isEmpty(r, c)) {
+                if (c >= SAFE_START_COL && m.isEmpty(r, c)) {
                     m.grid[r][c] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                 }
             }
             if (len >= 12 && randFloat() < 0.4f) { // Second enemy if huge space
                 int r = m.heightMap[start] - 1;
                 int c = start + len/4;
-                if (m.isEmpty(r, c)) m.grid[r][c] = gndEnemies[randInt(0, gndEnemies.size()-1)];
+                if (c >= SAFE_START_COL && m.isEmpty(r, c)) {
+                    m.grid[r][c] = gndEnemies[randInt(0, gndEnemies.size()-1)];
+                }
             }
         }
         start = end;
@@ -334,6 +338,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
     const int SUB_WIDTH = 60;
     const int SUB_HEIGHT = 20;
     const int SUB_GROUND_ROW = 17;
+    const int SUB_SAFE_START_COL = 18;
 
     std::vector<std::string> grid(SUB_HEIGHT, std::string(SUB_WIDTH, '.'));
 
@@ -375,7 +380,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                     grid[blockRow - 1][c] = 'C'; // Coin above block
                 }
             }
-            if (randFloat() < 0.6f && col + 1 < 50) {
+            if (randFloat() < 0.6f && col + 1 >= SUB_SAFE_START_COL && col + 1 < 50) {
                 grid[SUB_GROUND_ROW - 1][col + 1] = 'G'; // Patrol enemy
             }
             col += numBlocks + randInt(2, 3);
@@ -393,7 +398,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                     grid[topR - 1][c] = 'C'; // Coin on top
                 }
             }
-            if (randFloat() < 0.5f && col + 2 < 50) {
+            if (randFloat() < 0.5f && col + 2 >= SUB_SAFE_START_COL && col + 2 < 50) {
                 grid[topR - 1][col + 2] = (randFloat() < 0.5f) ? 'K' : 'G';
             }
             col += plateauWidth + randInt(2, 3);
@@ -425,7 +430,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                 grid[SUB_GROUND_ROW - 3][col + 4] = 'C';
                 grid[SUB_GROUND_ROW - 2][col + 5] = 'C';
 
-                if (randFloat() < 0.6f) {
+                if (randFloat() < 0.6f && col + 2 >= SUB_SAFE_START_COL) {
                     grid[SUB_GROUND_ROW - 1][col + 2] = 'G';
                 }
             }
@@ -436,7 +441,9 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                 grid[SUB_GROUND_ROW - 3][col + 1] = '?';
                 grid[SUB_GROUND_ROW - 3][col] = 'B';
                 grid[SUB_GROUND_ROW - 3][col + 2] = 'B';
-                grid[SUB_GROUND_ROW - 1][col + 1] = 'G';
+                if (col + 1 >= SUB_SAFE_START_COL) {
+                    grid[SUB_GROUND_ROW - 1][col + 1] = 'G';
+                }
             }
             col += 5;
         }
