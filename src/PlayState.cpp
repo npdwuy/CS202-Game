@@ -1061,6 +1061,8 @@ void PlayState::handleItemCollisions()
 bool PlayState::handleEnemyCollisions()
 {
     const sf::FloatRect bounds = playerBounds();
+    const bool isFalling = m_player && m_player->velocity().y > 0.f;
+    bool stompedAny = false;
 
     for (auto& enemy : m_enemies)
     {
@@ -1077,7 +1079,7 @@ bool PlayState::handleEnemyCollisions()
             enemy->GetBounds();
 
         const bool stomped =
-            m_player->velocity().y > 0.f &&
+            isFalling &&
             bounds.top + bounds.height <=
                 enemyBounds.top +
                 enemyBounds.height * 0.65f;
@@ -1137,6 +1139,9 @@ bool PlayState::handleEnemyCollisions()
         // =========================================================
         if (stomped)
         {
+            stompedAny = true;
+            m_damageCooldown = std::max(m_damageCooldown, 0.35f);
+
             // -----------------------------------------------------
             // BOSS
             // -----------------------------------------------------
@@ -1296,6 +1301,11 @@ bool PlayState::handleEnemyCollisions()
         // =========================================================
         // NORMAL SIDE DAMAGE
         // =========================================================
+        if (stompedAny)
+        {
+            continue;
+        }
+
         if (koopa && koopa->IsSafeFromPlayer())
         {
             continue;

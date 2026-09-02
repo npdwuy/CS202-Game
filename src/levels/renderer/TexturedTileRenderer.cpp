@@ -173,6 +173,7 @@ void TexturedTileRenderer::buildSingleTile(
     );
 
     sf::Color vertexColor = sf::Color::White;
+    char c = data.rows[row][col];
     if (c == '?') {
         vertexColor = sf::Color(255, 230, 100);
     } else if (c == '!') {
