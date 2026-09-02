@@ -105,7 +105,7 @@ LevelData LevelLoader::loadFromFile(const std::string& path) {
         }
 
         if (line.empty()) {
-            throw std::runtime_error("Map rows cannot be empty in: " + path);
+            continue;
         }
 
         level.rows.push_back(line);
@@ -162,16 +162,17 @@ LevelData LevelLoader::loadFromFile(const std::string& path) {
         );
     }
 
-    if (exitCount != 1) {
+    if (exitCount > 1) {
         throw std::runtime_error(
-            "A level must contain exactly one exit symbol X: " + path
+            "A level must contain at most one exit symbol X: " + path
         );
     }
+    level.hasExit = (exitCount == 1);
 
     return level;
 }
 
 bool LevelLoader::isSupportedSymbol(char symbol) {
-    const std::string supportedSymbols = "#.PCMFGKEBXLSV?!";
+    const std::string supportedSymbols = "#.PCMFGKEBZXLSV?!TD=HhW|[]";
     return supportedSymbols.find(symbol) != std::string::npos;
 }

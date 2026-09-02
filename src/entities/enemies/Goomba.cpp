@@ -77,7 +77,15 @@ void Goomba::Render(sf::RenderWindow& window) const
 
 sf::FloatRect Goomba::GetBounds() const
 {
-    return m_sprite.getGlobalBounds();
+    sf::FloatRect bounds = m_sprite.getGlobalBounds();
+
+    // Thu nhỏ hitbox để khớp với hình ảnh thực tế (loại bỏ viền trong suốt)
+    bounds.left += 8.f;
+    bounds.width -= 16.f;
+    bounds.top += 12.f;  // Goomba thường lùn hơn frame 48x48
+    bounds.height -= 12.f;
+
+    return bounds;
 }
 
 bool Goomba::IsActive() const
@@ -98,4 +106,8 @@ void Goomba::Fling() {
 
 bool Goomba::IsFlung() const {
     return m_flung;
+}
+
+void Goomba::SetPlayerPosition(sf::Vector2f pos) {
+    m_movementStrategy->setPlayerPosition(pos);
 }

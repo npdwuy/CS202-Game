@@ -9,6 +9,8 @@ Button::Button(const std::string &textStr, const sf::Font &font,
                m_isHovered(false)
 {
     m_shape.setSize(size);
+    m_shape.setCornerRadius(10.f);
+    m_shape.setCornerPointCount(10);
     m_shape.setOrigin(size.x / 2.f, size.y / 2.f);
     m_shape.setPosition(position);
     m_shape.setFillColor(m_normalColor);
@@ -132,4 +134,10 @@ void Button::setCornerSize(float cornerSize) {
 
 sf::FloatRect Button::getGlobalBounds() const {
     return m_shape.getGlobalBounds();
+}
+
+void Button::setShapeCornerRadius(float radius) {
+    m_shape.setCornerRadius(radius);
+    m_shape.refresh();   // force vertex array rebuild
+    centerText();
 }

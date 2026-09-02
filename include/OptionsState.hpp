@@ -25,7 +25,6 @@ private:
 
 private:
     sf::Font m_font;
-    sf::Texture m_buttonTexture;
 
     // Panel visuals
     sf::RectangleShape m_dimOverlay;

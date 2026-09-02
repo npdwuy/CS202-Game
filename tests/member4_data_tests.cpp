@@ -9,330 +9,165 @@
 
 namespace {
 
-bool require(
-    bool condition,
-    const std::string& message
-)
-{
-    if (!condition)
-    {
-        std::cerr
-            << "FAILED: "
-            << message
-            << '\n';
+bool require(bool condition, const std::string& message) {
+    if (!condition) {
+        std::cerr << "FAILED: " << message << '\n';
     }
-
     return condition;
 }
 
 }
 
-int main()
-{
-    try
-    {
-        bool passed = true;
+int main() {
+    bool passed = true;
 
-        // =========================================================
-        // LEVEL DATA TESTS
-        // =========================================================
-        for (
-            int levelNumber = 1;
-            levelNumber <= 3;
-            ++levelNumber
-        )
-        {
-            std::cout
-                << "Loading level "
-                << levelNumber
-                << "...\n";
-
-            const LevelData level =
-                LevelLoader::loadFromFile(
-                    "levels/level" +
-                    std::to_string(levelNumber) +
-                    ".txt"
-                );
-
-            passed &= require(
-                level.widthInTiles() == 48U,
-                "level width is 48"
-            );
-
-            passed &= require(
-                level.heightInTiles() == 20U,
-                "level height is 20"
-            );
-
-            passed &= require(
-                !level.spawnRequests.empty(),
-                "level has spawns"
-            );
-
-            passed &= require(
-                level.tileSize == 48U,
-                "tile size is 48"
-            );
-        }
-
-        // =========================================================
-        // INVALID LEVEL SYMBOL TEST
-        // =========================================================
-        const std::filesystem::path invalidLevelPath =
-            std::filesystem::temp_directory_path() /
-            "cs202_member4_invalid_level_test.txt";
-
-        {
-            std::ofstream invalidLevel(
-                invalidLevelPath,
-                std::ios::trunc
-            );
-
-            invalidLevel
-                << "@name=Invalid\n"
-                << "@difficulty=Test\n"
-                << "@tile_size=48\n"
-                << "@map\n"
-
-                // W is intentionally unsupported.
-                << "PWX\n"
-
-                << "###\n";
-        }
-
-        bool invalidLevelRejected = false;
-
-        try
-        {
-            static_cast<void>(
-                LevelLoader::loadFromFile(
-                    invalidLevelPath.string()
-                )
-            );
-        }
-        catch (const std::exception&)
-        {
-            invalidLevelRejected = true;
-        }
-
-        passed &= require(
-            invalidLevelRejected,
-            "unsupported level symbols are rejected"
+    for (int levelNumber = 1; levelNumber <= 3; ++levelNumber) {
+        const LevelData level = LevelLoader::loadFromFile(
+            "levels/level" + std::to_string(levelNumber) + ".txt"
         );
 
-        // =========================================================
-        // EXTENDED ENTITY / ITEM SYMBOL TEST
-        // =========================================================
-        const std::filesystem::path extendedLevelPath =
-            std::filesystem::temp_directory_path() /
-            "cs202_extended_item_level_test.txt";
-
-        {
-            std::ofstream extendedLevel(
-                extendedLevelPath,
-                std::ios::trunc
-            );
-
-            extendedLevel
-                << "@name=Extended Items\n"
-                << "@difficulty=Test\n"
-                << "@tile_size=48\n"
-                << "@map\n"
-                << "PLSVECMFGKBX\n"
-                << "############\n";
-        }
-
-        const LevelData extendedLevel =
-            LevelLoader::loadFromFile(
-                extendedLevelPath.string()
-            );
-
-        passed &= require(
-            extendedLevel.spawnRequests.size() == 10U,
-            "new item and flying-enemy symbols create spawn requests"
-        );
-
-        // =========================================================
-        // SAVE / LOAD TEST
-        // =========================================================
-        const std::filesystem::path savePath =
-            std::filesystem::temp_directory_path() /
-            "cs202_member4_save_test.txt";
-
-        SaveData expected;
-
-        expected.currentLevel = 2;
-        expected.score = 2400;
-        expected.remainingLives = 2;
-        expected.selectedCharacter = "Luigi";
-
-        expected.hasPlayerPosition = true;
-
-        expected.playerX = 144.f;
-        expected.playerY = 288.f;
-
-        expected.powerUpState =
-            "FireFlower";
-
-        passed &= require(
-            SaveManager::save(
-                expected,
-                savePath.string()
-            ),
-            "valid save data is written"
-        );
-
-        const std::optional<SaveData> loaded =
-            LoadManager::load(
-                savePath.string()
-            );
-
-        passed &= require(
-            loaded.has_value(),
-            "saved data can be loaded"
-        );
-
-        if (loaded)
-        {
-            passed &= require(
-                loaded->currentLevel ==
-                    expected.currentLevel,
-                "current level round-trips"
-            );
-
-            passed &= require(
-                loaded->score ==
-                    expected.score,
-                "score round-trips"
-            );
-
-            passed &= require(
-                loaded->remainingLives ==
-                    expected.remainingLives,
-                "lives round-trip"
-            );
-
-            passed &= require(
-                loaded->selectedCharacter ==
-                    expected.selectedCharacter,
-                "character round-trips"
-            );
-
-            passed &= require(
-                loaded->powerUpState ==
-                    expected.powerUpState,
-                "power-up round-trips"
-            );
-        }
-
-        // =========================================================
-        // SAVE REPLACEMENT TEST
-        // =========================================================
-        SaveData replacement =
-            expected;
-
-        replacement.score = 3100;
-        replacement.remainingLives = 4;
-
-        passed &= require(
-            SaveManager::save(
-                replacement,
-                savePath.string()
-            ),
-            "an existing save can be replaced safely"
-        );
-
-        const std::optional<SaveData> replaced =
-            LoadManager::load(
-                savePath.string()
-            );
-
-        passed &= require(
-            replaced &&
-                replaced->score == 3100 &&
-                replaced->remainingLives == 4,
-            "replacement save data round-trips"
-        );
-
-        // =========================================================
-        // INVALID SAVE VERSION TEST
-        // =========================================================
-        {
-            std::ofstream corrupted(
-                savePath,
-                std::ios::trunc
-            );
-
-            corrupted
-                << "version=999\n"
-                << "currentLevel=1\n"
-                << "score=0\n"
-                << "remainingLives=3\n"
-                << "selectedCharacter=Mario\n"
-                << "hasPlayerPosition=false\n"
-                << "playerX=0\n"
-                << "playerY=0\n"
-                << "powerUpState=None\n";
-        }
-
-        passed &= require(
-            !LoadManager::load(
-                savePath.string()
-            ).has_value(),
-            "invalid save version is rejected"
-        );
-
-        // =========================================================
-        // CLEAN TEMP FILES
-        // =========================================================
-        std::error_code removeError;
-
-        std::filesystem::remove(
-            invalidLevelPath,
-            removeError
-        );
-
-        removeError.clear();
-
-        std::filesystem::remove(
-            extendedLevelPath,
-            removeError
-        );
-
-        removeError.clear();
-
-        std::filesystem::remove(
-            savePath,
-            removeError
-        );
-
-        // =========================================================
-        // RESULT
-        // =========================================================
-        if (passed)
-        {
-            std::cout
-                << "All Member 4 data tests passed.\n";
-
-            return 0;
-        }
-
-        return 1;
+        passed &= require(level.widthInTiles() == 160U, "level width is 160");
+        passed &= require(level.heightInTiles() == 20U, "level height is 20");
+        passed &= require(!level.spawnRequests.empty(), "level has spawns");
+        passed &= require(level.tileSize == 48U, "tile size is 48");
     }
-    catch (const std::exception& error)
-    {
-        std::cerr
-            << "\nUNCAUGHT EXCEPTION: "
-            << error.what()
-            << '\n';
 
-        return 2;
-    }
-    catch (...)
+    const std::filesystem::path invalidLevelPath =
+        std::filesystem::temp_directory_path() /
+        "cs202_member4_invalid_level_test.txt";
     {
-        std::cerr
-            << "\nUNCAUGHT UNKNOWN EXCEPTION\n";
-
-        return 3;
+        std::ofstream invalidLevel(invalidLevelPath, std::ios::trunc);
+        invalidLevel
+            << "@name=Invalid\n"
+            << "@difficulty=Test\n"
+            << "@tile_size=48\n"
+            << "@map\n"
+            << "P&X\n"
+            << "###\n";
     }
+
+    bool invalidLevelRejected = false;
+    try {
+        static_cast<void>(
+            LevelLoader::loadFromFile(invalidLevelPath.string())
+        );
+    } catch (const std::exception&) {
+        invalidLevelRejected = true;
+    }
+    passed &= require(
+        invalidLevelRejected,
+        "unsupported level symbols are rejected"
+    );
+
+    const std::filesystem::path extendedLevelPath =
+        std::filesystem::temp_directory_path() /
+        "cs202_extended_item_level_test.txt";
+    {
+        std::ofstream extendedLevel(extendedLevelPath, std::ios::trunc);
+        extendedLevel
+            << "@name=Extended Items\n"
+            << "@difficulty=Test\n"
+            << "@tile_size=48\n"
+            << "@map\n"
+            << "PLSVECMFGKBX\n"
+            << "############\n";
+    }
+
+    const LevelData extendedLevel = LevelLoader::loadFromFile(
+        extendedLevelPath.string()
+    );
+    passed &= require(
+        extendedLevel.spawnRequests.size() == 10U,
+        "new item and flying-enemy symbols create spawn requests"
+    );
+
+    const std::filesystem::path savePath =
+        std::filesystem::temp_directory_path() / "cs202_member4_save_test.txt";
+
+    SaveData expected;
+    expected.currentLevel = 2;
+    expected.score = 2400;
+    expected.remainingLives = 2;
+    expected.selectedCharacter = "Luigi";
+    expected.hasPlayerPosition = true;
+    expected.playerX = 144.f;
+    expected.playerY = 288.f;
+    expected.powerUpState = "FireFlower";
+
+    passed &= require(
+        SaveManager::save(expected, savePath.string()),
+        "valid save data is written"
+    );
+
+    const std::optional<SaveData> loaded =
+        LoadManager::load(savePath.string());
+    passed &= require(loaded.has_value(), "saved data can be loaded");
+    if (loaded) {
+        passed &= require(
+            loaded->currentLevel == expected.currentLevel,
+            "current level round-trips"
+        );
+        passed &= require(
+            loaded->score == expected.score,
+            "score round-trips"
+        );
+        passed &= require(
+            loaded->remainingLives == expected.remainingLives,
+            "lives round-trip"
+        );
+        passed &= require(
+            loaded->selectedCharacter == expected.selectedCharacter,
+            "character round-trips"
+        );
+        passed &= require(
+            loaded->powerUpState == expected.powerUpState,
+            "power-up round-trips"
+        );
+    }
+
+    SaveData replacement = expected;
+    replacement.score = 3100;
+    replacement.remainingLives = 4;
+    passed &= require(
+        SaveManager::save(replacement, savePath.string()),
+        "an existing save can be replaced safely"
+    );
+    const std::optional<SaveData> replaced =
+        LoadManager::load(savePath.string());
+    passed &= require(
+        replaced && replaced->score == 3100 && replaced->remainingLives == 4,
+        "replacement save data round-trips"
+    );
+
+    {
+        std::ofstream corrupted(savePath, std::ios::trunc);
+        corrupted
+            << "version=999\n"
+            << "currentLevel=1\n"
+            << "score=0\n"
+            << "remainingLives=3\n"
+            << "selectedCharacter=Mario\n"
+            << "hasPlayerPosition=false\n"
+            << "playerX=0\n"
+            << "playerY=0\n"
+            << "powerUpState=None\n";
+    }
+    passed &= require(
+        !LoadManager::load(savePath.string()).has_value(),
+        "invalid save version is rejected"
+    );
+
+    std::error_code removeError;
+    std::filesystem::remove(invalidLevelPath, removeError);
+    removeError.clear();
+    std::filesystem::remove(extendedLevelPath, removeError);
+    removeError.clear();
+    std::filesystem::remove(savePath, removeError);
+
+    if (passed) {
+        std::cout << "All Member 4 data tests passed.\n";
+        return 0;
+    }
+
+    return 1;
 }

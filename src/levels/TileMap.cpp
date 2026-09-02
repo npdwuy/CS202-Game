@@ -17,7 +17,7 @@ void TileMap::load(const std::string& path) {
 
     std::string tilesetPath = "assets/sprites/tilesets/WU_Field_plain.png";
     if (m_data.difficulty == "Medium") {
-        tilesetPath = "assets/sprites/tilesets/WU_Field_underground.png";
+        tilesetPath = "assets/sprites/tilesets/WU_Field_athletic_D.png";
     } else if (m_data.difficulty == "Hard") {
         tilesetPath = "assets/sprites/tilesets/WU_Field_castle.png";
     }
@@ -86,14 +86,34 @@ void TileMap::render(sf::RenderWindow& window) const {
         qb.Render(window);
     }
 
-    window.draw(m_exitPole);
-    window.draw(m_exitFlag);
+    if (m_data.hasExit) {
+        window.draw(m_exitPole);
+        window.draw(m_exitFlag);
+    }
 
     for (const auto& debris : m_debris) {
         if (debris.useSprite) {
             window.draw(debris.sprite);
         } else {
             window.draw(debris.shape);
+        }
+    }
+}
+
+void TileMap::renderForegroundPipes(sf::RenderWindow& window) const {
+    if (m_renderer) {
+        sf::VertexArray pipeTiles(sf::Quads);
+        for (int row = 0; row < m_data.rows.size(); ++row) {
+            for (int col = 0; col < m_data.rows[row].size(); ++col) {
+                char c = m_data.rows[row][col];
+                if (c == 'W' || c == '|') {
+                    m_renderer->buildSingleTile(pipeTiles, m_data, row, col, sf::Vector2f(0.f, 0.f));
+                }
+            }
+        }
+        if (pipeTiles.getVertexCount() > 0) {
+            sf::VertexArray emptyQuad(sf::Quads);
+            m_renderer->render(window, pipeTiles, emptyQuad, emptyQuad);
         }
     }
 }
@@ -148,7 +168,8 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
 
         for (int row = firstRow; row <= lastRow; ++row) {
             for (int column = firstColumn; column <= lastColumn; ++column) {
-                if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
+                char c = m_data.rows[row][column];
+                if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                     continue;
                 }
 
@@ -171,17 +192,24 @@ void TileMap::resolveCollision(Character& character, sf::Time timePerFrame, std:
         }
 
         if (velocity.x > 0.f) {
-            // Move Mario just left of the tile with a small skin to avoid immediate re‑collision
-            // Apply a larger skin to ensure separation from the tile
-            position.x = tile.left - width - 0.1f;
+            float myCenter = horizontalBounds.left + width * 0.5f;
+            float tileCenter = tile.left + tile.width * 0.5f;
+            if (myCenter < tileCenter) {
+                // Move Mario just left of the tile with a small skin to avoid immediate re-collision
+                position.x = tile.left - width - 0.1f;
+                velocity.x = 0.f;
+                horizontalBounds.left = position.x;
+            }
         } else if (velocity.x < 0.f) {
-            // Move Mario just right of the tile with a small skin
-            // Apply a larger skin to ensure separation from the tile
-            position.x = tile.left + tile.width + 0.1f;
+            float myCenter = horizontalBounds.left + width * 0.5f;
+            float tileCenter = tile.left + tile.width * 0.5f;
+            if (myCenter > tileCenter) {
+                // Move Mario just right of the tile with a small skin
+                position.x = tile.left + tile.width + 0.1f;
+                velocity.x = 0.f;
+                horizontalBounds.left = position.x;
+            }
         }
-
-        velocity.x = 0.f;
-        horizontalBounds.left = position.x;
     });
 
     const float maximumX = std::max(0.f, m_data.worldSize().x - width);
@@ -279,7 +307,7 @@ void TileMap::breakBlock(int row, int col) {
         return;
     }
     
-    if (m_data.rows[row][col] == '#') {
+    if (m_data.rows[row][col] == 'B') {
         m_data.rows[row][col] = '.';
 
         // Remove from cracked tracking if it was cracked
@@ -359,7 +387,7 @@ bool TileMap::hitBlock(int row, int col) {
     if (row < 0 || row >= static_cast<int>(m_data.rows.size()) || col < 0 || col >= static_cast<int>(m_data.rows[row].size())) {
         return false;
     }
-    if (m_data.rows[row][col] != '#') {
+    if (m_data.rows[row][col] != 'B') {
         return false;
     }
 
@@ -419,7 +447,8 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
         return false;
     }
 
-    return m_data.rows[row][column] == '#' || m_data.rows[row][column] == '?' || m_data.rows[row][column] == '!';
+    char c = m_data.rows[row][column];
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
@@ -454,7 +483,8 @@ bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
 
     for (int row = firstRow; row <= lastRow; ++row) {
         for (int column = firstColumn; column <= lastColumn; ++column) {
-            if (m_data.rows[row][column] != '#' && m_data.rows[row][column] != '?' && m_data.rows[row][column] != '!') {
+            char c = m_data.rows[row][column];
+            if (c != '#' && c != '=' && c != 'T' && c != 'D' && c != 'B' && c != '?' && c != '!' && c != 'W' && c != '|' && c != '[' && c != ']') {
                 continue;
             }
 

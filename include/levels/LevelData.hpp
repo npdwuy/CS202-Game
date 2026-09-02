@@ -19,6 +19,7 @@ struct LevelData {
     std::vector<LevelSpawnRequest> spawnRequests;
     sf::Vector2f playerStart{};
     sf::Vector2f exitPosition{};
+    bool hasExit = false;
 
     std::size_t widthInTiles() const {
         return rows.empty() ? 0U : rows.front().size();

@@ -13,7 +13,8 @@ public:
     {
         Walking,
         ShellIdle,
-        ShellMoving
+        ShellMoving,
+        Held
     };
 
     Koopa(
@@ -35,19 +36,26 @@ public:
     void Fling() override;
     bool IsFlung() const override;
 
+    void SetPlayerPosition(sf::Vector2f pos) override;
+
     // =========================================================
     // SHELL STATE
     // =========================================================
     void EnterShell();
     void KickShell(int direction);
+    void PickUp();
+    void Throw(int direction);
+    void SetPosition(sf::Vector2f pos);
 
     State GetState() const;
 
     bool IsWalking() const;
     bool IsShellIdle() const;
     bool IsShellMoving() const;
+    bool IsHeld() const;
 
     bool CanKickShell() const;
+    bool IsSafeFromPlayer() const;
 
     // Handles gravity, falling, landing,
     // and horizontal terrain collision for the shell.

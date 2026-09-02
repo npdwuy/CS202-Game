@@ -1,7 +1,9 @@
 #pragma once
 
 #include "entities/Enemy.hpp"
+#include "entities/strategies/MovementStrategy.hpp"
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include <vector>
 
 enum class BossState {
@@ -16,9 +18,8 @@ class BossEnemy : public Enemy {
 public:
     BossEnemy(
         sf::Vector2f position,
-        float minX,
-        float maxX,
-        float speed
+        float speed,
+        std::unique_ptr<MovementStrategy> movementStrategy
     );
 
     void Update(sf::Time dt) override;
@@ -26,36 +27,42 @@ public:
     sf::FloatRect GetBounds() const override;
     bool IsActive() const override;
     void Deactivate() override;
-    
-    void Fling() override { m_flung = true; }
-    bool IsFlung() const override { return m_flung; }
 
-    void TakeDamage();
-    bool IsHurt() const { return m_state == BossState::Hurt; }
-    
-    // Hàm nhận vị trí của Mario từ PlayState
-    void SetPlayerPosition(sf::Vector2f playerPos);
+    void TakeDamage() override;
+    bool IsHurt() const override;
+    bool IsBoss() const override;
+
+    void Fling() override;
+    bool IsFlung() const override;
+
+    void SetPlayerPosition(sf::Vector2f playerPos) override;
 
 private:
     void FireProjectile();
-    
+
     sf::Sprite m_sprite;
-    sf::Vector2f m_position;
+    std::unique_ptr<MovementStrategy> m_movementStrategy;
     sf::Vector2f m_playerPos;
 
-    float m_minX;
-    float m_maxX;
     float m_speed;
-    
-    BossState m_state;
-    int m_health;
+    float m_spriteScale = 1.44f;
+
+    BossState m_state = BossState::Walk;
+    int m_health = 5;
     bool m_active = true;
     bool m_flung = false;
-
-    bool m_facingLeft = true;
-    float m_scale = 1.2f;
 
     float m_stateTimer = 0.f;
     float m_animationTimer = 0.f;
     int m_currentFrame = 0;
+
+    static constexpr float FRAME_WIDTH = 85.f;
+    static constexpr float FRAME_HEIGHT = 65.f;
+    static constexpr float ATTACK_RANGE_X = 450.f;
+    static constexpr float ATTACK_RANGE_Y = 250.f;
+    static constexpr float WALK_COOLDOWN = 2.5f;
+    static constexpr float WALK_RESET = 1.5f;
+    static constexpr float HURT_DURATION = 0.8f;
+    static constexpr float HURT_FLASH_INTERVAL = 0.08f;
+    static constexpr int DEFEAT_SCORE = 500;
 };

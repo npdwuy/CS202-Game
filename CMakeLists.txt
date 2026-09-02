@@ -25,6 +25,11 @@ elseif(MINGW)
     target_link_directories(${PROJECT_NAME} PRIVATE SFML/lib/mingw)
     target_link_libraries(${PROJECT_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio sfml-network)
     file(GLOB SFML_DLLS "SFML/bin/mingw/*.dll")
+    
+    # Find and include GCC runtime DLLs
+    get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
+    file(GLOB GCC_DLLS "${COMPILER_DIR}/libgcc_*.dll" "${COMPILER_DIR}/libstdc++*.dll" "${COMPILER_DIR}/libwinpthread*.dll")
+    list(APPEND SFML_DLLS ${GCC_DLLS})
 endif()
 
 # Locate additional lib*.dll files (common in MinGW builds)
@@ -90,3 +95,6 @@ if(BUILD_TESTING)
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
 endif()
+
+
+

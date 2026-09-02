@@ -44,9 +44,19 @@ public:
     static std::string difficultyToString(Difficulty diff);
     static Difficulty stringToDifficulty(const std::string& str);
 
+    // Character selection (transient, not persisted to file)
+    const std::string& getSelectedCharacter() const;
+    void setSelectedCharacter(const std::string& name);
+
+    // Level selection (transient, not persisted to file)
+    int  getSelectedLevel() const;
+    void setSelectedLevel(int level);
+
 private:
     Difficulty m_difficulty;
     float m_sfxVolume;
     float m_bgmVolume;
     std::map<std::string, sf::Keyboard::Key> m_keyBindings;
+    std::string m_selectedCharacter = "Mario";
+    int         m_selectedLevel     = 1;
 };

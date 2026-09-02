@@ -8,14 +8,16 @@ std::unique_ptr<Enemy> LevelObjectFactory::createEnemy(
     char symbol,
     sf::Vector2f position,
     float tileSize,
-    float levelWidth
+    float levelWidth,
+    const TileMap& tileMap
 ) const
 {
     return EnemyFactory::Create(
         symbol,
         position,
         tileSize,
-        levelWidth
+        levelWidth,
+        tileMap
     );
 }
 
@@ -35,7 +37,9 @@ bool LevelObjectFactory::isEnemySymbol(char symbol)
     return symbol == 'G'
         || symbol == 'K'
         || symbol == 'E'
-        || symbol == 'B';
+        || symbol == 'Z'
+        || symbol == 'H'
+        || symbol == 'h';
 }
 
 bool LevelObjectFactory::isItemSymbol(char symbol) {

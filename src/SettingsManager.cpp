@@ -10,6 +10,23 @@ SettingsManager::SettingsManager() {
     loadFromFile(); // Load saved configurations on startup if any
 }
 
+const std::string& SettingsManager::getSelectedCharacter() const {
+    return m_selectedCharacter;
+}
+
+void SettingsManager::setSelectedCharacter(const std::string& name) {
+    m_selectedCharacter = name;
+}
+
+int SettingsManager::getSelectedLevel() const {
+    return m_selectedLevel;
+}
+
+void SettingsManager::setSelectedLevel(int level) {
+    if (level >= 1 && level <= 4)
+        m_selectedLevel = level;
+}
+
 Difficulty SettingsManager::getDifficulty() const {
     return m_difficulty;
 }

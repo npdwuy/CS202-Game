@@ -55,9 +55,6 @@ void Koopa::Update(sf::Time timePerFrame)
 
     const float dt = timePerFrame.asSeconds();
 
-    // =========================================================
-    // SHELL KICK DELAY
-    // =========================================================
     if (m_shellKickDelay > 0.f)
     {
         m_shellKickDelay -= dt;
@@ -68,9 +65,6 @@ void Koopa::Update(sf::Time timePerFrame)
         }
     }
 
-    // =========================================================
-    // FLUNG STATE
-    // =========================================================
     if (m_flung)
     {
         m_velocity.y += 2000.f * dt;
@@ -87,25 +81,11 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    // =========================================================
-    // IDLE SHELL
-    //
-    // Horizontal movement is disabled.
-    // Gravity is handled later by UpdateShellPhysics().
-    // =========================================================
-    if (m_state == State::ShellIdle)
+    if (m_state == State::ShellIdle || m_state == State::Held)
     {
         return;
     }
 
-    // =========================================================
-    // MOVING SHELL
-    //
-    // Horizontal movement + gravity are handled by
-    // UpdateShellPhysics().
-    //
-    // This section only handles shell animation.
-    // =========================================================
     if (m_state == State::ShellMoving)
     {
         m_animationTime += dt;
@@ -117,7 +97,7 @@ void Koopa::Update(sf::Time timePerFrame)
             m_animationTime = 0.f;
 
             m_currentFrame =
-                (m_currentFrame + 1) % 4;
+                (m_currentFrame + 1) % 2;
 
             m_sprite.setTextureRect(
                 sf::IntRect(
@@ -132,9 +112,6 @@ void Koopa::Update(sf::Time timePerFrame)
         return;
     }
 
-    // =========================================================
-    // NORMAL WALKING KOOPA
-    // =========================================================
     m_animationTime += dt;
 
     const float frameDuration = 0.22f;
@@ -173,7 +150,8 @@ void Koopa::UpdateShellPhysics(
         m_flung ||
         (
             m_state != State::ShellIdle &&
-            m_state != State::ShellMoving
+            m_state != State::ShellMoving &&
+            m_state != State::Held
         )
     )
     {
@@ -182,7 +160,7 @@ void Koopa::UpdateShellPhysics(
 
     const float dt = timePerFrame.asSeconds();
 
-    if (dt <= 0.f)
+    if (dt <= 0.f || m_state == State::Held)
     {
         return;
     }
@@ -190,9 +168,6 @@ void Koopa::UpdateShellPhysics(
     constexpr float gravity = 2000.f;
     constexpr float terminalVelocity = 1800.f;
 
-    // =========================================================
-    // HORIZONTAL SHELL MOVEMENT
-    // =========================================================
     if (m_state == State::ShellMoving)
     {
         const float dx =
@@ -200,8 +175,7 @@ void Koopa::UpdateShellPhysics(
             static_cast<float>(m_shellDirection) *
             dt;
 
-        const sf::FloatRect currentBounds =
-            m_sprite.getGlobalBounds();
+        const sf::FloatRect currentBounds = GetBounds();
 
         sf::FloatRect nextHorizontal(
             currentBounds.left + dx,
@@ -229,8 +203,7 @@ void Koopa::UpdateShellPhysics(
 
         if (hitsWorldEdge || hitsWall)
         {
-            Deactivate();
-            return;
+            m_shellDirection *= -1;
         }
         else
         {
@@ -241,11 +214,7 @@ void Koopa::UpdateShellPhysics(
         }
     }
 
-    // =========================================================
-    // CHECK FOR GROUND
-    // =========================================================
-    sf::FloatRect bounds =
-        m_sprite.getGlobalBounds();
+    sf::FloatRect bounds = GetBounds();
 
     const float footY =
         bounds.top +
@@ -283,9 +252,6 @@ void Koopa::UpdateShellPhysics(
             )
         );
 
-    // =========================================================
-    // GRAVITY
-    // =========================================================
     if (
         hasGround &&
         m_shellVerticalVelocity >= 0.f
@@ -305,16 +271,12 @@ void Koopa::UpdateShellPhysics(
             );
     }
 
-    // =========================================================
-    // VERTICAL MOVEMENT
-    // =========================================================
     if (m_shellVerticalVelocity != 0.f)
     {
         const float dy =
             m_shellVerticalVelocity * dt;
 
-        bounds =
-            m_sprite.getGlobalBounds();
+        bounds = GetBounds();
 
         sf::FloatRect nextVertical(
             bounds.left + 4.f,
@@ -331,13 +293,6 @@ void Koopa::UpdateShellPhysics(
             tileMap.intersectsSolid(nextVertical)
         )
         {
-            // -------------------------------------------------
-            // Shell is falling onto a platform.
-            //
-            // Find the maximum safe vertical movement so the
-            // shell lands directly above the tile instead of
-            // entering it.
-            // -------------------------------------------------
             float safeMove = 0.f;
             float collisionMove = dy;
 
@@ -383,13 +338,10 @@ void Koopa::UpdateShellPhysics(
             tileMap.intersectsSolid(nextVertical)
         )
         {
-            // Currently not normally used by the shell,
-            // but prevents upward motion through blocks.
             m_shellVerticalVelocity = 0.f;
         }
         else
         {
-            // No ground / obstacle -> continue falling.
             m_sprite.move(
                 0.f,
                 dy
@@ -397,9 +349,6 @@ void Koopa::UpdateShellPhysics(
         }
     }
 
-    // =========================================================
-    // FALL OUT OF LEVEL
-    // =========================================================
     if (
         m_sprite.getPosition().y >
         tileMap.worldBounds().height + 200.f
@@ -421,7 +370,24 @@ void Koopa::Render(
 
 sf::FloatRect Koopa::GetBounds() const
 {
-    return m_sprite.getGlobalBounds();
+    sf::FloatRect bounds = m_sprite.getGlobalBounds();
+
+    if (m_state == State::Walking)
+    {
+        bounds.left += 8.f;
+        bounds.width -= 16.f;
+        bounds.top += 4.f;
+        bounds.height -= 4.f;
+    }
+    else
+    {
+        bounds.left += 8.f;
+        bounds.width -= 16.f;
+        bounds.top += 20.f;
+        bounds.height -= 20.f;
+    }
+
+    return bounds;
 }
 
 bool Koopa::IsActive() const
@@ -434,9 +400,6 @@ void Koopa::Deactivate()
     m_active = false;
 }
 
-// =============================================================
-// ENTER SHELL
-// =============================================================
 void Koopa::EnterShell()
 {
     if (
@@ -452,8 +415,6 @@ void Koopa::EnterShell()
     m_animationTime = 0.f;
     m_currentFrame = 0;
 
-    // Prevent the same stomp from immediately
-    // kicking the shell.
     m_shellKickDelay = 0.35f;
 
     m_shellVerticalVelocity = 0.f;
@@ -475,9 +436,6 @@ void Koopa::EnterShell()
     );
 }
 
-// =============================================================
-// KICK SHELL
-// =============================================================
 void Koopa::KickShell(int direction)
 {
     if (
@@ -496,6 +454,7 @@ void Koopa::KickShell(int direction)
             : -1;
 
     m_shellVerticalVelocity = 0.f;
+    m_shellKickDelay = 0.2f;
 
     m_animationTime = 0.f;
     m_currentFrame = 0;
@@ -517,6 +476,12 @@ void Koopa::KickShell(int direction)
     );
 }
 
+void Koopa::SetPlayerPosition(sf::Vector2f pos) {
+    if (m_movementStrategy) {
+        m_movementStrategy->setPlayerPosition(pos);
+    }
+}
+
 Koopa::State Koopa::GetState() const
 {
     return m_state;
@@ -524,27 +489,53 @@ Koopa::State Koopa::GetState() const
 
 bool Koopa::IsWalking() const
 {
-    return m_state ==
-        State::Walking;
+    return m_state == State::Walking;
 }
 
 bool Koopa::IsShellIdle() const
 {
-    return m_state ==
-        State::ShellIdle;
+    return m_state == State::ShellIdle;
 }
 
 bool Koopa::IsShellMoving() const
 {
-    return m_state ==
-        State::ShellMoving;
+    return m_state == State::ShellMoving;
+}
+
+bool Koopa::IsHeld() const
+{
+    return m_state == State::Held;
+}
+
+void Koopa::PickUp()
+{
+    if (m_state == State::ShellIdle)
+    {
+        m_state = State::Held;
+    }
+}
+
+void Koopa::Throw(int direction)
+{
+    if (m_state == State::Held)
+    {
+        KickShell(direction);
+    }
+}
+
+void Koopa::SetPosition(sf::Vector2f pos)
+{
+    m_sprite.setPosition(pos);
 }
 
 bool Koopa::CanKickShell() const
 {
-    return
-        m_state == State::ShellIdle &&
-        m_shellKickDelay <= 0.f;
+    return m_state == State::ShellIdle && m_shellKickDelay <= 0.f;
+}
+
+bool Koopa::IsSafeFromPlayer() const
+{
+    return m_state == State::Held || m_shellKickDelay > 0.f;
 }
 
 // =============================================================
@@ -553,21 +544,13 @@ bool Koopa::CanKickShell() const
 void Koopa::Fling()
 {
     m_flung = true;
-
     m_state = State::Walking;
-
     m_shellVerticalVelocity = 0.f;
-
-    m_velocity = {
-        0.f,
-        -500.f
-    };
+    m_velocity = {0.f, -500.f};
 
     m_sprite.setScale(
         m_sprite.getScale().x,
-        -std::abs(
-            m_sprite.getScale().y
-        )
+        -std::abs(m_sprite.getScale().y)
     );
 }
 

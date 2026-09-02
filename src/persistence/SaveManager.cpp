@@ -24,7 +24,9 @@ bool isValid(const SaveData& data) {
     return (
         data.version == 1 &&
         data.currentLevel >= 1 &&
-        data.currentLevel <= 3 &&
+        data.currentLevel <= 5 &&
+        data.highestUnlockedLevel >= 1 &&
+        data.highestUnlockedLevel <= 3 &&
         data.score >= 0 &&
         data.remainingLives >= 0 &&
         isSupportedCharacter(data.selectedCharacter) &&
@@ -71,6 +73,7 @@ bool SaveManager::save(const SaveData& data, const std::string& path) {
 
     output << "version=" << data.version << '\n';
     output << "currentLevel=" << data.currentLevel << '\n';
+    output << "highestUnlockedLevel=" << data.highestUnlockedLevel << '\n';
     output << "score=" << data.score << '\n';
     output << "remainingLives=" << data.remainingLives << '\n';
     output << "selectedCharacter=" << data.selectedCharacter << '\n';

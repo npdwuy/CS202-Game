@@ -103,6 +103,14 @@ void Player:: update(sf::Time timePerFrame){
         return; // Skip input and physics while transforming
     }
 
+    if (isWarpingDown_) {
+        // Move slowly downwards
+        position_.y += velocity_.y * timePerFrame.asSeconds();
+        animationTime_ += timePerFrame.asSeconds();
+        currentState = State::Stand; // Keep stand animation
+        return;
+    }
+
     if (bossKnockbackTimer_ > 0.0f) {
         bossKnockbackTimer_ -= timePerFrame.asSeconds();
         float t = 1.0f - std::max(0.0f, bossKnockbackTimer_ / bossKnockbackDuration_);

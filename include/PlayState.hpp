@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-
 #include "GameState.hpp"
 #include "factories/LevelObjectFactory.hpp"
 #include "levels/TileMap.hpp"
@@ -13,12 +12,15 @@
 #include "ui/GameHud.hpp"
 #include "camera/PlayerCamera.hpp"
 #include "ui/Button.hpp"
-#include "entities/projectiles/Fireball.hpp"
-#include "entities/projectiles/BossFireball.hpp"
-
+#include "ui/ParallaxBackground.hpp"
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
+#include "entities/projectiles/Fireball.hpp"
+#include "entities/projectiles/BossFireball.hpp"
+#include "entities/projectiles/HammerProjectile.hpp"
+#include "entities/enemies/Koopa.hpp"
 
 class PlayState
     : public GameState,
@@ -37,76 +39,55 @@ private:
     void loadLevel(int levelNumber, bool restoreSavedPosition);
     void handleLevelStart();
     void createLevelObjects();
-
     void saveGame();
     void loadGame();
-
     void handleItemCollisions();
     bool handleEnemyCollisions();
     void handleMovingShellEnemyCollisions();
     bool handlePlayerFall();
-
     void handleLevelExit();
-    void setupCastle();
     void finishLevelExit();
-
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
     void updateLevelTimer(sf::Time timePerFrame);
     void resetTransientEffects();
-
     void triggerDeath();
     void loseLife();
-
     void updateHud();
     void updateCamera(sf::Time timePerFrame);
-
-    void showStatus(
-        const std::string& message,
-        float duration = 2.f
-    );
-
+    void showStatus(const std::string& message, float duration = 2.f);
     sf::FloatRect playerBounds() const;
     bool hasActiveBoss() const;
-
     static std::string levelPath(int levelNumber);
 
-private:
     TileMap m_tileMap;
     LevelObjectFactory m_objectFactory;
+    sf::View m_uiView;
+
+    ParallaxBackground m_parallaxBg;
 
     std::vector<std::unique_ptr<Enemy>> m_enemies;
     std::vector<std::unique_ptr<Item>> m_items;
     std::vector<std::unique_ptr<Fireball>> m_fireballs;
     std::vector<std::unique_ptr<BossFireball>> m_bossFireballs;
-
+    std::vector<std::unique_ptr<HammerProjectile>> m_hammerProjectiles;
     std::unique_ptr<Player> m_player;
+    Koopa* m_heldShell = nullptr;
 
     SaveData m_saveData;
     GameHud m_hud;
     PlayerCamera m_camera;
-
     float m_invincibilityTimeRemaining = 0.f;
     float m_speedBoostTimeRemaining = 0.f;
     float m_damageCooldown = 0.f;
     float m_fireballCooldown = 0.f;
-
     bool m_playerDamagePending = false;
-
     float m_timeRemaining = 400.f;
 
-    enum class ExitSequence
-    {
-        None,
-        Sliding,
-        WalkingToCastle,
-        EnteringCastle,
-        IrisWipe
-    };
-
+    enum class ExitSequence { None, Sliding, WalkingRight, IrisWipe };
     ExitSequence m_exitSequence = ExitSequence::None;
     float m_exitTimer = 0.f;
-
+    
     bool m_levelStarting = true;
     float m_startTimer = 0.f;
 
@@ -114,57 +95,61 @@ private:
     bool m_showFlagScore = false;
     float m_flagScoreTimer = 0.f;
 
-    sf::Texture m_castleTexture;
-    sf::Sprite m_castleSprite;
-    bool m_playerInsideCastle = false;
-    float m_castleDoorX = 0.f;
-
     std::unique_ptr<Button> m_menuButton;
-    sf::Texture m_buttonTexture;
 
-    struct BackgroundLayer
-    {
-        std::shared_ptr<sf::Texture> texture;
-        sf::Sprite sprite;
+struct BackgroundLayer
+{
+    std::shared_ptr<sf::Texture> texture;
+    sf::Sprite sprite;
 
-        float parallaxFactor = 0.f;
-        float driftAmplitude = 0.f;
-        float driftSpeed = 0.f;
-    };
+    float parallaxFactor = 0.f;
+    float driftAmplitude = 0.f;
+    float driftSpeed = 0.f;
+};
 
-    struct CloudEntity
-    {
-        sf::IntRect textureRect;
-        sf::Vector2f worldPosition;
+struct CloudEntity
+{
+    sf::IntRect textureRect;
+    sf::Vector2f worldPosition;
+    float scale;
+    float driftSpeed;
+    float parallaxFactor;
+};
 
-        float scale;
-        float driftSpeed;
-        float parallaxFactor;
-    };
+std::vector<BackgroundLayer> m_backgroundLayers;
+std::shared_ptr<sf::Texture> m_cloudTexture;
+std::vector<CloudEntity> m_clouds;
 
-    std::vector<BackgroundLayer> m_backgroundLayers;
+float m_backgroundAnimationTime = 0.f;
 
-    std::shared_ptr<sf::Texture> m_cloudTexture;
-    std::vector<CloudEntity> m_clouds;
+void loadBackgroundLayers();
 
-    float m_backgroundAnimationTime = 0.f;
+void addBackgroundLayer(
+    const std::string& path,
+    float parallaxFactor,
+    float driftAmplitude,
+    float driftSpeed,
+    bool required
+);
 
-    void loadBackgroundLayers();
+void updateBackgroundLayers(
+    sf::Time timePerFrame,
+    const sf::View& view
+);
 
-    void addBackgroundLayer(
-        const std::string& path,
-        float parallaxFactor,
-        float driftAmplitude,
-        float driftSpeed,
-        bool required
-    );
+void renderBackgroundLayers(
+    sf::RenderWindow& window
+);
 
-    void updateBackgroundLayers(
-        sf::Time timePerFrame,
-        const sf::View& view
-    );
-
-    void renderBackgroundLayers(
-        sf::RenderWindow& window
-    );
+    bool m_isWarping = false;
+    bool m_wasWarping = false;
+    bool m_wasZPressed = false;
+    float m_warpTimer = 0.f;
+    float m_warpCooldown = 0.f;
+    int m_warpDestinationLevel = 5;
+    int m_returnLevel = 1;
+    sf::Vector2f m_returnPlayerPos{0.f, 0.f};
+    bool m_hasReturnPos = false;
+    sf::RectangleShape m_warpFadeOverlay;
+    std::map<std::string, std::string> m_pipeSubLevelCache;
 };

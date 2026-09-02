@@ -80,9 +80,10 @@ void ProceduralTileRenderer::appendHill(
     sf::Color color
 ) const {
     sf::Color peakColor = brighten(color, 18U);
-    vertices.append({{centerX - width * 0.5f, baseY}, color});
-    vertices.append({{centerX, baseY - height}, peakColor});
-    vertices.append({{centerX + width * 0.5f, baseY}, color});
+    vertices.append({{centerX, baseY - height}, peakColor}); // TL
+    vertices.append({{centerX, baseY - height}, peakColor}); // TR
+    vertices.append({{centerX + width * 0.5f, baseY}, color}); // BR
+    vertices.append({{centerX - width * 0.5f, baseY}, color}); // BL
 }
 
 sf::Color ProceduralTileRenderer::brighten(sf::Color color, unsigned int amount) const {
@@ -106,45 +107,12 @@ void ProceduralTileRenderer::buildGeometry(
     backgroundVertices.clear();
 
     const TilePalette palette = paletteFor(data.difficulty);
-    const sf::Vector2f worldSize = data.worldSize();
-    appendGradientQuad(
-        backgroundVertices,
-        {
-            -540.f,
-            0.f,
-            worldSize.x + 1080.f,
-            std::max(1080.f, worldSize.y)
-        },
-        palette.skyTop,
-        palette.skyBottom
-    );
-
-    for (int index = 0; index < 5; ++index) {
-        appendHill(
-            sceneryVertices,
-            120.f + static_cast<float>(index) * 470.f,
-            890.f,
-            520.f,
-            175.f + static_cast<float>(index % 2) * 35.f,
-            palette.farHill
-        );
-    }
-    for (int index = 0; index < 4; ++index) {
-        appendHill(
-            sceneryVertices,
-            300.f + static_cast<float>(index) * 610.f,
-            930.f,
-            690.f,
-            225.f + static_cast<float>((index + 1) % 2) * 45.f,
-            palette.nearHill
-        );
-    }
-
     const float tileSize = static_cast<float>(data.tileSize);
 
     for (std::size_t row = 0; row < data.rows.size(); ++row) {
         for (std::size_t column = 0; column < data.rows[row].size(); ++column) {
-            if (data.rows[row][column] != '#') {
+            char c = data.rows[row][column];
+            if (c != '#' && c != 'W' && c != '|') {
                 continue;
             }
 
@@ -158,6 +126,9 @@ void ProceduralTileRenderer::buildGeometry(
             };
 
             sf::Color fillColor = row % 2U == 0U ? palette.lightFill : palette.darkFill;
+            if (c == 'W' || c == '|') {
+                fillColor = sf::Color(0, 160, 0); // Pipe Green
+            }
             appendQuad(
                 tileVertices,
                 {position.x, position.y, tileSize, tileSize},
@@ -229,6 +200,12 @@ void ProceduralTileRenderer::render(
     const sf::VertexArray& backgroundVertices
 ) const
 {
+    if (m_drawSky) {
+        target.draw(backgroundVertices);
+    }
+    if (m_drawHills) {
+        target.draw(sceneryVertices);
+    }
     target.draw(tileVertices);
 }
 
@@ -252,9 +229,14 @@ void ProceduralTileRenderer::buildSingleTile(
         static_cast<float>(row) * tileSize + offset.y
     };
 
-    const sf::Color fillColor = row % 2 == 0
+    sf::Color fillColor = row % 2 == 0
         ? palette.lightFill
         : palette.darkFill;
+        
+    char c = data.rows[row][col];
+    if (c == 'W' || c == '|' || c == '[' || c == ']') {
+        fillColor = sf::Color(0, 160, 0); // Pipe Green
+    }
         
     appendQuad(
         vertices,

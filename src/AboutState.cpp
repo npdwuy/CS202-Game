@@ -5,9 +5,7 @@
 #include <stdexcept>
 
 AboutState::AboutState() {
-    if (!m_buttonTexture.loadFromFile("assets/sprites/button/btn_transparent.png")) {
-        throw std::runtime_error("Failed to load assets/sprites/button/btn_transparent.png");
-    }
+
 
     if (!m_font.loadFromFile("assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf")) {
         throw std::runtime_error("Failed to load assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf");
@@ -22,7 +20,7 @@ void AboutState::initUI() {
     m_dimOverlay.setFillColor(sf::Color(0, 0, 0, 150));
 
     // Centered panel background
-    m_panelBackground = std::make_unique<Panel>(m_buttonTexture, sf::Vector2f(960.f, 540.f), sf::Vector2f(700.f, 550.f), 10.f);
+    m_panelBackground = std::make_unique<Panel>(sf::Vector2f(960.f, 540.f), sf::Vector2f(700.f, 550.f), 15.f);
     m_panelBackground->setColor(sf::Color(30, 30, 30, 240));
 
     // Title text
@@ -61,7 +59,7 @@ void AboutState::initUI() {
 
     // Back Button
     m_backButton = std::make_unique<Button>(
-        "BACK", m_font, m_buttonTexture, sf::Vector2f(960.f, 720.f), sf::Vector2f(260.f, 60.f), 24
+        "BACK", m_font, sf::Vector2f(960.f, 720.f), sf::Vector2f(260.f, 60.f), 24
     );
     m_backButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(245, 222, 179));
     m_backButton->setCommand(std::make_unique<PopStateCommand>());

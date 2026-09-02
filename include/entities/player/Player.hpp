@@ -4,7 +4,7 @@
 
 class Player : public Character {
 public:
-    static constexpr float CollisionWidth = 38.f;
+    static constexpr float CollisionWidth = 32.f;
     static constexpr float CollisionHeight = 45.f;
 protected:
     bool inputEnabled_ = true;
@@ -63,6 +63,7 @@ protected:
     static constexpr float BigJumpBonus = 207.5f;
 
     float throwTimer_ = 0.0f;
+    bool isCarrying_ = false;
 
     // Boss knockback timer
     float bossKnockbackTimer_ = 0.0f;
@@ -72,6 +73,9 @@ protected:
     void performJump();
 
 public:
+    void setCarrying(bool carrying) { isCarrying_ = carrying; }
+    bool isCarrying() const { return isCarrying_; }
+
     void triggerThrow() {
         throwTimer_ = 0.15f;
     }
@@ -119,6 +123,16 @@ public:
 
     void recalcJumpPower() {
         jumpPower_ = baseJumpPower_ + (powerUp_ != PowerUpState::Small ? BigJumpBonus : 0.f);
+    }
+
+    void setPowerUpState(PowerUpState state) {
+        powerUp_ = state;
+        recalcJumpPower();
+        isGrowing_ = false;
+        isShrinking_ = false;
+        isColorChanging_ = false;
+        isDamageTransforming_ = false;
+        isPendingTransformation_ = false;
     }
 
     void up2Fire() {
@@ -216,4 +230,11 @@ public:
     void setSpeedMultiplier(float multiplier);
     float speedMultiplier() const;
 
+    bool isWarpingDown_ = false;
+    void startWarpDown() {
+        isWarpingDown_ = true;
+        velocity_ = {0.f, 40.f}; // Move down slowly
+        inputEnabled_ = false;
+    }
+    bool isWarpingDown() const { return isWarpingDown_; }
 };

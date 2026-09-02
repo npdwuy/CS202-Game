@@ -6,6 +6,8 @@
 #include <memory>
 #include "commands/ICommand.hpp"
 #include "ui/NineSlice.hpp"
+#include "ui/RoundedRectangleShape.hpp"
+
 class Button {
 public:
     Button(const std::string &textStr,
@@ -35,6 +37,7 @@ public:
     void setPosition(sf::Vector2f position);
     void setText(const std::string &textStr);
     void setCornerSize(float cornerSize);
+    void setShapeCornerRadius(float radius);  // sets corner radius on RoundedRectangleShape directly
 
     bool isHovered() const { return m_isHovered; }
 
@@ -44,7 +47,7 @@ private: // Private methods
     void centerText();
 
 private: // Private Attributes
-    sf::RectangleShape m_shape;
+    RoundedRectangleShape m_shape;
     sf::Text m_text;
 
     std::unique_ptr<NineSlice> m_nineSlice;

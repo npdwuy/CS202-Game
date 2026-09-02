@@ -3,19 +3,19 @@
 #include "resources/ResourceManager.hpp"
 
 OneUpMushroom::OneUpMushroom(sf::Vector2f position)
-    : FloatingItem(position, 7.f, 2.2f) {
+    : FloatingItem(position, 0.f, 0.f) {
+    constexpr float TARGET_SPRITE_SIZE = 40.f;
+
     const sf::Texture& texture = ResourceManager::getInstance().getTexture(
-        "assets/sprites/items/mushroom.png"
+        "assets/sprites/items/green_mushroom-removebg-preview.png"
     );
     m_sprite.setTexture(texture);
-    m_sprite.setColor(sf::Color(90, 255, 120));
 
-    const sf::Vector2u size = texture.getSize();
-    if (size.x > 0U && size.y > 0U) {
-        m_sprite.setScale(
-            40.f / static_cast<float>(size.x),
-            40.f / static_cast<float>(size.y)
-        );
+    const sf::Vector2u textureSize = texture.getSize();
+    if (textureSize.x > 0U && textureSize.y > 0U) {
+        const float scaleX = TARGET_SPRITE_SIZE / static_cast<float>(textureSize.x);
+        const float scaleY = TARGET_SPRITE_SIZE / static_cast<float>(textureSize.y);
+        m_sprite.setScale(scaleX, scaleY);
     }
     m_sprite.setPosition(position);
 }

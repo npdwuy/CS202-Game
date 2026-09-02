@@ -28,25 +28,17 @@ void PatrolStrategy::Update(
 
     sprite.move(distance, 0.f);
 
-    float currentX = sprite.getPosition().x;
-    float spriteWidth = sprite.getGlobalBounds().width;
+    const float currentLeft = sprite.getGlobalBounds().left;
+    const float spriteWidth = sprite.getGlobalBounds().width;
 
-    if (currentX <= m_leftBoundary)
+    if (currentLeft <= m_leftBoundary)
     {
-        sprite.setPosition(
-            m_leftBoundary,
-            sprite.getPosition().y
-        );
-
+        sprite.move(m_leftBoundary - currentLeft, 0.f);
         m_direction = 1;
     }
-    else if (currentX + spriteWidth >= m_rightBoundary)
+    else if (currentLeft + spriteWidth >= m_rightBoundary)
     {
-        sprite.setPosition(
-            m_rightBoundary - spriteWidth,
-            sprite.getPosition().y
-        );
-
+        sprite.move(m_rightBoundary - (currentLeft + spriteWidth), 0.f);
         m_direction = -1;
     }
 }
