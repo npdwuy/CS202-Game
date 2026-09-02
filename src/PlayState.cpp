@@ -459,8 +459,8 @@ void PlayState::Update(sf::Time timePerFrame) {
         m_wasZPressed = zPressed;
 
         if (m_heldShell) {
-            // Throw shell when releasing Z
-            if (zJustReleased) {
+            // Throw shell when Z key is not held
+            if (!zPressed) {
                 m_heldShell->Throw(m_player->facing());
                 m_heldShell = nullptr;
                 m_player->triggerThrow();
@@ -490,10 +490,18 @@ void PlayState::Update(sf::Time timePerFrame) {
     if (m_heldShell && m_player) {
         m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
+
+        float handAnimOffset = 0.f;
+        if (m_player->getPlayerState() == Player::State::Walk || m_player->getPlayerState() == Player::State::AutoWalk) {
+            static const float walkFrameOffsets[] = { 0.f, 6.f, 3.f, 1.f, 0.f, 7.f, 4.f, 1.f };
+            int frameIdx = m_player->getCurrentFrame() % 8;
+            handAnimOffset = walkFrameOffsets[frameIdx];
+        }
+
         if (m_player->facing() == 1) {
-            pos.x += 16.f;
+            pos.x += 16.f + handAnimOffset;
         } else {
-            pos.x -= 32.f;
+            pos.x -= 32.f + handAnimOffset;
         }
         pos.y += m_player->height() - 36.f; 
 
@@ -721,6 +729,7 @@ void PlayState::Render(sf::RenderWindow& window) {
     m_tileMap.render(window);
 
     for (const auto& enemy : m_enemies) {
+        if (enemy.get() == m_heldShell) continue;
         if (visibleWorld.intersects(enemy->GetBounds())) {
             enemy->Render(window);
         }
@@ -752,6 +761,9 @@ void PlayState::Render(sf::RenderWindow& window) {
 
     if (m_player) {
         m_player->Render(window);
+        if (m_heldShell && m_heldShell->IsActive()) {
+            m_heldShell->Render(window);
+        }
     }
     m_tileMap.renderForegroundPipes(window);
 

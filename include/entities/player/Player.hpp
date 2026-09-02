@@ -99,6 +99,9 @@ protected:
     State currentState = State::Stand;
 
 public:
+    State getPlayerState() const { return currentState; }
+    int getCurrentFrame() const { return currentFrame_; }
+
     void setInputEnabled(bool enabled) { inputEnabled_ = enabled; }
     void forceState(State state) { 
         if (currentState != state) {
