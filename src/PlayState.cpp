@@ -417,13 +417,22 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_fireballCooldown -= timePerFrame.asSeconds();
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
-            if (m_heldShell && m_fireballCooldown <= 0.f) {
+        bool zPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
+        bool zJustPressed = zPressed && !m_wasZPressed;
+        bool zJustReleased = !zPressed && m_wasZPressed;
+        m_wasZPressed = zPressed;
+
+        if (m_heldShell) {
+            // Throw shell when releasing Z
+            if (zJustReleased) {
                 m_heldShell->Throw(m_player->facing());
                 m_heldShell = nullptr;
                 m_player->triggerThrow();
                 m_fireballCooldown = 0.35f; 
-            } else if (!m_heldShell && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
+            }
+        } else {
+            // Throw fireball when pressing Z
+            if (zJustPressed && m_player->isFireMario() && m_fireballCooldown <= 0.f) {
                 if (m_fireballs.size() < 20) { 
                     auto fb = std::make_unique<Fireball>(
                         m_player->position() + sf::Vector2f(m_player->width() / 2.f, m_player->height() / 2.f - 10.f),
@@ -1312,8 +1321,15 @@ bool PlayState::handleEnemyCollisions()
 
             if (!m_heldShell)
             {
-                m_heldShell = koopa;
-                koopa->PickUp();
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
+                    m_heldShell = koopa;
+                    koopa->PickUp();
+                } else {
+                    const float playerCenter = playerBounds().left + playerBounds().width * 0.5f;
+                    const float koopaCenter = koopa->GetBounds().left + koopa->GetBounds().width * 0.5f;
+                    const int direction = (playerCenter < koopaCenter) ? 1 : -1;
+                    koopa->KickShell(direction);
+                }
             }
 
             continue;
