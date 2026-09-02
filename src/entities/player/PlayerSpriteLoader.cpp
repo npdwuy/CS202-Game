@@ -1,5 +1,6 @@
 #include "entities/player/PlayerSpriteLoader.hpp"
-#include <stdexcept>
+#include <iostream>
+#include <vector>
 
 namespace {
 bool isCanvasBackgroundColor(const sf::Color& color) {
@@ -9,14 +10,25 @@ bool isCanvasBackgroundColor(const sf::Color& color) {
     return isDarkBg1 || isDarkBg2;
 }
 
-sf::Image loadOverlayImage(const std::string& primaryPath, const std::string& fallbackPath) {
+sf::Image loadOverlayImage(const std::string& filename, const std::string& fallbackFilename) {
     sf::Image image;
-    if (!image.loadFromFile(primaryPath)) {
-        if (!image.loadFromFile(fallbackPath)) {
-            throw std::runtime_error("Failed to load overlay image: " + primaryPath + " or " + fallbackPath);
+    const std::vector<std::string> candidatePaths = {
+        "assets/sprites/player/" + filename,
+        filename,
+        "../" + filename,
+        "assets/sprites/player/" + fallbackFilename,
+        fallbackFilename,
+        "../" + fallbackFilename
+    };
+
+    for (const auto& path : candidatePaths) {
+        if (image.loadFromFile(path)) {
+            return image;
         }
     }
-    return image;
+
+    std::cerr << "[PlayerSpriteLoader Warning] Could not locate overlay asset: " << filename << std::endl;
+    return sf::Image{};
 }
 } // namespace
 
@@ -67,36 +79,44 @@ sf::Image PlayerSpriteLoader::createFireRecolor(const sf::Image& source, Charact
 
 sf::Image PlayerSpriteLoader::loadCompositedSpriteSheet(CharacterType characterType) {
     sf::Image mainSheet;
-    std::string mainPath = (characterType == CharacterType::Mario) 
-        ? "assets/sprites/player/mario.png" 
-        : "assets/sprites/player/luigi.png";
+    const std::vector<std::string> mainSheetPaths = (characterType == CharacterType::Mario)
+        ? std::vector<std::string>{"assets/sprites/player/mario.png", "mario.png"}
+        : std::vector<std::string>{"assets/sprites/player/luigi.png", "luigi.png", "assets/sprites/player/mario.png"};
 
-    if (!mainSheet.loadFromFile(mainPath)) {
-        if (!mainSheet.loadFromFile("assets/sprites/player/mario.png")) {
-            throw std::runtime_error("Failed to load base player sprite sheet.");
+    bool loaded = false;
+    for (const auto& path : mainSheetPaths) {
+        if (mainSheet.loadFromFile(path)) {
+            loaded = true;
+            break;
         }
     }
-    mainSheet.createMaskFromColor(sf::Color::White);
+    if (!loaded) {
+        std::cerr << "[PlayerSpriteLoader Error] Base player sprite sheet could not be loaded." << std::endl;
+        // Create fallback colored image to avoid crash
+        mainSheet.create(1471, 720, sf::Color::Transparent);
+    } else {
+        mainSheet.createMaskFromColor(sf::Color::White);
+    }
 
-    std::string standPath = (characterType == CharacterType::Mario) ? "HoldStand.png" : "HoldStand_Luigi.png";
-    std::string walkPath  = (characterType == CharacterType::Mario) ? "HoldWalk.png"  : "HoldWalk_Luigi.png";
+    std::string standFilename = (characterType == CharacterType::Mario) ? "HoldStand.png" : "HoldStand_Luigi.png";
+    std::string walkFilename  = (characterType == CharacterType::Mario) ? "HoldWalk.png"  : "HoldWalk_Luigi.png";
 
-    sf::Image holdStand = loadOverlayImage(standPath, "HoldStand.png");
-    sf::Image holdWalk  = loadOverlayImage(walkPath, "HoldWalk.png");
+    sf::Image holdStand = loadOverlayImage(standFilename, "HoldStand.png");
+    sf::Image holdWalk  = loadOverlayImage(walkFilename, "HoldWalk.png");
 
-    processCanvasTransparency(holdStand);
-    processCanvasTransparency(holdWalk);
+    if (holdStand.getSize().x > 0 && holdStand.getSize().y > 0) {
+        processCanvasTransparency(holdStand);
+        sf::Image fireHoldStand = createFireRecolor(holdStand, characterType);
+        mainSheet.copy(holdStand, 0, 295, sf::IntRect(0, 0, 0, 0), true);
+        mainSheet.copy(fireHoldStand, 736, 295, sf::IntRect(0, 0, 0, 0), true);
+    }
 
-    sf::Image fireHoldStand = createFireRecolor(holdStand, characterType);
-    sf::Image fireHoldWalk  = createFireRecolor(holdWalk, characterType);
-
-    // Composite normal hold animations onto main sheet (destY: 295 and 365, destX: 0)
-    mainSheet.copy(holdStand, 0, 295, sf::IntRect(0, 0, 0, 0), true);
-    mainSheet.copy(holdWalk, 0, 365, sf::IntRect(0, 0, 0, 0), true);
-
-    // Composite fire palette hold animations at offset X=736
-    mainSheet.copy(fireHoldStand, 736, 295, sf::IntRect(0, 0, 0, 0), true);
-    mainSheet.copy(fireHoldWalk, 736, 365, sf::IntRect(0, 0, 0, 0), true);
+    if (holdWalk.getSize().x > 0 && holdWalk.getSize().y > 0) {
+        processCanvasTransparency(holdWalk);
+        sf::Image fireHoldWalk = createFireRecolor(holdWalk, characterType);
+        mainSheet.copy(holdWalk, 0, 365, sf::IntRect(0, 0, 0, 0), true);
+        mainSheet.copy(fireHoldWalk, 736, 365, sf::IntRect(0, 0, 0, 0), true);
+    }
 
     return mainSheet;
 }
