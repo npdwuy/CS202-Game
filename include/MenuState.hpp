@@ -27,8 +27,9 @@ private:
     float    m_scrollX = 0.f;
     static constexpr float ScrollSpeed = 50.f;  // px/s
 
-    // 4 menu buttons (PLAY, LOAD, OPTIONS, EXIT)
+    // 5 menu buttons (PLAY, NEW GAME, LOAD, OPTIONS, EXIT)
     std::unique_ptr<Button> m_playButton;
+    std::unique_ptr<Button> m_newGameButton;
     std::unique_ptr<Button> m_loadButton;
     std::unique_ptr<Button> m_optionsButton;
     std::unique_ptr<Button> m_exitButton;

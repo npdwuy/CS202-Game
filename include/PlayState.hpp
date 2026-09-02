@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 #include "entities/projectiles/Fireball.hpp"
 #include "entities/projectiles/BossFireball.hpp"
 #include "entities/projectiles/HammerProjectile.hpp"
@@ -143,9 +144,11 @@ void renderBackgroundLayers(
     bool m_isWarping = false;
     bool m_wasWarping = false;
     float m_warpTimer = 0.f;
-    int m_warpDestinationLevel = 4;
+    float m_warpCooldown = 0.f;
+    int m_warpDestinationLevel = 5;
     int m_returnLevel = 1;
     sf::Vector2f m_returnPlayerPos{0.f, 0.f};
     bool m_hasReturnPos = false;
     sf::RectangleShape m_warpFadeOverlay;
+    std::map<std::string, std::string> m_pipeSubLevelCache;
 };

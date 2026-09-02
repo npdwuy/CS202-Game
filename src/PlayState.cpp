@@ -20,6 +20,7 @@
 #include "levels/MapGenerator.hpp"
 
 #include <filesystem>
+#include <fstream>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -345,6 +346,10 @@ void PlayState::Update(sf::Time timePerFrame) {
     );
     m_hud.update(timePerFrame);
     
+    if (m_warpCooldown > 0.f) {
+        m_warpCooldown -= timePerFrame.asSeconds();
+    }
+
     if (m_isWarping) {
         m_warpTimer += timePerFrame.asSeconds();
         float alpha = std::min(255.f, m_warpTimer * 255.f);
@@ -355,6 +360,7 @@ void PlayState::Update(sf::Time timePerFrame) {
             m_isWarping = false;
             m_wasWarping = true;
             m_warpTimer = 0.f;
+            m_warpCooldown = 1.0f; // 1s cooldown after warping
             if (m_player) {
                 m_player->isWarpingDown_ = false;
                 if (m_player->isFireMario()) {
@@ -372,7 +378,7 @@ void PlayState::Update(sf::Time timePerFrame) {
         return;
     }
 
-    if (m_player && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+    if (m_player && m_warpCooldown <= 0.f && sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
         if (m_player->onGround()) {
             const auto& data = m_tileMap.data();
             sf::FloatRect bounds(m_player->position().x, m_player->position().y, m_player->width(), m_player->height());
@@ -388,15 +394,37 @@ void PlayState::Update(sf::Time timePerFrame) {
                     m_isWarping = true;
                     m_warpTimer = 0.f;
                     
-                    if (m_saveData.currentLevel != 4) {
+                    if (m_saveData.currentLevel != 5) {
                         // Enter random sub-level
                         m_returnLevel = m_saveData.currentLevel;
                         m_returnPlayerPos = m_player->position();
                         m_hasReturnPos = true;
-                        m_warpDestinationLevel = 4;
-                        // Dynamically generate a fresh random compact sub-level
-                        MapGenerator::generateSubLevel("levels/level4.txt");
-                        MapGenerator::generateSubLevel("build/levels/level4.txt");
+                        m_warpDestinationLevel = 5;
+
+                        std::string pipeKey = "L" + std::to_string(m_saveData.currentLevel) + "_" + std::to_string(row) + "_" + std::to_string(col);
+                        if (m_pipeSubLevelCache.find(pipeKey) == m_pipeSubLevelCache.end()) {
+                            // Dynamically generate a fresh random compact sub-level matching the active level difficulty/theme
+                            std::string currentDiff = m_tileMap.data().difficulty;
+                            if (currentDiff.empty()) {
+                                currentDiff = (m_saveData.currentLevel == 2) ? "Medium" : ((m_saveData.currentLevel == 3) ? "Hard" : "Easy");
+                            }
+                            MapGenerator::generateSubLevel(currentDiff, "levels/level5.txt");
+                            std::ifstream f("levels/level5.txt");
+                            if (f.is_open()) {
+                                std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                                m_pipeSubLevelCache[pipeKey] = content;
+                            }
+                        } else {
+                            // Restore cached sub-level map from RAM for this specific pipe
+                            const std::string& content = m_pipeSubLevelCache[pipeKey];
+                            std::vector<std::string> paths = { "levels/level5.txt", "build/levels/level5.txt", "../levels/level5.txt" };
+                            for (const auto& p : paths) {
+                                std::ofstream out(p);
+                                if (out.is_open()) {
+                                    out << content;
+                                }
+                            }
+                        }
                     } else {
                         // Exit sub-level back to main level
                         m_warpDestinationLevel = m_returnLevel;
@@ -762,8 +790,8 @@ void PlayState::handleLevelStart() {
 }
 
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
-    if (levelNumber < 1 || levelNumber > 4) {
-        throw std::out_of_range("Level number must be between 1 and 4.");
+    if (levelNumber < 1 || levelNumber > 5) {
+        throw std::out_of_range("Level number must be between 1 and 5.");
     }
 
     handleLevelStart();
@@ -784,7 +812,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     
     if (m_wasWarping) {
         m_wasWarping = false;
-        if (m_saveData.currentLevel != 4 && m_hasReturnPos) {
+        if (m_saveData.currentLevel != 5 && m_hasReturnPos) {
             // Returning to main level: spawn at saved pipe position
             spawnPosition = m_returnPlayerPos;
             m_hasReturnPos = false;
@@ -1790,7 +1818,8 @@ void PlayState::loadBackgroundLayers()
     const bool isLevel2 = (m_saveData.currentLevel == 2 || difficulty == "Medium");
 
     if (isCastle) {
-        // Level 3 (Lâu đài): sử dụng bg2.png
+        // Level 3 (Lâu đài): sử dụng bg2.png làm parallax background tràn viền
+        m_parallaxBg.load("assets/sprites/bg2.png");
         addBackgroundLayer(
             "assets/sprites/bg2.png",
             0.20f,
@@ -1799,7 +1828,8 @@ void PlayState::loadBackgroundLayers()
             true
         );
     } else if (isLevel2) {
-        // Level 2 (Athletic): sử dụng bg3.png
+        // Level 2 (Athletic): sử dụng bg3.png làm parallax background tràn viền
+        m_parallaxBg.load("assets/sprites/bg3.png");
         addBackgroundLayer(
             "assets/sprites/bg3.png",
             0.20f,
@@ -1808,7 +1838,8 @@ void PlayState::loadBackgroundLayers()
             true
         );
     } else {
-        // Level 1 / Màn ngoài trời mặc định: sử dụng long_background.png
+        // Level 1 / Màn ngoài trời mặc định: sử dụng level_bg.png làm parallax tràn viền
+        m_parallaxBg.load("assets/backgrounds/level_bg.png");
         addBackgroundLayer(
             "assets/sprites/long_background.png",
             0.20f,

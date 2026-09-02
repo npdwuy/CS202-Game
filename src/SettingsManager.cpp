@@ -23,7 +23,7 @@ int SettingsManager::getSelectedLevel() const {
 }
 
 void SettingsManager::setSelectedLevel(int level) {
-    if (level >= 1 && level <= 3)
+    if (level >= 1 && level <= 4)
         m_selectedLevel = level;
 }
 

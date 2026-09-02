@@ -5,6 +5,7 @@
 #include "PlayState.hpp"
 #include "commands/MenuCommands.hpp"
 #include "resources/ResourceManager.hpp"
+#include "persistence/SaveManager.hpp"
 
 #include <stdexcept>
 
@@ -28,9 +29,9 @@ MenuState::MenuState() {
     m_bgCamera.setCenter(gameView.getSize().x / 2.f, camCenterY);
 
     // ── Button layout: pill-shaped (cornerRadius = height/2) ────────────────
-    // 4 buttons stacked vertically, centred at x=960 (half of 1920)
-    const sf::Vector2f btnSize(340.f, 72.f);
-    const float cornerR = btnSize.y / 2.f;   // = 36 → fully rounded ends
+    // 5 buttons stacked vertically, centred at x=960 (half of 1920)
+    const sf::Vector2f btnSize(340.f, 66.f);
+    const float cornerR = btnSize.y / 2.f;   // fully rounded ends
     const float cx      = gameView.getSize().x / 2.f;
 
     const sf::Color normalOrange (255, 155, 40,  215);
@@ -42,20 +43,41 @@ MenuState::MenuState() {
     auto makeBtn = [&](const std::string& label, float cy,
                        sf::Color norm, sf::Color hov) {
         auto btn = std::make_unique<Button>(label, m_font,
-                                            sf::Vector2f(cx, cy), btnSize, 30);
+                                            sf::Vector2f(cx, cy), btnSize, 26);
         btn->setColors(norm, hov, white);
         btn->setShapeCornerRadius(cornerR);
         return btn;
     };
 
-    // Vertical spacing: buttons centred in the lower 55 % of a 1080 px screen
-    m_playButton    = makeBtn("PLAY",    600.f, normalOrange, hoverYellow);
-    m_loadButton    = makeBtn("LOAD",    700.f, normalOrange, hoverYellow);
-    m_optionsButton = makeBtn("OPTIONS", 800.f, normalOrange, hoverYellow);
-    m_exitButton    = makeBtn("EXIT",    900.f, normalRed,    hoverRed   );
+    // Vertical spacing: 5 buttons centred in lower portion of screen
+    m_playButton    = makeBtn("PLAY",     520.f, normalOrange, hoverYellow);
+    m_newGameButton = makeBtn("NEW GAME", 610.f, normalOrange, hoverYellow);
+    m_loadButton    = makeBtn("LOAD",     700.f, normalOrange, hoverYellow);
+    m_optionsButton = makeBtn("OPTIONS",  790.f, normalOrange, hoverYellow);
+    m_exitButton    = makeBtn("EXIT",     880.f, normalRed,    hoverRed   );
 
     // ── Commands ─────────────────────────────────────────────────────────────
     m_playButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().changeState(
+            std::make_unique<CharacterSelectState>()
+        );
+    }));
+
+    m_newGameButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        SaveData defaultData;
+        defaultData.version = 1;
+        defaultData.currentLevel = 1;
+        defaultData.highestUnlockedLevel = 1;
+        defaultData.score = 0;
+        defaultData.remainingLives = 3;
+        defaultData.coins = 0;
+        defaultData.remainingTime = 400.f;
+        defaultData.powerUpState = "None";
+        defaultData.selectedCharacter = "Mario";
+        defaultData.playerX = 100.f;
+        defaultData.playerY = 700.f;
+        SaveManager::save(defaultData);
+
         GameManager::getInstance().changeState(
             std::make_unique<CharacterSelectState>()
         );
@@ -83,6 +105,7 @@ void MenuState::Input(const sf::Event& event) {
             GameManager::getInstance().getGameView()
         );
         m_playButton   ->update(mp);
+        m_newGameButton->update(mp);
         m_loadButton   ->update(mp);
         m_optionsButton->update(mp);
         m_exitButton   ->update(mp);
@@ -94,6 +117,7 @@ void MenuState::Input(const sf::Event& event) {
             GameManager::getInstance().getGameView()
         );
         if (m_playButton   ->handleClick(event, mp)) return;
+        if (m_newGameButton->handleClick(event, mp)) return;
         if (m_loadButton   ->handleClick(event, mp)) return;
         if (m_optionsButton->handleClick(event, mp)) return;
         if (m_exitButton   ->handleClick(event, mp)) return;
@@ -146,8 +170,9 @@ void MenuState::Render(sf::RenderWindow& window) {
     overlay.setFillColor(sf::Color(0, 0, 0, 130));
     window.draw(overlay);
 
-    // 4. Draw the 4 buttons
+    // 4. Draw the 5 buttons
     m_playButton   ->render(window);
+    m_newGameButton->render(window);
     m_loadButton   ->render(window);
     m_optionsButton->render(window);
     m_exitButton   ->render(window);

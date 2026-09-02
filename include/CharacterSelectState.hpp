@@ -34,4 +34,5 @@ private:
     int m_selected = 0;   // 0 = Mario, 1 = Luigi
 
     std::unique_ptr<Button> m_confirmButton;
+    std::unique_ptr<Button> m_backButton;
 };

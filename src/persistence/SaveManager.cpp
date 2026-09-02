@@ -24,7 +24,7 @@ bool isValid(const SaveData& data) {
     return (
         data.version == 1 &&
         data.currentLevel >= 1 &&
-        data.currentLevel <= 4 &&
+        data.currentLevel <= 5 &&
         data.highestUnlockedLevel >= 1 &&
         data.highestUnlockedLevel <= 3 &&
         data.score >= 0 &&

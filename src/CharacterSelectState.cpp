@@ -1,6 +1,7 @@
 #include "CharacterSelectState.hpp"
 #include "GameManager.hpp"
 #include "LevelSelectState.hpp"
+#include "MenuState.hpp"
 #include "PlayState.hpp"
 #include "commands/MenuCommands.hpp"
 #include "resources/ResourceManager.hpp"
@@ -93,7 +94,7 @@ CharacterSelectState::CharacterSelectState() {
     {
         sf::FloatRect hb = m_hintText.getLocalBounds();
         m_hintText.setOrigin(hb.left + hb.width / 2.f, hb.top + hb.height / 2.f);
-        m_hintText.setPosition(kScreenW / 2.f, kScreenH - 80.f);
+        m_hintText.setPosition(kScreenW / 2.f, kScreenH - 60.f);
     }
 
     // ── Highlight box ─────────────────────────────────────────────────────────
@@ -103,13 +104,13 @@ CharacterSelectState::CharacterSelectState() {
     m_highlight.setOutlineColor(sf::Color(255, 220, 0));
     m_highlight.setOutlineThickness(4.f);
 
-    // ── Confirm button ────────────────────────────────────────────────────────
+    // ── Buttons ───────────────────────────────────────────────────────────────
     m_confirmButton = std::make_unique<Button>(
         "PLAY",
         m_font,
-        sf::Vector2f(kScreenW / 2.f, 840.f),
-        sf::Vector2f(300.f, 70.f),
-        32
+        sf::Vector2f(kScreenW / 2.f - 160.f, 830.f),
+        sf::Vector2f(280.f, 66.f),
+        28
     );
     m_confirmButton->setColors(
         sf::Color(255, 160, 50, 220),   // normal  – orange
@@ -118,6 +119,22 @@ CharacterSelectState::CharacterSelectState() {
     );
     m_confirmButton->setCommand(std::make_unique<LambdaCommand>([this]() {
         confirmSelection();
+    }));
+
+    m_backButton = std::make_unique<Button>(
+        "BACK",
+        m_font,
+        sf::Vector2f(kScreenW / 2.f + 160.f, 830.f),
+        sf::Vector2f(280.f, 66.f),
+        28
+    );
+    m_backButton->setColors(
+        sf::Color(210, 55, 55, 220),   // normal – red
+        sf::Color(255, 80, 80, 255),   // hover  – bright red
+        sf::Color::White
+    );
+    m_backButton->setCommand(std::make_unique<LambdaCommand>([]() {
+        GameManager::getInstance().changeState(std::make_unique<MenuState>());
     }));
 }
 
@@ -140,6 +157,7 @@ void CharacterSelectState::Input(const sf::Event& event) {
             GameManager::getInstance().getGameView()
         );
         m_confirmButton->update(mp);
+        m_backButton->update(mp);
 
         // Click on Mario portrait → select Mario
         if (m_marioSprite.getGlobalBounds().contains(mp)) m_selected = 0;
@@ -152,6 +170,7 @@ void CharacterSelectState::Input(const sf::Event& event) {
             GameManager::getInstance().getGameView()
         );
         if (m_confirmButton->handleClick(event, mp)) return;
+        if (m_backButton->handleClick(event, mp)) return;
         // Click directly on portrait = instant confirm
         if (m_marioSprite.getGlobalBounds().contains(mp)) { m_selected = 0; confirmSelection(); return; }
         if (m_luigiSprite.getGlobalBounds().contains(mp)) { m_selected = 1; confirmSelection(); return; }
@@ -172,7 +191,8 @@ void CharacterSelectState::Input(const sf::Event& event) {
                 confirmSelection(); break;
 
             case sf::Keyboard::Escape:
-                GameManager::getInstance().popState(); break;
+                GameManager::getInstance().changeState(std::make_unique<MenuState>());
+                break;
 
             default: break;
         }
@@ -207,6 +227,7 @@ void CharacterSelectState::Render(sf::RenderWindow& window) {
     window.draw(m_titleText);
     window.draw(m_hintText);
 
-    // ── Confirm button ────────────────────────────────────────────────────────
+    // ── Buttons ───────────────────────────────────────────────────────────────
     m_confirmButton->render(window);
+    m_backButton->render(window);
 }

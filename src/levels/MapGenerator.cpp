@@ -15,6 +15,29 @@ const int GROUND_ROW = 17;
 static int randInt(int min, int max) { return min + std::rand() % (max - min + 1); }
 static float randFloat() { return static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX); }
 
+static bool isSolidTileChar(char ch) {
+    return ch == '#' || ch == '=' || ch == 'T' || ch == 'D' || ch == 'B' || ch == '?' || ch == '!' || ch == '|' || ch == 'W';
+}
+
+static bool hasMinWalkableSpace(const std::vector<std::string>& grid, int r, int c, int minTiles = 3) {
+    int height = static_cast<int>(grid.size());
+    if (r < 0 || r >= height - 1 || c < 0 || c >= static_cast<int>(grid[0].size())) return false;
+
+    if (!isSolidTileChar(grid[r + 1][c])) return false;
+
+    int span = 1;
+    for (int lc = c - 1; lc >= 0; --lc) {
+        if (isSolidTileChar(grid[r][lc]) || !isSolidTileChar(grid[r + 1][lc])) break;
+        span++;
+    }
+    for (int rc = c + 1; rc < static_cast<int>(grid[0].size()); ++rc) {
+        if (isSolidTileChar(grid[r][rc]) || !isSolidTileChar(grid[r + 1][rc])) break;
+        span++;
+    }
+
+    return span >= minTiles;
+}
+
 struct GameMap {
     std::vector<std::string> grid;
     std::vector<int> heightMap;
@@ -104,7 +127,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 m.buildTerrain(col+1, GROUND_ROW-2); m.buildTerrain(col+5, GROUND_ROW-2);
                 m.buildTerrain(col+2, GROUND_ROW-3); m.buildTerrain(col+3, GROUND_ROW-3); m.buildTerrain(col+4, GROUND_ROW-3);
                 // Sniper
-                if (col + 3 >= SAFE_START_COL && randFloat() < (effectiveLevel * 0.3f)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
+                if (col + 3 >= SAFE_START_COL && randFloat() < (effectiveLevel * 0.3f) && hasMinWalkableSpace(m.grid, GROUND_ROW-4, col+3, 3)) m.grid[GROUND_ROW-4][col+3] = snipers[randInt(0, snipers.size()-1)];
                 col += 8;
             } else if (pat == 3 && checkFlat(col, 6)) { // Staircase
                 int h = 1;
@@ -122,8 +145,8 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 // gap is just ground
                 for(int c=col+7; c<col+10; ++c) m.buildTerrain(c, GROUND_ROW-4);
                 // Valley ambush
-                m.grid[GROUND_ROW-1][col+4] = 'K';
-                m.grid[GROUND_ROW-1][col+5] = 'G';
+                if (hasMinWalkableSpace(m.grid, GROUND_ROW-1, col+4, 3)) m.grid[GROUND_ROW-1][col+4] = 'K';
+                if (hasMinWalkableSpace(m.grid, GROUND_ROW-1, col+5, 3)) m.grid[GROUND_ROW-1][col+5] = 'G';
                 col += 11;
             } else if (pat == 6 && checkFlat(col, 7)) { // Birthday Cake
                 int bw = randInt(5, 7);
@@ -149,7 +172,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
             for (int k = 1; k <= 4; ++k) {
                 if (m.heightMap[i+k] != m.heightMap[i+1]) wideEnough = false;
             }
-            if (wideEnough && randFloat() < (effectiveLevel * 0.3f) && m.isEmpty(m.heightMap[i+1]-1, i+1)) {
+            if (wideEnough && randFloat() < (effectiveLevel * 0.3f) && m.isEmpty(m.heightMap[i+1]-1, i+1) && hasMinWalkableSpace(m.grid, m.heightMap[i+1]-1, i+1, 3)) {
                 m.grid[m.heightMap[i+1]-1][i+1] = 'K';
             }
         }
@@ -214,7 +237,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+1] = 'B'; 
                     m.grid[baseR][col+2] = '?'; m.grid[baseR][col+3] = 'B'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top if level >= 2
-                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.4f && m.isEmpty(baseR-1, col+2) && hasMinWalkableSpace(m.grid, baseR-1, col+2, 3)) {
                         m.grid[baseR-1][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -225,7 +248,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                 } else if (pat == 3 && checkClear(col, 8, baseR - 1)) { // Canopy
                     for(int c=col; c<col+8; ++c) m.grid[baseR-1][c] = 'B';
                     // Spawn enemy on Canopy
-                    if (col + 4 >= SAFE_START_COL && randFloat() < 0.6f && m.isEmpty(baseR-2, col+4)) {
+                    if (col + 4 >= SAFE_START_COL && randFloat() < 0.6f && m.isEmpty(baseR-2, col+4) && hasMinWalkableSpace(m.grid, baseR-2, col+4, 3)) {
                         m.grid[baseR-2][col+4] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 10;
@@ -233,7 +256,7 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
                     m.grid[baseR-3][col] = 'B'; m.grid[baseR-3][col+1] = 'B'; m.grid[baseR-3][col+2] = 'B'; m.grid[baseR-3][col+3] = 'B'; m.grid[baseR-3][col+4] = 'B';
                     m.grid[baseR][col] = 'B'; m.grid[baseR][col+2] = '?'; m.grid[baseR][col+4] = 'B';
                     // Spawn enemy on top
-                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2)) {
+                    if (col + 2 >= SAFE_START_COL && effectiveLevel >= 2 && randFloat() < 0.5f && m.isEmpty(baseR-4, col+2) && hasMinWalkableSpace(m.grid, baseR-4, col+2, 3)) {
                         m.grid[baseR-4][col+2] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                     }
                     col += 7;
@@ -301,14 +324,14 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
             if (randFloat() < 0.5f) {
                 int r = m.heightMap[start] - 1;
                 int c = start + len/2;
-                if (c >= SAFE_START_COL && m.isEmpty(r, c)) {
+                if (c >= SAFE_START_COL && m.isEmpty(r, c) && hasMinWalkableSpace(m.grid, r, c, 3)) {
                     m.grid[r][c] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                 }
             }
             if (len >= 12 && randFloat() < 0.4f) { // Second enemy if huge space
                 int r = m.heightMap[start] - 1;
                 int c = start + len/4;
-                if (c >= SAFE_START_COL && m.isEmpty(r, c)) {
+                if (c >= SAFE_START_COL && m.isEmpty(r, c) && hasMinWalkableSpace(m.grid, r, c, 3)) {
                     m.grid[r][c] = gndEnemies[randInt(0, gndEnemies.size()-1)];
                 }
             }
@@ -329,11 +352,10 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
     if (effectiveLevel == 3) m.grid[GROUND_ROW-1][WIDTH-8] = 'Z';
 
     std::vector<std::string> pathsToSave = { outputPath };
-    if (outputPath.find("level4.txt") != std::string::npos) {
-        pathsToSave.push_back("levels/level4.txt");
-        pathsToSave.push_back("build/levels/level4.txt");
-        pathsToSave.push_back("../levels/level4.txt");
-    }
+    std::string filename = std::filesystem::path(outputPath).filename().string();
+    pathsToSave.push_back("levels/" + filename);
+    pathsToSave.push_back("build/levels/" + filename);
+    pathsToSave.push_back("../levels/" + filename);
 
     for (const auto& path : pathsToSave) {
         std::ofstream out(path);
@@ -353,6 +375,10 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
 }
 
 void MapGenerator::generateSubLevel(const std::string& outputPath) {
+    generateSubLevel("Easy", outputPath);
+}
+
+void MapGenerator::generateSubLevel(const std::string& difficulty, const std::string& outputPath) {
     const int SUB_WIDTH = 60;
     const int SUB_HEIGHT = 20;
     const int SUB_GROUND_ROW = 17;
@@ -398,7 +424,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                     grid[blockRow - 1][c] = 'C'; // Coin above block
                 }
             }
-            if (randFloat() < 0.6f && col + 1 >= SUB_SAFE_START_COL && col + 1 < 50) {
+            if (randFloat() < 0.6f && col + 1 >= SUB_SAFE_START_COL && col + 1 < 50 && hasMinWalkableSpace(grid, SUB_GROUND_ROW - 1, col + 1, 3)) {
                 grid[SUB_GROUND_ROW - 1][col + 1] = 'G'; // Patrol enemy
             }
             col += numBlocks + randInt(2, 3);
@@ -416,7 +442,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                     grid[topR - 1][c] = 'C'; // Coin on top
                 }
             }
-            if (randFloat() < 0.5f && col + 2 >= SUB_SAFE_START_COL && col + 2 < 50) {
+            if (randFloat() < 0.5f && col + 2 >= SUB_SAFE_START_COL && col + 2 < 50 && hasMinWalkableSpace(grid, topR - 1, col + 2, 3)) {
                 grid[topR - 1][col + 2] = (randFloat() < 0.5f) ? 'K' : 'G';
             }
             col += plateauWidth + randInt(2, 3);
@@ -448,7 +474,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                 grid[SUB_GROUND_ROW - 3][col + 4] = 'C';
                 grid[SUB_GROUND_ROW - 2][col + 5] = 'C';
 
-                if (randFloat() < 0.6f && col + 2 >= SUB_SAFE_START_COL) {
+                if (randFloat() < 0.6f && col + 2 >= SUB_SAFE_START_COL && hasMinWalkableSpace(grid, SUB_GROUND_ROW - 1, col + 2, 3)) {
                     grid[SUB_GROUND_ROW - 1][col + 2] = 'G';
                 }
             }
@@ -459,7 +485,7 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
                 grid[SUB_GROUND_ROW - 3][col + 1] = '?';
                 grid[SUB_GROUND_ROW - 3][col] = 'B';
                 grid[SUB_GROUND_ROW - 3][col + 2] = 'B';
-                if (col + 1 >= SUB_SAFE_START_COL) {
+                if (col + 1 >= SUB_SAFE_START_COL && hasMinWalkableSpace(grid, SUB_GROUND_ROW - 1, col + 1, 3)) {
                     grid[SUB_GROUND_ROW - 1][col + 1] = 'G';
                 }
             }
@@ -467,18 +493,27 @@ void MapGenerator::generateSubLevel(const std::string& outputPath) {
         }
     }
 
-    std::ofstream out(outputPath);
-    if (!out) return;
-
-    out << "@name=Bonus Sub-Level\n";
-    out << "@difficulty=Easy\n";
-    out << "@tile_size=48\n";
-    out << "@map\n";
-
-    for (int r = 0; r < SUB_HEIGHT; ++r) {
-        out << grid[r] << "\n";
+    std::vector<std::string> pathsToSave = { outputPath };
+    if (outputPath.find("level5.txt") != std::string::npos || outputPath.find("level4.txt") != std::string::npos) {
+        pathsToSave.push_back("levels/level5.txt");
+        pathsToSave.push_back("build/levels/level5.txt");
+        pathsToSave.push_back("../levels/level5.txt");
     }
-    out.close();
+
+    for (const auto& path : pathsToSave) {
+        std::ofstream out(path);
+        if (!out) continue;
+
+        out << "@name=Bonus Sub-Level\n";
+        out << "@difficulty=" << (difficulty.empty() ? "Easy" : difficulty) << "\n";
+        out << "@tile_size=48\n";
+        out << "@map\n";
+
+        for (int r = 0; r < SUB_HEIGHT; ++r) {
+            out << grid[r] << "\n";
+        }
+        out.close();
+    }
 }
 
 

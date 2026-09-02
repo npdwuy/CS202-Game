@@ -96,7 +96,7 @@ std::optional<SaveData> LoadManager::load(const std::string& path) {
         if (data.version != 1) {
             throw std::runtime_error("Unsupported save version.");
         }
-        if (data.currentLevel < 1 || data.currentLevel > 4) {
+        if (data.currentLevel < 1 || data.currentLevel > 5) {
             throw std::runtime_error("Saved level is outside the valid range.");
         }
         if (data.highestUnlockedLevel < 1 || data.highestUnlockedLevel > 3) {
