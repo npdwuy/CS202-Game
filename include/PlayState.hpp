@@ -142,5 +142,8 @@ void renderBackgroundLayers(
     bool m_wasWarping = false;
     float m_warpTimer = 0.f;
     int m_warpDestinationLevel = 4;
+    int m_returnLevel = 1;
+    sf::Vector2f m_returnPlayerPos{0.f, 0.f};
+    bool m_hasReturnPos = false;
     sf::RectangleShape m_warpFadeOverlay;
 };

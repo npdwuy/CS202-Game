@@ -17,6 +17,7 @@
 #include "resources/ResourceManager.hpp"
 #include "events/GameEventManager.hpp"
 #include "entities/enemies/Koopa.hpp"
+#include "levels/MapGenerator.hpp"
 
 #include <filesystem>
 #include <algorithm>
@@ -30,8 +31,6 @@ PlayState::PlayState(bool loadSavedGame)
     : m_hud(ResourceManager::getInstance().getFont(
           "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
       )) {
-    loadBackgroundLayers();
-
     const sf::Font& hudFont = ResourceManager::getInstance().getFont(
         "assets/fonts/ro-spritendo-font/RoSpritendoSemiboldBeta-vmVwZ.otf"
     );
@@ -379,47 +378,22 @@ void PlayState::Update(sf::Time timePerFrame) {
                     m_isWarping = true;
                     m_warpTimer = 0.f;
                     
-                    if (m_saveData.currentLevel == 1) m_warpDestinationLevel = 4;
-                    else if (m_saveData.currentLevel == 4) m_warpDestinationLevel = 1;
+                    if (m_saveData.currentLevel != 4) {
+                        // Enter random sub-level
+                        m_returnLevel = m_saveData.currentLevel;
+                        m_returnPlayerPos = m_player->position();
+                        m_hasReturnPos = true;
+                        m_warpDestinationLevel = 4;
+                        // Dynamically generate a fresh random compact sub-level
+                        MapGenerator::generateSubLevel("levels/level4.txt");
+                        MapGenerator::generateSubLevel("build/levels/level4.txt");
+                    } else {
+                        // Exit sub-level back to main level
+                        m_warpDestinationLevel = m_returnLevel;
+                    }
                     
                     m_player->isWarpingDown_ = true;
                     m_player->setVelocity({0.f, 25.f}); 
-                    AudioManager::getInstance().playEffect(SoundEffect::Pipe);
-                }
-            }
-        }
-    }
-    
-    // Horizontal Warp Logic
-    if (m_player && (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))) {
-        const auto& data = m_tileMap.data();
-        sf::FloatRect bounds(m_player->position().x, m_player->position().y, m_player->width(), m_player->height());
-        
-        float rightX = bounds.left + bounds.width + 2.0f;
-        float leftX = bounds.left - 2.0f;
-        float centerY = bounds.top + bounds.height / 2.0f;
-        
-        int colR = static_cast<int>(rightX / data.tileSize);
-        int colL = static_cast<int>(leftX / data.tileSize);
-        int row = static_cast<int>(centerY / data.tileSize);
-        
-        if (row >= 0 && row < data.rows.size()) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && colR >= 0 && colR < data.rows[row].size()) {
-                if (data.rows[row][colR] == '[' || data.rows[row][colR] == ']') {
-                    m_isWarping = true;
-                    m_warpTimer = 0.f;
-                    m_warpDestinationLevel = 1;
-                    m_player->isWarpingDown_ = true; // Use same flag to disable physics
-                    m_player->setVelocity({25.f, 0.f}); // Slide right
-                    AudioManager::getInstance().playEffect(SoundEffect::Pipe);
-                }
-            } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && colL >= 0 && colL < data.rows[row].size()) {
-                if (data.rows[row][colL] == '[' || data.rows[row][colL] == ']') {
-                    m_isWarping = true;
-                    m_warpTimer = 0.f;
-                    m_warpDestinationLevel = 1;
-                    m_player->isWarpingDown_ = true; 
-                    m_player->setVelocity({-25.f, 0.f}); // Slide left
                     AudioManager::getInstance().playEffect(SoundEffect::Pipe);
                 }
             }
@@ -776,6 +750,7 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     m_saveData.currentLevel = levelNumber;
     m_playerDamagePending = false;
     m_tileMap.load(levelPath(levelNumber));
+    loadBackgroundLayers();
     m_enemies.clear();
     m_items.clear();
     m_fireballs.clear();
@@ -787,24 +762,27 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     
     if (m_wasWarping) {
         m_wasWarping = false;
-        // Find the first 'W' or '[' pipe
-        bool foundPipe = false;
-        for (int r = 0; r < m_tileMap.data().rows.size(); ++r) {
-            for (int c = 0; c < m_tileMap.data().rows[r].size(); ++c) {
-                char ch = m_tileMap.data().rows[r][c];
-                if (ch == 'W' || ch == '[') {
-                    spawnPosition = sf::Vector2f(
-                        c * m_tileMap.data().tileSize,
-                        (r - 1) * m_tileMap.data().tileSize
-                    );
-                    // For a horizontal pipe, spawning above it might be weird, but 
-                    // it prevents getting stuck inside it. A better logic could spawn 
-                    // adjacent to it. For now, spawning above 'W' is perfect.
-                    foundPipe = true;
-                    break;
+        if (m_saveData.currentLevel != 4 && m_hasReturnPos) {
+            // Returning to main level: spawn at saved pipe position
+            spawnPosition = m_returnPlayerPos;
+            m_hasReturnPos = false;
+        } else {
+            // Find the first 'W' vertical pipe
+            bool foundPipe = false;
+            for (int r = 0; r < m_tileMap.data().rows.size(); ++r) {
+                for (int c = 0; c < m_tileMap.data().rows[r].size(); ++c) {
+                    char ch = m_tileMap.data().rows[r][c];
+                    if (ch == 'W') {
+                        spawnPosition = sf::Vector2f(
+                            c * m_tileMap.data().tileSize,
+                            (r - 1) * m_tileMap.data().tileSize
+                        );
+                        foundPipe = true;
+                        break;
+                    }
                 }
+                if (foundPipe) break;
             }
-            if (foundPipe) break;
         }
     } else if (restoreSavedPosition && m_saveData.hasPlayerPosition) {
         const sf::Vector2f savedPosition{
@@ -1761,38 +1739,68 @@ void PlayState::addBackgroundLayer(
 void PlayState::loadBackgroundLayers()
 {
     m_backgroundLayers.clear();
-    
-    // We now use ParallaxBackground for level_bg.png
-    m_parallaxBg.load("assets/backgrounds/level_bg.png");
+    m_clouds.clear();
 
-    // Initialize Dynamic Clouds System
-    m_cloudTexture = std::make_shared<sf::Texture>();
-    if (m_cloudTexture->loadFromFile("assets/sprites/cloud.png"))
-    {
-        // Define bounding boxes for some good clouds from the new spritesheet
-        std::vector<sf::IntRect> cloudRects = {
-            sf::IntRect(43, 111, 373, 200),
-            sf::IntRect(791, 126, 407, 232),
-            sf::IntRect(17, 322, 497, 339),
-            sf::IntRect(527, 340, 483, 431),
-            sf::IntRect(1092, 653, 376, 308),
-            sf::IntRect(379, 775, 299, 191),
-            sf::IntRect(65, 805, 224, 143)
-        };
-        
-        m_clouds.clear();
-        for (int i = 0; i < 30; ++i)
+    const std::string& difficulty = m_tileMap.data().difficulty;
+    const bool isCastle = (m_saveData.currentLevel == 3 || difficulty == "Hard");
+    const bool isLevel2 = (m_saveData.currentLevel == 2 || difficulty == "Medium");
+
+    if (isCastle) {
+        // Level 3 (Lâu đài): sử dụng bg2.png
+        addBackgroundLayer(
+            "assets/sprites/bg2.png",
+            0.20f,
+            0.f,
+            0.f,
+            true
+        );
+    } else if (isLevel2) {
+        // Level 2 (Athletic): sử dụng bg3.png
+        addBackgroundLayer(
+            "assets/sprites/bg3.png",
+            0.20f,
+            0.f,
+            0.f,
+            true
+        );
+    } else {
+        // Level 1 / Màn ngoài trời mặc định: sử dụng long_background.png
+        addBackgroundLayer(
+            "assets/sprites/long_background.png",
+            0.20f,
+            0.f,
+            0.f,
+            true
+        );
+
+        // Initialize Dynamic Clouds System
+        m_cloudTexture = std::make_shared<sf::Texture>();
+        if (m_cloudTexture->loadFromFile("assets/sprites/cloud.png"))
         {
-            CloudEntity c;
-            c.textureRect = cloudRects[rand() % cloudRects.size()];
-            c.worldPosition = sf::Vector2f(
-                static_cast<float>(rand() % 15000) - 2000.f, // Spread from X=-2000 to X=13000
-                static_cast<float>(20 + (rand() % 400)) // Y between 20 and 420
-            );
-            c.scale = 0.3f + static_cast<float>(rand() % 50) / 100.f; // Scale 0.3 to 0.8
-            c.driftSpeed = 5.f + static_cast<float>(rand() % 15); // Drift speed 5 to 20
-            c.parallaxFactor = 0.5f + static_cast<float>(rand() % 30) / 100.f; // Parallax 0.5 to 0.8
-            m_clouds.push_back(c);
+            // Define bounding boxes for some good clouds from the new spritesheet
+            std::vector<sf::IntRect> cloudRects = {
+                sf::IntRect(43, 111, 373, 200),
+                sf::IntRect(791, 126, 407, 232),
+                sf::IntRect(17, 322, 497, 339),
+                sf::IntRect(527, 340, 483, 431),
+                sf::IntRect(1092, 653, 376, 308),
+                sf::IntRect(379, 775, 299, 191),
+                sf::IntRect(65, 805, 224, 143)
+            };
+            
+            for (int i = 0; i < 30; ++i)
+            {
+                CloudEntity c;
+                c.textureRect = cloudRects[rand() % cloudRects.size()];
+                c.worldPosition = sf::Vector2f(
+                    static_cast<float>(rand() % 15000) - 2000.f, // Spread from X=-2000 to X=13000
+                    static_cast<float>(20 + (rand() % 400)) // Y between 20 and 420
+                );
+                c.scale = 0.3f + static_cast<float>(rand() % 50) / 100.f; // Scale 0.3 to 0.8
+                c.driftSpeed = 5.f + static_cast<float>(rand() % 15); // Drift speed 5 to 20
+                c.parallaxFactor = 0.5f + static_cast<float>(rand() % 30) / 100.f; // Parallax 0.5 to 0.8
+                m_clouds.push_back(c);
+            }
         }
     }
 }
@@ -1938,7 +1946,7 @@ void PlayState::renderBackgroundLayers(
         }
     }
     
-    // Draw dynamic clouds
+    // Draw dynamic clouds (nếu có)
     if (m_cloudTexture && !m_clouds.empty())
     {
         sf::Sprite cloudSprite(*m_cloudTexture);
@@ -1955,14 +1963,17 @@ void PlayState::renderBackgroundLayers(
             float parallaxWorldX = c.worldPosition.x + (cameraLeft * (1.f - c.parallaxFactor));
             cloudSprite.setPosition(parallaxWorldX, c.worldPosition.y);
             
-            // Draw all clouds (SFML culls efficiently anyway, or we could add manual culling if needed)
             window.draw(cloudSprite);
         }
     }
     
-    // Draw atmospheric fog overlay
-    sf::RectangleShape fogRect(window.getView().getSize());
-    fogRect.setPosition(window.getView().getCenter() - window.getView().getSize() * 0.5f);
-    fogRect.setFillColor(sf::Color(255, 255, 255, 70)); // White overlay (paler opacity)
-    window.draw(fogRect);
+    // Draw atmospheric fog overlay (chỉ cho màn Level 1 ngoài trời)
+    const bool isCastle = (m_saveData.currentLevel == 3 || m_tileMap.data().difficulty == "Hard");
+    const bool isLevel2 = (m_saveData.currentLevel == 2 || m_tileMap.data().difficulty == "Medium");
+    if (!isCastle && !isLevel2) {
+        sf::RectangleShape fogRect(window.getView().getSize());
+        fogRect.setPosition(window.getView().getCenter() - window.getView().getSize() * 0.5f);
+        fogRect.setFillColor(sf::Color(255, 255, 255, 70)); // White overlay (paler opacity)
+        window.draw(fogRect);
+    }
 }

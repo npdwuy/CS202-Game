@@ -116,10 +116,12 @@ void BossEnemy::Update(sf::Time dt) {
             }
 
             // 2. Chặn Boss không đi lố giới hạn của map
-            if (m_position.x < m_minX) m_position.x = m_minX;
-            if (m_position.x > m_maxX) m_position.x = m_maxX;
-
-            // 3. Animation đi bộ
+            sf::FloatRect bounds = m_sprite.getGlobalBounds();
+            if (bounds.left < m_minX) {
+                m_position.x += (m_minX - bounds.left);
+            } else if (bounds.left + bounds.width > m_maxX) {
+                m_position.x -= ((bounds.left + bounds.width) - m_maxX);
+            }
             advanceAnimation(framesWalk, m_currentFrame, m_animationTimer,
                              0.15f, true, animationEnded);
             m_sprite.setTextureRect(framesWalk[m_currentFrame]);

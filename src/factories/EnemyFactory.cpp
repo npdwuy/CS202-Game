@@ -23,22 +23,45 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
     const TileMap& tileMap
 )
 {
-    // Default amplitude was 2 tiles. The user requested 2.5x increase (2.0 * 2.5 = 5.0 tiles).
-    float minimumX = std::max(0.f, position.x - tileSize * 5.f);
-    float maximumX = std::min(std::max(0.f, levelWidth - tileSize), position.x + tileSize * 5.f);
+    float enemyWidth = tileSize;
+    float enemyHeight = tileSize;
+    if (symbol == 'Z') {
+        enemyWidth = 85.f * 1.6f;
+        enemyHeight = 65.f * 1.6f;
+    } else if (symbol == 'H') {
+        enemyWidth = 51.f * 0.7f;
+        enemyHeight = 75.f * 0.7f;
+    } else if (symbol == 'h') {
+        enemyWidth = 75.f * 0.8f;
+        enemyHeight = 97.f * 0.8f;
+    }
 
-    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h') {
-        // Scan left and right to find exact platform bounds
-        float leftScan = position.x;
+    float minimumX = std::max(0.f, position.x - tileSize * 5.f);
+    float maximumX = std::min(std::max(0.f, levelWidth - enemyWidth), position.x + enemyWidth + tileSize * 5.f);
+
+    if (symbol == 'G' || symbol == 'K' || symbol == 'H' || symbol == 'h' || symbol == 'Z') {
+        // Multi-point vertical scan: foot (ground probe), bottom body, middle body, and head
         const float footY = position.y + tileSize + 2.f;
-        const float bodyY = position.y + tileSize * 0.5f;
-        const float step = 10.f;
+        const float bottomBodyY = position.y + tileSize - 4.f;
+        const float midY = position.y + tileSize - enemyHeight * 0.5f;
+        const float topY = position.y + tileSize - enemyHeight + 4.f;
+        const float step = 8.f;
+
+        auto isBlockedAt = [&](float x) {
+            return tileMap.isSolidAt(sf::Vector2f(x, bottomBodyY)) ||
+                   tileMap.isSolidAt(sf::Vector2f(x, midY)) ||
+                   tileMap.isSolidAt(sf::Vector2f(x, topY));
+        };
+
+        auto hasGroundAt = [&](float x) {
+            return tileMap.isSolidAt(sf::Vector2f(x, footY));
+        };
 
         // Quét sang trái
+        float leftScan = position.x;
         while (leftScan >= 0.f) {
             float nextLeft = leftScan - step;
-            if (tileMap.isSolidAt(sf::Vector2f(nextLeft, bodyY)) || 
-                !tileMap.isSolidAt(sf::Vector2f(nextLeft, footY))) {
+            if (isBlockedAt(nextLeft) || !hasGroundAt(nextLeft)) {
                 break;
             }
             leftScan = nextLeft;
@@ -46,16 +69,15 @@ std::unique_ptr<Enemy> EnemyFactory::Create(
         minimumX = leftScan;
 
         // Quét sang phải (tính từ mép phải của quái vật)
-        float rightScan = position.x + tileSize;
+        float rightScan = position.x + enemyWidth;
         while (rightScan <= levelWidth) {
             float nextRight = rightScan + step;
-            if (tileMap.isSolidAt(sf::Vector2f(nextRight, bodyY)) || 
-                !tileMap.isSolidAt(sf::Vector2f(nextRight, footY))) {
+            if (isBlockedAt(nextRight) || !hasGroundAt(nextRight)) {
                 break;
             }
             rightScan = nextRight;
         }
-        maximumX = std::max(minimumX, rightScan - tileSize);
+        maximumX = std::max(minimumX + enemyWidth, rightScan);
     }
 
     switch (symbol)

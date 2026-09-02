@@ -85,20 +85,12 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
 
             bool hitBound = false;
             if (newLeft <= m_leftBound) {
-                if (sprite.getScale().x < 0.f) {
-                    sprite.setPosition(m_leftBound + newWidth, sprite.getPosition().y);
-                } else {
-                    sprite.setPosition(m_leftBound, sprite.getPosition().y);
-                }
+                sprite.move(m_leftBound - newLeft, 0.f);
                 hitBound = true;
                 m_direction = 1;
                 m_lastDirChangeX = m_leftBound + newWidth * 0.5f; // Cập nhật gốc đổi hướng
             } else if (newLeft + newWidth >= m_rightBound) {
-                if (sprite.getScale().x < 0.f) {
-                    sprite.setPosition(m_rightBound, sprite.getPosition().y);
-                } else {
-                    sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
-                }
+                sprite.move(m_rightBound - (newLeft + newWidth), 0.f);
                 hitBound = true;
                 m_direction = -1;
                 m_lastDirChangeX = m_rightBound - newWidth * 0.5f; // Cập nhật gốc đổi hướng
@@ -126,22 +118,12 @@ void ChaseStrategy::Update(sf::Sprite& sprite, float speed, sf::Time timePerFram
 
     bool hitBound = false;
     if (newLeft <= m_leftBound) {
-        // Clamp left edge
-        if (sprite.getScale().x < 0.f) {
-            sprite.setPosition(m_leftBound + newWidth, sprite.getPosition().y);
-        } else {
-            sprite.setPosition(m_leftBound, sprite.getPosition().y);
-        }
+        sprite.move(m_leftBound - newLeft, 0.f);
         m_direction = 1;
         m_lastDirChangeX = m_leftBound + newWidth * 0.5f;
         hitBound = true;
     } else if (newLeft + newWidth >= m_rightBound) {
-        // Clamp right edge
-        if (sprite.getScale().x < 0.f) {
-            sprite.setPosition(m_rightBound, sprite.getPosition().y);
-        } else {
-            sprite.setPosition(m_rightBound - newWidth, sprite.getPosition().y);
-        }
+        sprite.move(m_rightBound - (newLeft + newWidth), 0.f);
         m_direction = -1;
         m_lastDirChangeX = m_rightBound - newWidth * 0.5f;
         hitBound = true;

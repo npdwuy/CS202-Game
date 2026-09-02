@@ -27,6 +27,14 @@ struct TilesetLayout {
     sf::Vector2i highDirtCenter{9, 8};
     sf::Vector2i highDirtRight{10, 8};
     sf::Vector2i highDirtIsolated{5, 13};
+
+    // Vertical Pipe
+    sf::Vector2i pipeVerticalTopLeft{14, 0};
+    sf::Vector2i pipeVerticalTopRight{15, 0};
+    sf::Vector2i pipeVerticalBodyLeft{14, 1};
+    sf::Vector2i pipeVerticalBodyRight{15, 1};
+    sf::Vector2i pipeVerticalBottomLeft{14, 2};
+    sf::Vector2i pipeVerticalBottomRight{15, 2};
 };
 
 class TexturedTileRenderer : public TileRenderer {
@@ -71,7 +79,6 @@ private:
     ) const;
 
     sf::Texture m_texture;
-    sf::Texture m_pipeTexture;
     sf::Image m_image;
     TilesetLayout m_layout;
 };

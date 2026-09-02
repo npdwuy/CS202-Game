@@ -17,7 +17,7 @@ void TileMap::load(const std::string& path) {
 
     std::string tilesetPath = "assets/sprites/tilesets/WU_Field_plain.png";
     if (m_data.difficulty == "Medium") {
-        tilesetPath = "assets/sprites/tilesets/WU_Field_underground.png";
+        tilesetPath = "assets/sprites/tilesets/WU_Field_athletic_D.png";
     } else if (m_data.difficulty == "Hard") {
         tilesetPath = "assets/sprites/tilesets/WU_Field_castle.png";
     }
@@ -106,16 +106,14 @@ void TileMap::renderForegroundPipes(sf::RenderWindow& window) const {
         for (int row = 0; row < m_data.rows.size(); ++row) {
             for (int col = 0; col < m_data.rows[row].size(); ++col) {
                 char c = m_data.rows[row][col];
-                if (c == 'W' || c == '|' || c == '[' || c == ']') {
+                if (c == 'W' || c == '|') {
                     m_renderer->buildSingleTile(pipeTiles, m_data, row, col, sf::Vector2f(0.f, 0.f));
                 }
             }
         }
         if (pipeTiles.getVertexCount() > 0) {
-            sf::VertexArray emptyTri(sf::Triangles);
             sf::VertexArray emptyQuad(sf::Quads);
-            // Pass pipeTiles as sceneryVertices to render it untextured
-            m_renderer->render(window, emptyQuad, pipeTiles, emptyQuad);
+            m_renderer->render(window, pipeTiles, emptyQuad, emptyQuad);
         }
     }
 }
@@ -443,7 +441,7 @@ bool TileMap::isSolidAt(sf::Vector2f worldPosition) const {
     }
 
     char c = m_data.rows[row][column];
-    return c == '#' || c == 'B' || c == '?' || c == '!' || c == '=' || c == 'W' || c == '|' || c == '[' || c == ']';
+    return c == '#' || c == '=' || c == 'T' || c == 'D' || c == 'B' || c == '?' || c == '!' || c == 'W' || c == '|';
 }
 
 bool TileMap::intersectsSolid(const sf::FloatRect& bounds) const {
