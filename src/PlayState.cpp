@@ -491,11 +491,11 @@ void PlayState::Update(sf::Time timePerFrame) {
         m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
         if (m_player->facing() == 1) {
-            pos.x += m_player->width();
+            pos.x += 16.f;
         } else {
-            pos.x -= 48.f;
+            pos.x -= 32.f;
         }
-        pos.y += m_player->height() / 2.f - 24.f; 
+        pos.y += m_player->height() - 36.f; 
         m_heldShell->SetPosition(pos); 
     } else if (m_player) {
         m_player->setCarrying(false);
