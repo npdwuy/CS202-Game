@@ -368,7 +368,17 @@ void MapGenerator::generateMap(int level, const std::string& outputPath) {
         out << "@tile_size=48\n@map\n";
 
         for (int r = 0; r < HEIGHT; ++r) {
-            out << m.grid[r] << "\n";
+            std::string row = m.grid[r];
+
+            if (r == GROUND_ROW) {
+                row += "########";
+            } else if (r > GROUND_ROW) {
+                row += "========";
+            } else {
+                row += "........";
+            }
+
+            out << row << "\n";
         }
         out.close();
     }

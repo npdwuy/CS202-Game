@@ -26,7 +26,7 @@ int main() {
             "levels/level" + std::to_string(levelNumber) + ".txt"
         );
 
-        passed &= require(level.widthInTiles() == 160U, "level width is 160");
+        passed &= require(level.widthInTiles() == 168U, "level width is 168");
         passed &= require(level.heightInTiles() == 20U, "level height is 20");
         passed &= require(!level.spawnRequests.empty(), "level has spawns");
         passed &= require(level.tileSize == 48U, "tile size is 48");

@@ -46,6 +46,7 @@ private:
     void handleMovingShellEnemyCollisions();
     bool handlePlayerFall();
     void handleLevelExit();
+    void setupCastle();
     void finishLevelExit();
     void handlePlayerDamage();
     void updateTimedPowerUps(sf::Time timePerFrame);
@@ -84,7 +85,15 @@ private:
     bool m_playerDamagePending = false;
     float m_timeRemaining = 400.f;
 
-    enum class ExitSequence { None, Sliding, WalkingRight, IrisWipe };
+    enum class ExitSequence
+    {
+        None,
+        Sliding,
+        WalkingToCastle,
+        EnteringCastle,
+        IrisWipe
+    };
+
     ExitSequence m_exitSequence = ExitSequence::None;
     float m_exitTimer = 0.f;
     
@@ -94,6 +103,12 @@ private:
     sf::Text m_flagScoreText;
     bool m_showFlagScore = false;
     float m_flagScoreTimer = 0.f;
+
+    sf::Texture m_castleTexture;
+    sf::Sprite m_castleSprite;
+    bool m_castleVisible = false;
+    bool m_playerInsideCastle = false;
+    float m_castleDoorX = 0.f;
 
     std::unique_ptr<Button> m_menuButton;
 

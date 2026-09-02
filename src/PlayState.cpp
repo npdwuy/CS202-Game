@@ -42,6 +42,20 @@ PlayState::PlayState(bool loadSavedGame)
     m_flagScoreText.setFillColor(sf::Color::White);
     m_flagScoreText.setOutlineColor(sf::Color::Black);
     m_flagScoreText.setOutlineThickness(1.f);
+
+    if (!m_castleTexture.loadFromFile(
+            "assets/sprites/objects/castle.png"
+        ))
+    {
+        throw std::runtime_error(
+            "Failed to load assets/sprites/objects/castle.png"
+        );
+    }
+
+    m_castleSprite.setTexture(
+        m_castleTexture,
+        true
+    );
     
     m_menuButton = std::make_unique<Button>("...", hudFont, sf::Vector2f(24.f, 25.f), sf::Vector2f(40.f, 40.f), 24);
     m_menuButton->setColors(sf::Color::White, sf::Color(255, 230, 200, 255), sf::Color(255, 180, 0));
@@ -281,52 +295,116 @@ void PlayState::Input(const sf::Event& event) {
 
 void PlayState::Update(sf::Time timePerFrame) {
     if (m_exitSequence != ExitSequence::None) {
+        const float dt = timePerFrame.asSeconds();
+
         if (m_exitSequence == ExitSequence::Sliding) {
-            // player is sliding down
             bool playerAtBottom = false;
-            if (m_player->position().y + m_player->height() >= m_tileMap.getPoleBottomY() - 1.f) {
-                m_player->setPosition({m_player->position().x, m_tileMap.getPoleBottomY() - m_player->height()});
+
+            if (
+                m_player->position().y + m_player->height() >=
+                m_tileMap.getPoleBottomY() - 1.f
+            ) {
+                m_player->setPosition({
+                    m_player->position().x,
+                    m_tileMap.getPoleBottomY() - m_player->height()
+                });
                 playerAtBottom = true;
             } else {
                 sf::Vector2f pos = m_player->position();
-                pos.y += 250.f * timePerFrame.asSeconds();
+                pos.y += 250.f * dt;
                 m_player->setPosition(pos);
             }
-            
-            bool flagAtBottom = m_tileMap.updateFlagAnimation(timePerFrame, 200.f);
-            
+
+            const bool flagAtBottom =
+                m_tileMap.updateFlagAnimation(
+                    timePerFrame,
+                    200.f
+                );
+
             if (playerAtBottom && flagAtBottom) {
                 m_player->forceState(Player::State::AutoWalk);
                 m_player->setFacing(1);
-                m_exitSequence = ExitSequence::WalkingRight;
-            }
-        } else if (m_exitSequence == ExitSequence::WalkingRight) {
-            m_player->setVelocity({180.f, 0.f}); 
-            m_exitTimer += timePerFrame.asSeconds();
-            if (m_exitTimer >= 1.0f) {
-                m_exitSequence = ExitSequence::IrisWipe; 
+                m_player->setVelocity({180.f, 0.f});
+
                 m_exitTimer = 0.f;
-            }
-        } else if (m_exitSequence == ExitSequence::IrisWipe) {
-            m_player->setVelocity({180.f, 0.f}); // keep walking out
-            m_exitTimer += timePerFrame.asSeconds();
-            if (m_exitTimer >= 1.0f) {
-                finishLevelExit();
-                m_exitSequence = ExitSequence::None;
+                m_exitSequence =
+                    ExitSequence::WalkingToCastle;
             }
         }
-        
+        else if (
+            m_exitSequence ==
+            ExitSequence::WalkingToCastle
+        ) {
+            m_player->forceState(Player::State::AutoWalk);
+            m_player->setFacing(1);
+            m_player->setVelocity({180.f, 0.f});
+
+            const float playerCenterX =
+                m_player->position().x +
+                m_player->width() * 0.5f;
+
+            if (playerCenterX >= m_castleDoorX) {
+                m_player->setPosition({
+                    m_castleDoorX -
+                        m_player->width() * 0.5f,
+                    m_tileMap.getPoleBottomY() -
+                        m_player->height()
+                });
+
+                m_player->setVelocity({0.f, 0.f});
+                m_playerInsideCastle = true;
+                m_exitTimer = 0.f;
+                m_exitSequence =
+                    ExitSequence::EnteringCastle;
+            }
+        }
+        else if (
+            m_exitSequence ==
+            ExitSequence::EnteringCastle
+        ) {
+            m_player->setVelocity({0.f, 0.f});
+            m_exitTimer += dt;
+
+            if (m_exitTimer >= 0.35f) {
+                m_exitTimer = 0.f;
+                m_exitSequence =
+                    ExitSequence::IrisWipe;
+            }
+        }
+        else if (
+            m_exitSequence ==
+            ExitSequence::IrisWipe
+        ) {
+            m_player->setVelocity({0.f, 0.f});
+            m_exitTimer += dt;
+
+            if (m_exitTimer >= 1.f) {
+                m_exitSequence = ExitSequence::None;
+                finishLevelExit();
+                return;
+            }
+        }
+
         m_player->update(timePerFrame);
         updateCamera(timePerFrame);
-        updateBackgroundLayers(timePerFrame, m_camera.view());
+        updateBackgroundLayers(
+            timePerFrame,
+            m_camera.view()
+        );
         m_hud.update(timePerFrame);
+
         if (m_showFlagScore) {
-            m_flagScoreTimer += timePerFrame.asSeconds();
-            m_flagScoreText.move(0.f, -50.f * timePerFrame.asSeconds());
-            if (m_flagScoreTimer > 2.0f) {
+            m_flagScoreTimer += dt;
+            m_flagScoreText.move(
+                0.f,
+                -50.f * dt
+            );
+
+            if (m_flagScoreTimer > 2.f) {
                 m_showFlagScore = false;
             }
         }
+
         return;
     }
 
@@ -720,6 +798,15 @@ void PlayState::Render(sf::RenderWindow& window) {
 
     m_tileMap.render(window);
 
+    if (
+        m_castleVisible &&
+        visibleWorld.intersects(
+            m_castleSprite.getGlobalBounds()
+        )
+    ) {
+        window.draw(m_castleSprite);
+    }
+
     for (const auto& enemy : m_enemies) {
         if (visibleWorld.intersects(enemy->GetBounds())) {
             enemy->Render(window);
@@ -750,7 +837,7 @@ void PlayState::Render(sf::RenderWindow& window) {
         }
     }
 
-    if (m_player) {
+    if (m_player && !m_playerInsideCastle) {
         m_player->Render(window);
     }
     m_tileMap.renderForegroundPipes(window);
@@ -826,10 +913,81 @@ void PlayState::handleLevelStart() {
     }
 }
 
+void PlayState::setupCastle() {
+    m_castleVisible = false;
+    m_playerInsideCastle = false;
+    m_castleDoorX = 0.f;
+
+    if (
+        !m_tileMap.data().hasExit ||
+        m_saveData.currentLevel == 5
+    ) {
+        return;
+    }
+
+    m_castleSprite.setTexture(
+        m_castleTexture,
+        true
+    );
+
+    const sf::Vector2u textureSize =
+        m_castleTexture.getSize();
+
+    if (
+        textureSize.x == 0 ||
+        textureSize.y == 0
+    ) {
+        return;
+    }
+
+    const float tileSize =
+        static_cast<float>(
+            m_tileMap.data().tileSize
+        );
+
+    const float targetHeight =
+        tileSize * 5.f;
+
+    const float scale =
+        targetHeight /
+        static_cast<float>(
+            textureSize.y
+        );
+
+    m_castleSprite.setScale(
+        scale,
+        scale
+    );
+
+    const float castleX =
+        m_tileMap.getPoleX() +
+        tileSize * 2.f;
+
+    const float castleY =
+        m_tileMap.getPoleBottomY() -
+        targetHeight;
+
+    m_castleSprite.setPosition(
+        castleX,
+        castleY
+    );
+
+    m_castleDoorX =
+        castleX +
+        47.f * scale;
+
+    m_castleVisible = true;
+}
+
 void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
     if (levelNumber < 1 || levelNumber > 5) {
         throw std::out_of_range("Level number must be between 1 and 5.");
     }
+
+    m_exitSequence = ExitSequence::None;
+    m_exitTimer = 0.f;
+    m_playerInsideCastle = false;
+    m_castleVisible = false;
 
     handleLevelStart();
 
@@ -859,6 +1017,8 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
             m_savedMainLevelState.clear();
         }
     }
+
+    setupCastle();
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
     
@@ -1619,6 +1779,8 @@ void PlayState::resetTransientEffects() {
     m_timeRemaining = 400.f;
     m_playerDamagePending = false;
     m_exitSequence = ExitSequence::None;
+    m_exitTimer = 0.f;
+    m_playerInsideCastle = false;
     m_heldShell = nullptr;
 
     m_enemies.clear();
@@ -1662,6 +1824,8 @@ void PlayState::handleLevelExit() {
     }
 
     m_exitSequence = ExitSequence::Sliding;
+    m_exitTimer = 0.f;
+    m_playerInsideCastle = false;
     m_player->setInputEnabled(false);
     
     // Snap to pole
