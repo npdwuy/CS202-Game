@@ -496,6 +496,16 @@ void PlayState::Update(sf::Time timePerFrame) {
             pos.x -= 32.f;
         }
         pos.y += m_player->height() - 36.f; 
+
+        // Clamp held shell position if it would penetrate a solid wall tile
+        sf::FloatRect testBounds(pos.x + 8.f, pos.y + 20.f, 32.f, 28.f);
+        if (m_tileMap.intersectsSolid(testBounds)) {
+            if (m_player->facing() == 1) {
+                pos.x = m_player->position().x + m_player->width() - 8.f;
+            } else {
+                pos.x = m_player->position().x - 24.f;
+            }
+        }
         m_heldShell->SetPosition(pos); 
     } else if (m_player) {
         m_player->setCarrying(false);
@@ -845,7 +855,9 @@ void PlayState::loadLevel(int levelNumber, bool restoreSavedPosition) {
         m_enemies.clear();
         m_items.clear();
         createLevelObjects();
-        m_savedMainLevelState.clear();
+        if (!m_wasWarping) {
+            m_savedMainLevelState.clear();
+        }
     }
 
     sf::Vector2f spawnPosition = m_tileMap.data().playerStart;
@@ -1547,6 +1559,11 @@ bool PlayState::handlePlayerFall()
 void PlayState::handlePlayerDamage() {
     if (m_damageCooldown > 0.f || m_invincibilityTimeRemaining > 0.f) {
         return;
+    }
+
+    if (m_heldShell) {
+        m_heldShell->Throw(m_player ? m_player->facing() : 1);
+        m_heldShell = nullptr;
     }
 
     if (m_player && m_player->powerUpState() != Player::PowerUpState::Small) {

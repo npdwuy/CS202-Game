@@ -214,20 +214,18 @@ void Koopa::UpdateShellPhysics(
                     if (row >= 0 && row < static_cast<int>(data.rows.size()) && col >= 0 && col < static_cast<int>(data.rows[row].size())) {
                         const_cast<TileMap&>(tileMap).hitQuestionBlock(row, col);
                         const_cast<TileMap&>(tileMap).hitBlock(row, col);
+
+                        float tileEdgeX = static_cast<float>(col * data.tileSize);
+                        if (m_shellDirection > 0) {
+                            m_sprite.setPosition(tileEdgeX - 48.f + 4.f, m_sprite.getPosition().y);
+                        } else {
+                            m_sprite.setPosition(tileEdgeX + static_cast<float>(data.tileSize) - 4.f, m_sprite.getPosition().y);
+                        }
                     }
                 }
             }
 
-            const float pushDistance = std::max(std::abs(dx) + 4.f, 8.f);
             m_shellDirection *= -1;
-            if (m_shellDirection > 0)
-            {
-                m_sprite.move(pushDistance, 0.f);
-            }
-            else
-            {
-                m_sprite.move(-pushDistance, 0.f);
-            }
         }
         else
         {
