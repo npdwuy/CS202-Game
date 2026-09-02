@@ -151,6 +151,8 @@ void Mario::update(sf::Time timePerFrame) {
         } else {
             currentRect = sf::IntRect(137, 85, 40, 50); // Bung tay
         }
+    } else if (isCarrying() && currentState != State::Dead) {
+        currentRect = sf::IntRect(93, 85, 40, 50);  // Giơ tay (Carrying)
     }
     
     static constexpr int FireMarioSpriteOffsetX = 736;

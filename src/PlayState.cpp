@@ -450,10 +450,13 @@ void PlayState::Update(sf::Time timePerFrame) {
     }
 
     if (m_heldShell && m_player) {
+        m_player->setCarrying(true);
         sf::Vector2f pos = m_player->position();
         pos.x += m_player->facing() == 1 ? m_player->width() : -m_player->width();
         pos.y += m_player->height() / 2.f - 24.f; 
         m_heldShell->SetPosition(pos); 
+    } else if (m_player) {
+        m_player->setCarrying(false);
     }
     
     m_tileMap.update(timePerFrame);

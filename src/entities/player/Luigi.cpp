@@ -123,6 +123,8 @@ void Luigi::update(sf::Time timePerFrame) {
         currentRect = (throwTimer_ > 0.075f)
             ? sf::IntRect(93, 85, 40, 50)
             : sf::IntRect(137, 85, 40, 50);
+    } else if (isCarrying() && currentState != State::Dead) {
+        currentRect = sf::IntRect(93, 85, 40, 50);
     }
 
     static constexpr int FireOffset = 736;
