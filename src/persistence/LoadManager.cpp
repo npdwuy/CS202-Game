@@ -63,6 +63,14 @@ std::optional<SaveData> LoadManager::load(const std::string& path) {
         SaveData data;
         data.version = std::stoi(values.at("version"));
         data.currentLevel = std::stoi(values.at("currentLevel"));
+        
+        auto highestLevelIt = values.find("highestUnlockedLevel");
+        if (highestLevelIt != values.end()) {
+            data.highestUnlockedLevel = std::stoi(highestLevelIt->second);
+        } else {
+            data.highestUnlockedLevel = 1;
+        }
+
         data.score = std::stoi(values.at("score"));
         data.remainingLives = std::stoi(values.at("remainingLives"));
         data.selectedCharacter = values.at("selectedCharacter");
@@ -88,8 +96,11 @@ std::optional<SaveData> LoadManager::load(const std::string& path) {
         if (data.version != 1) {
             throw std::runtime_error("Unsupported save version.");
         }
-        if (data.currentLevel < 1 || data.currentLevel > 3) {
+        if (data.currentLevel < 1 || data.currentLevel > 4) {
             throw std::runtime_error("Saved level is outside the valid range.");
+        }
+        if (data.highestUnlockedLevel < 1 || data.highestUnlockedLevel > 3) {
+            throw std::runtime_error("Saved highest unlocked level is outside the valid range.");
         }
         if (data.score < 0 || data.remainingLives < 0) {
             throw std::runtime_error("Score and lives cannot be negative.");

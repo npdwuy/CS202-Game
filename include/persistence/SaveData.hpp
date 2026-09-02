@@ -5,6 +5,7 @@
 struct SaveData {
     int version = 1;
     int currentLevel = 1;
+    int highestUnlockedLevel = 1;
     int score = 0;
     int remainingLives = 10;
     std::string selectedCharacter = "Mario";

@@ -1620,6 +1620,7 @@ void PlayState::finishLevelExit() {
 
     if (m_saveData.currentLevel < 3) {
         const int nextLevel = m_saveData.currentLevel + 1;
+        m_saveData.highestUnlockedLevel = std::max(m_saveData.highestUnlockedLevel, nextLevel);
         loadLevel(nextLevel, false);
         SaveManager::save(m_saveData);
         updateHud();

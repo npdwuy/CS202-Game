@@ -6,8 +6,10 @@
 #include "SettingsManager.hpp"
 #include "commands/MenuCommands.hpp"
 #include "resources/ResourceManager.hpp"
+#include "persistence/LoadManager.hpp"
 
 #include <stdexcept>
+#include <filesystem>
 
 // Level metadata shown on each button
 static const struct {
@@ -48,10 +50,10 @@ LevelSelectState::LevelSelectState() {
     {
         sf::FloatRect b = m_titleText.getLocalBounds();
         m_titleText.setOrigin(b.width / 2.f, b.height / 2.f);
-        m_titleText.setPosition(gameView.getSize().x / 2.f, 130.f);
+        m_titleText.setPosition(gameView.getSize().x / 2.f, 100.f);
     }
 
-    // ── 3 Level buttons + Generate Level button ──────────────────────────────
+    // ── 3 Level buttons + Random Level button ──────────────────────────────
     const sf::Vector2f btnSize(420.f, 85.f);
     const float cornerR = btnSize.y / 2.f;
     const float cx = gameView.getSize().x / 2.f;
@@ -66,35 +68,52 @@ LevelSelectState::LevelSelectState() {
 
     const sf::Color normalColors[3] = { normalBlue, normalGreen, normalRed };
     const sf::Color hoverColors[3]  = { hoverBlue,  hoverGreen,  hoverRed };
-    const float yPositions [3] = { 245.f, 390.f, 535.f };
+    const float yPositions [3] = { 220.f, 360.f, 500.f };
+
+    int highestUnlockedLevel = 1;
+    const std::optional<SaveData> loadedData = LoadManager::load();
+    if (loadedData) {
+        highestUnlockedLevel = loadedData->highestUnlockedLevel;
+    }
 
     for (int i = 0; i < 3; ++i) {
-        // Button label: "LEVEL N"
-        std::string label = kLevelInfo[i].name;
+        int level = i + 1;
+        bool isLocked = level > highestUnlockedLevel;
+
+        std::string label = isLocked ? "LOCKED" : kLevelInfo[i].name;
         auto btn = std::make_unique<Button>(label, m_font,
                                             sf::Vector2f(cx, yPositions[i]),
                                             btnSize, 32);
-        btn->setColors(normalColors[i], hoverColors[i], white);
-        btn->setShapeCornerRadius(cornerR);
 
-        // Capture by value
-        int level = i + 1;
-        btn->setCommand(std::make_unique<LambdaCommand>([level]() {
-            GameManager::getInstance().getSettings().setSelectedLevel(level);
-            GameManager::getInstance().changeState(
-                std::make_unique<PlayState>(false)
-            );
-        }));
+        if (isLocked) {
+            btn->setColors(sf::Color(60, 60, 60, 200), sf::Color(60, 60, 60, 200), sf::Color(150, 150, 150, 255));
+            btn->setCommand(nullptr); // No action if locked
+        } else {
+            btn->setColors(normalColors[i], hoverColors[i], white);
+            btn->setCommand(std::make_unique<LambdaCommand>([level]() {
+                GameManager::getInstance().getSettings().setSelectedLevel(level);
+                GameManager::getInstance().changeState(
+                    std::make_unique<PlayState>(false)
+                );
+            }));
+        }
+        btn->setShapeCornerRadius(cornerR);
 
         m_levelButtons[i] = std::move(btn);
 
         // Difficulty sub-label
         m_difficultyText[i].setFont(m_font);
-        m_difficultyText[i].setString(
-            std::string("Difficulty: ") + kLevelInfo[i].difficulty
-        );
+        if (isLocked) {
+            m_difficultyText[i].setString("Win previous level to unlock");
+            m_difficultyText[i].setFillColor(sf::Color(150, 150, 150));
+        } else {
+            m_difficultyText[i].setString(
+                std::string("Difficulty: ") + kLevelInfo[i].difficulty
+            );
+            m_difficultyText[i].setFillColor(sf::Color(255, 255, 200));
+        }
         m_difficultyText[i].setCharacterSize(20);
-        m_difficultyText[i].setFillColor(sf::Color(255, 255, 200));
+        
         {
             sf::FloatRect b = m_difficultyText[i].getLocalBounds();
             m_difficultyText[i].setOrigin(b.width / 2.f, 0.f);
@@ -102,10 +121,11 @@ LevelSelectState::LevelSelectState() {
         }
     }
 
-    // Generate Level button (Identical size & capsule styling as level buttons)
-    m_generateButton = std::make_unique<Button>("GENERATE LEVEL", m_font,
-                                            sf::Vector2f(cx, 680.f),
-                                            btnSize, 30);
+    // Single RANDOM button
+    m_playGeneratedButton = nullptr;
+    m_generateButton = std::make_unique<Button>("RANDOM", m_font,
+                                                sf::Vector2f(cx, 640.f),
+                                                btnSize, 32);
     m_generateButton->setColors(sf::Color(120, 40, 160, 215),
                                 sf::Color(180, 80, 230, 255), white);
     m_generateButton->setShapeCornerRadius(cornerR);
@@ -115,7 +135,7 @@ LevelSelectState::LevelSelectState() {
 
     // Back button
     m_backButton = std::make_unique<Button>("BACK", m_font,
-                                            sf::Vector2f(cx, 835.f),
+                                            sf::Vector2f(cx, 800.f),
                                             sf::Vector2f(260.f, 60.f), 26);
     m_backButton->setColors(sf::Color(80, 80, 80, 200),
                             sf::Color(140, 140, 140, 255), white);
@@ -142,6 +162,7 @@ void LevelSelectState::Input(const sf::Event& event) {
         );
         for (auto& btn : m_levelButtons) btn->update(mp);
         m_generateButton->update(mp);
+        if (m_playGeneratedButton) m_playGeneratedButton->update(mp);
         m_backButton->update(mp);
     }
 
@@ -152,6 +173,7 @@ void LevelSelectState::Input(const sf::Event& event) {
         for (auto& btn : m_levelButtons)
             if (btn->handleClick(event, mp)) return;
         if (m_generateButton->handleClick(event, mp)) return;
+        if (m_playGeneratedButton && m_playGeneratedButton->handleClick(event, mp)) return;
         if (m_backButton->handleClick(event, mp)) return;
     }
 
@@ -214,5 +236,8 @@ void LevelSelectState::Render(sf::RenderWindow& window) {
 
     // 6. Generate & Back button
     m_generateButton->render(window);
+    if (m_playGeneratedButton) {
+        m_playGeneratedButton->render(window);
+    }
     m_backButton->render(window);
 }
